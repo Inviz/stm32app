@@ -1,0 +1,13 @@
+{
+  "name": "PiduinoCommons",
+  "version": "1.0.0",
+  "build": {
+    "srcFilter": [
+      "+<*.c>",
+      "-<heap_1.c>",
+      "-<heap_2.c>",
+      "-<heap_3.c>",
+      "-<heap_5.c>"
+    ]
+  }
+}

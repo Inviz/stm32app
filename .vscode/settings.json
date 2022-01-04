@@ -1,0 +1,12 @@
+{
+  "files.associations": {
+    "gpio.h": "c",
+    "canopen.h": "c",
+    "co_storageblank.h": "c",
+    "crc16-ccitt.h": "c",
+    "flash.h": "c",
+    "freertos.h": "c",
+    "task.h": "c",
+    "od.h": "c"
+  }
+}
