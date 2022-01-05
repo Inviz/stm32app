@@ -10,20 +10,21 @@ const values = {};
 
 var count = 0;
 overlays.map((overlay) => {
-  overlay.replace(/(x\d{4}_.*?) = \{([\s\S]*?)    \}/g, (m, name, content) => {
-    content.replace(/    \.([^\s]+) = ([^\n]+?)\n/g, (m, k, v) => {
-      if (!values[name]) values[name] = {};
+  overlay.replace(/(\.x\d{4})([^ ]+) = \{([\s\S]*?)    \}/g, (m, id, name, content) => {
+    content.replace(/    \.([^\s]+) = ([^\n]+?),?\n/g, (m, k, v) => {
+      if (!values[id]) values[id] = {};
       if (k == 'highestSub_indexSupported') return;
       count++;
-      values[name][k] = v;
+      values[id][k] = v;
     })
   })
 })
 
-const output = base.replace(/(x\d{4}_.*?) = \{([\s\S]*?)    \}/g, (m, name, content) => {
-  return m.replace(/    \.([^\s]+) = ([^\n]+?)\n/g, (m, k, v) => {
-    if (!values[name] || !values[name][k]) return m;
-    return `    .${k} = ${values[name][k]}\n`;
+const output = base.replace(/(\.x\d{4})([^ ]+) = \{([\s\S]*?)    \}/g, (m, id, name, content) => {
+  return m.replace(/    \.([^\s]+) = ([^\n]+?)(,?)\n/g, (m, k, v, c) => {
+    if (!values[id] || !values[id][k]) return m;
+
+    return `    .${k} = ${values[id][k]}${c}\n`;
   })
 })
 

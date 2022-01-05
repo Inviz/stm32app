@@ -11,12 +11,12 @@
 
     File info:
         File Names:   OD.h; OD.c
-        Project File: Base.xdd
+        Project File: Base1.xdd
         File Version: 1
 
         Created:      9/25/2021 2:03:07 AM
         Created By:   
-        Modified:     1/4/2022 9:46:29 AM
+        Modified:     1/5/2022 11:26:23 PM
         Modified By:  
 
     Device Info:
@@ -46,12 +46,20 @@
 #define OD_CNT_SDO_CLI 1
 #define OD_CNT_RPDO 4
 #define OD_CNT_TPDO 4
-#define OD_CNT_MODULE_ADC 2
-#define OD_CNT_MODULE_SPI 1
-#define OD_CNT_MODULE_USART 2
-#define OD_CNT_DEVICE_MODBUS 1
-#define OD_CNT_DEVICE_EPAPER 2
 #define OD_CNT_DEVICE_CIRCUIT 4
+#define OD_CNT_MODULE_ADC 2
+#define OD_CNT_TRANSPORT_CAN 1
+#define OD_CNT_TRANSPORT_SPI 1
+#define OD_CNT_TRANSPORT_USART 1
+#define OD_CNT_TRANSPORT_I2C 1
+#define OD_CNT_TRANSPORT_MODBUS 1
+#define OD_CNT_STORAGE_EEPROM 1
+#define OD_CNT_STORAGE_WINBOND 1
+#define OD_CNT_STORAGE_FLASH 1
+#define OD_CNT_MEMORY_SRAM 1
+#define OD_CNT_INPUT_SENSOR 1
+#define OD_CNT_CONTROL_TOUCHSCREEN 1
+#define OD_CNT_SCREEN_EPAPER 1
 
 
 /*******************************************************************************
@@ -61,7 +69,6 @@
 #define OD_CNT_ARR_1010 4
 #define OD_CNT_ARR_1011 4
 #define OD_CNT_ARR_1016 8
-#define OD_CNT_ARR_9999 8
 
 
 /*******************************************************************************
@@ -238,40 +245,87 @@ typedef struct {
     } x1A03_TPDOMappingParameter;
     struct {
         uint8_t highestSub_indexSupported;
+        int16_t disabled;
+        uint8_t port;
+        uint8_t pin;
+        uint16_t limitCurrent;
+        uint16_t limitVoltage;
+        uint16_t PSU_Index;
+        uint16_t sensorIndex;
+    } x3800_deviceCircuit_1;
+    struct {
+        uint8_t highestSub_indexSupported;
+        int16_t disabled;
+        uint8_t port;
+        uint8_t pin;
+        uint16_t limitCurrent;
+        uint16_t limitVoltage;
+        uint16_t PSU_Index;
+        uint16_t sensorIndex;
+    } x3801_deviceCircuit_2;
+    struct {
+        uint8_t highestSub_indexSupported;
+        int16_t disabled;
+        uint8_t port;
+        uint8_t pin;
+        uint16_t limitCurrent;
+        uint16_t limitVoltage;
+        uint16_t PSU_Index;
+        uint16_t sensorIndex;
+    } x3802_deviceCircuit_3;
+    struct {
+        uint8_t highestSub_indexSupported;
         uint32_t disabled;
         char family[8];
         char boardType[10];
+        uint32_t storageIndex;
         uint32_t greenLED_Port;
         uint32_t greenLED_Pin;
         uint32_t redLED_Port;
         uint32_t redLED_Pin;
-    } x7000_moduleMCU;
-    struct {
-        uint8_t highestSub_indexSupported;
-        uint32_t disabled;
-        int8_t index;
-        uint8_t TX_Port;
-        uint8_t TX_Pin;
-        uint8_t RX_Port;
-        uint8_t RX_Pin;
-    } x7030_moduleCAN_1;
+    } x6000_moduleMCU;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t index;
+        uint8_t prescaler;
+        uint8_t source;
+    } x6010_moduleTimer_1;
+    struct {
+        uint8_t highestSub_indexSupported;
+        int16_t disabled;
         uint8_t interval;
         uint16_t sampleCountPerChannel;
         uint8_t DMA_Unit;
         uint8_t DMA_Stream;
         uint8_t DMA_Channel;
-    } x7100_moduleADC_1;
+    } x6020_moduleADC_1;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint32_t disabled;
+        uint8_t TX_Port;
+        uint8_t TX_Pin;
+        uint8_t RX_Port;
+        uint8_t RX_Pin;
+        int16_t bitrate;
+        uint16_t BRP;
+        uint8_t SJW;
+        uint8_t prop;
+        uint8_t phSeg1;
+        uint8_t phSeg2;
+        bool_t CANopen;
+        bool_t CANopenFifoIndex;
+    } x6100_transportCAN_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t index;
+        bool_t isSlave;
+        bool_t softwareSS_Control;
+        uint8_t mode;
         uint8_t DMA_RxUnit;
+        uint8_t DMA_RxStream;
         uint8_t DMA_RxChannel;
         uint8_t DMA_TxUnit;
+        uint8_t DMA_TxStream;
         uint8_t DMA_TxChannel;
         uint8_t SS_Port;
         uint8_t SS_Pin;
@@ -281,11 +335,10 @@ typedef struct {
         uint8_t MISO_Pin;
         uint8_t MOSI_Port;
         uint8_t MOSI_Pin;
-    } x7120_moduleSPI_1;
+    } x6120_transportSPI_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t index;
         uint8_t DMA_RxUnit;
         uint8_t DMA_RxStream;
         uint8_t DMA_RxChannel;
@@ -295,11 +348,10 @@ typedef struct {
         uint8_t DMA_TxChannel;
         uint32_t baudrate;
         uint8_t databits;
-    } x7140_moduleUSART_1;
+    } x6140_transportUSART_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t index;
         uint8_t DMA_RxUnit;
         uint8_t DMA_RxStream;
         uint8_t DMA_RxChannel;
@@ -309,55 +361,56 @@ typedef struct {
         uint8_t DMA_TxChannel;
         uint32_t baudrate;
         uint8_t databits;
-    } x7141_moduleUSART_2;
+    } x6160_transportI2C_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t index;
-        uint8_t prescaler;
-        uint8_t source;
-    } x7180_moduleTimer_1;
-    struct {
-        uint8_t highestSub_indexSupported;
-        int16_t disabled;
-        uint8_t timerIndex;
-        uint8_t USART_Index;
+        uint16_t timerIndex;
+        uint16_t USART_Index;
         uint8_t RTS_Port;
         uint8_t RTS_Pin;
         uint8_t slaveAddress;
         uint16_t rxBufferSize;
         uint16_t timeout;
-    } x7300_deviceModbus_1;
+    } x6180_transportModbus_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t port;
-        uint8_t pin;
-        uint16_t limitCurrent;
-        uint16_t limitVoltage;
-        uint16_t PSU_Index;
-        uint16_t sensorIndex;
-    } x7400_deviceCircuit_1;
+        uint16_t transportIndex;
+        uint16_t transportAddress;
+        uint16_t pageSize;
+        uint16_t size;
+    } x6200_storageEeprom_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t port;
-        uint8_t pin;
-        uint16_t limitCurrent;
-        uint16_t limitVoltage;
-        uint16_t PSU_Index;
-        uint16_t sensorIndex;
-    } x7401_deviceCircuit_2;
+        uint16_t SPI_Index;
+        uint16_t pageSize;
+        uint16_t size;
+    } x6220_storageWinbond;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
+        uint32_t startAddress;
+        uint16_t pageSize;
+        uint16_t size;
+    } x6240_storageFlash;
+    struct {
+        uint8_t highestSub_indexSupported;
+        int16_t disabled;
+        uint16_t transportIndex;
+        uint16_t transportAddress;
+        uint16_t pageSize;
+        uint16_t size;
+    } x6280_memorySRAM_1;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint16_t disabled;
         uint8_t port;
         uint8_t pin;
-        uint16_t limitCurrent;
-        uint16_t limitVoltage;
-        uint16_t PSU_Index;
-        uint16_t sensorIndex;
-    } x7402_deviceCircuit_3;
+        uint16_t ADC_Index;
+        uint8_t ADC_Channel;
+    } x6800_inputSensor_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
@@ -373,35 +426,11 @@ typedef struct {
         uint16_t width;
         uint16_t height;
         uint16_t mode;
-    } x7500_deviceEpaper_1;
-    struct {
-        uint8_t highestSub_indexSupported;
-        uint16_t disabled;
-        uint8_t port;
-        uint8_t pin;
-        uint16_t ADC_Index;
-        uint8_t ADC_Channel;
-    } x7600_deviceSensor_1;
-    struct {
-        uint8_t highestSub_indexSupported;
-        uint16_t disabled;
-        uint8_t port;
-        uint8_t pin;
-        uint16_t ADC_Index;
-        uint8_t ADC_Channel;
-    } x7601_deviceSensor_2;
-    struct {
-        uint8_t highestSub_indexSupported;
-        uint16_t disabled;
-        uint8_t port;
-        uint8_t pin;
-        uint16_t ADC_Index;
-        uint8_t ADC_Channel;
-    } x7602_deviceSensor_3;
+    } x6900_controlTouchscreen_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        uint8_t SPI_Index;
+        uint16_t SPI_Index;
         uint8_t DC_Port;
         uint8_t DC_Pin;
         uint8_t CS_Port;
@@ -413,12 +442,20 @@ typedef struct {
         uint16_t width;
         uint16_t height;
         uint16_t mode;
-    } x7700_deviceTouchscreen_1;
+    } x7000_screenEpaper_1;
     struct {
         uint8_t highestSub_indexSupported;
         int8_t CPU_Temperature;
         uint64_t startupTime;
     } x8000_moduleValuesMCU;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint16_t disabled;
+        uint8_t port;
+        uint8_t pin;
+        uint16_t ADC_Index;
+        uint8_t ADC_Channel;
+    } x8800_inputValuesSensor_1;
 } OD_PERSIST_COMM_t;
 
 typedef struct {
@@ -438,28 +475,26 @@ typedef struct {
         uint16_t current;
         uint16_t voltage;
         uint8_t consumers;
-    } x8400_deviceValuesCircuit_1;
+    } x5800_deviceValuesCircuit_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t dutyCycle;
         uint16_t current;
         uint16_t voltage;
         uint8_t consumers;
-    } x8401_deviceValuesCircuit_2;
+    } x5801_deviceValuesCircuit_2;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t dutyCycle;
         uint16_t current;
         uint16_t voltage;
         uint8_t consumers;
-    } x8402_deviceValuesCircuit_3;
+    } x5802_deviceValuesCircuit_3;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t imageBuffer;
         int16_t renderCount;
-    } x8500_deviceValuesEpaper_1;
-    uint8_t x9999_newObject_sub0;
-    uint16_t x9999_newObject[OD_CNT_ARR_9999];
+    } x9000_screenValuesEpaper_1;
 } OD_RAM_t;
 
 #ifndef OD_ATTR_PERSIST_COMM
@@ -514,28 +549,30 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H1A01 &OD->list[30]
 #define OD_ENTRY_H1A02 &OD->list[31]
 #define OD_ENTRY_H1A03 &OD->list[32]
-#define OD_ENTRY_H7000 &OD->list[33]
-#define OD_ENTRY_H7030 &OD->list[34]
-#define OD_ENTRY_H7100 &OD->list[35]
-#define OD_ENTRY_H7120 &OD->list[36]
-#define OD_ENTRY_H7140 &OD->list[37]
-#define OD_ENTRY_H7141 &OD->list[38]
-#define OD_ENTRY_H7180 &OD->list[39]
-#define OD_ENTRY_H7300 &OD->list[40]
-#define OD_ENTRY_H7400 &OD->list[41]
-#define OD_ENTRY_H7401 &OD->list[42]
-#define OD_ENTRY_H7402 &OD->list[43]
-#define OD_ENTRY_H7500 &OD->list[44]
-#define OD_ENTRY_H7600 &OD->list[45]
-#define OD_ENTRY_H7601 &OD->list[46]
-#define OD_ENTRY_H7602 &OD->list[47]
-#define OD_ENTRY_H7700 &OD->list[48]
-#define OD_ENTRY_H8000 &OD->list[49]
-#define OD_ENTRY_H8400 &OD->list[50]
-#define OD_ENTRY_H8401 &OD->list[51]
-#define OD_ENTRY_H8402 &OD->list[52]
-#define OD_ENTRY_H8500 &OD->list[53]
-#define OD_ENTRY_H9999 &OD->list[54]
+#define OD_ENTRY_H3800 &OD->list[33]
+#define OD_ENTRY_H3801 &OD->list[34]
+#define OD_ENTRY_H3802 &OD->list[35]
+#define OD_ENTRY_H5800 &OD->list[36]
+#define OD_ENTRY_H5801 &OD->list[37]
+#define OD_ENTRY_H5802 &OD->list[38]
+#define OD_ENTRY_H6000 &OD->list[39]
+#define OD_ENTRY_H6010 &OD->list[40]
+#define OD_ENTRY_H6020 &OD->list[41]
+#define OD_ENTRY_H6100 &OD->list[42]
+#define OD_ENTRY_H6120 &OD->list[43]
+#define OD_ENTRY_H6140 &OD->list[44]
+#define OD_ENTRY_H6160 &OD->list[45]
+#define OD_ENTRY_H6180 &OD->list[46]
+#define OD_ENTRY_H6200 &OD->list[47]
+#define OD_ENTRY_H6220 &OD->list[48]
+#define OD_ENTRY_H6240 &OD->list[49]
+#define OD_ENTRY_H6280 &OD->list[50]
+#define OD_ENTRY_H6800 &OD->list[51]
+#define OD_ENTRY_H6900 &OD->list[52]
+#define OD_ENTRY_H7000 &OD->list[53]
+#define OD_ENTRY_H8000 &OD->list[54]
+#define OD_ENTRY_H8800 &OD->list[55]
+#define OD_ENTRY_H9000 &OD->list[56]
 
 
 /*******************************************************************************
@@ -574,28 +611,30 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H1A01_TPDOMappingParameter &OD->list[30]
 #define OD_ENTRY_H1A02_TPDOMappingParameter &OD->list[31]
 #define OD_ENTRY_H1A03_TPDOMappingParameter &OD->list[32]
-#define OD_ENTRY_H7000_moduleMCU &OD->list[33]
-#define OD_ENTRY_H7030_moduleCAN_1 &OD->list[34]
-#define OD_ENTRY_H7100_moduleADC_1 &OD->list[35]
-#define OD_ENTRY_H7120_moduleSPI_1 &OD->list[36]
-#define OD_ENTRY_H7140_moduleUSART_1 &OD->list[37]
-#define OD_ENTRY_H7141_moduleUSART_2 &OD->list[38]
-#define OD_ENTRY_H7180_moduleTimer_1 &OD->list[39]
-#define OD_ENTRY_H7300_deviceModbus_1 &OD->list[40]
-#define OD_ENTRY_H7400_deviceCircuit_1 &OD->list[41]
-#define OD_ENTRY_H7401_deviceCircuit_2 &OD->list[42]
-#define OD_ENTRY_H7402_deviceCircuit_3 &OD->list[43]
-#define OD_ENTRY_H7500_deviceEpaper_1 &OD->list[44]
-#define OD_ENTRY_H7600_deviceSensor_1 &OD->list[45]
-#define OD_ENTRY_H7601_deviceSensor_2 &OD->list[46]
-#define OD_ENTRY_H7602_deviceSensor_3 &OD->list[47]
-#define OD_ENTRY_H7700_deviceTouchscreen_1 &OD->list[48]
-#define OD_ENTRY_H8000_moduleValuesMCU &OD->list[49]
-#define OD_ENTRY_H8400_deviceValuesCircuit_1 &OD->list[50]
-#define OD_ENTRY_H8401_deviceValuesCircuit_2 &OD->list[51]
-#define OD_ENTRY_H8402_deviceValuesCircuit_3 &OD->list[52]
-#define OD_ENTRY_H8500_deviceValuesEpaper_1 &OD->list[53]
-#define OD_ENTRY_H9999_newObject &OD->list[54]
+#define OD_ENTRY_H3800_deviceCircuit_1 &OD->list[33]
+#define OD_ENTRY_H3801_deviceCircuit_2 &OD->list[34]
+#define OD_ENTRY_H3802_deviceCircuit_3 &OD->list[35]
+#define OD_ENTRY_H5800_deviceValuesCircuit_1 &OD->list[36]
+#define OD_ENTRY_H5801_deviceValuesCircuit_2 &OD->list[37]
+#define OD_ENTRY_H5802_deviceValuesCircuit_3 &OD->list[38]
+#define OD_ENTRY_H6000_moduleMCU &OD->list[39]
+#define OD_ENTRY_H6010_moduleTimer_1 &OD->list[40]
+#define OD_ENTRY_H6020_moduleADC_1 &OD->list[41]
+#define OD_ENTRY_H6100_transportCAN_1 &OD->list[42]
+#define OD_ENTRY_H6120_transportSPI_1 &OD->list[43]
+#define OD_ENTRY_H6140_transportUSART_1 &OD->list[44]
+#define OD_ENTRY_H6160_transportI2C_1 &OD->list[45]
+#define OD_ENTRY_H6180_transportModbus_1 &OD->list[46]
+#define OD_ENTRY_H6200_storageEeprom_1 &OD->list[47]
+#define OD_ENTRY_H6220_storageWinbond &OD->list[48]
+#define OD_ENTRY_H6240_storageFlash &OD->list[49]
+#define OD_ENTRY_H6280_memorySRAM_1 &OD->list[50]
+#define OD_ENTRY_H6800_inputSensor_1 &OD->list[51]
+#define OD_ENTRY_H6900_controlTouchscreen_1 &OD->list[52]
+#define OD_ENTRY_H7000_screenEpaper_1 &OD->list[53]
+#define OD_ENTRY_H8000_moduleValuesMCU &OD->list[54]
+#define OD_ENTRY_H8800_inputValuesSensor_1 &OD->list[55]
+#define OD_ENTRY_H9000_screenValuesEpaper_1 &OD->list[56]
 
 
 /*******************************************************************************

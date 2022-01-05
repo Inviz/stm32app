@@ -1,25 +1,27 @@
-#include "devices/devices.h"
-#include "OD.h"
+#include "devices.h"
 #include "CO_application.h"
-#include "modules/adc.h"
-#include "modules/spi.h"
+#include "OD.h"
+#include "module/adc.h"
+#include "transport/spi.h"
 
 device_t *devices = NULL;
 size_t device_count = 0;
 
 char *string_from_phase(device_phase_t phase) {
     static char *phases[] = {
-        "ENABLED",  "CONSTRUCTING", "LINKING",
+        "ENABLED",    "CONSTRUCTING", "LINKING",
 
-        "STARTING", "CALIBRATING",  "PREPARING", "RUNNING",
+        "STARTING",   "CALIBRATING",  "PREPARING", "RUNNING",
 
-        "BUSY",     "RESETTING",
+        "REQUESTING", "RESPONDING",
 
-        "PAUSING",  "PAUSED",       "RESUMING",
+        "BUSY",       "RESETTING",
 
-        "STOPPING", "STOPPED",
+        "PAUSING",    "PAUSED",       "RESUMING",
 
-        "DISABLED", "DESTRUCTING",
+        "STOPPING",   "STOPPED",
+
+        "DISABLED",   "DESTRUCTING",
     };
     return phases[phase];
 }
@@ -27,8 +29,8 @@ char *string_from_phase(device_phase_t phase) {
 // Count or initialize all devices in OD of given type
 size_t devices_enumerate_type(device_type_t type, device_callbacks_t *callbacks, size_t struct_size, device_t *destination, size_t offset) {
     size_t count = 0;
-    for (size_t index = 0; index < 128; index++) {
-        OD_entry_t *config = OD_find(OD, type + index);
+    for (size_t seq = 0; seq < 128; seq++) {
+        OD_entry_t *config = OD_find(OD, type + seq);
         if (config == NULL)
             break;
 
@@ -37,7 +39,7 @@ size_t devices_enumerate_type(device_type_t type, device_callbacks_t *callbacks,
         OD_get_u16(config, 0x01, &disabled, true);
         if (disabled != 0)
             break;
-        OD_entry_t *values = OD_find(OD, type + DEVICES_VALUES_OFFSET + index);
+        OD_entry_t *values = OD_find(OD, type + DEVICES_VALUES_OFFSET + seq);
 
         if (callbacks->validate(config) != 0 && destination == NULL) {
             CO_errorReport(CO->em, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(config));
@@ -51,7 +53,8 @@ size_t devices_enumerate_type(device_type_t type, device_callbacks_t *callbacks,
 
         device_t *device = &destination[offset + count - 1];
         device->type = type;
-        device->index = type + index;
+        device->seq = seq;
+        device->index = type + seq;
         device->struct_size = struct_size;
         device->config = config;
         device->callbacks = callbacks;
@@ -78,6 +81,16 @@ device_t *find_device(uint16_t index) {
     return NULL;
 }
 
+device_t *find_device_by_type(uint16_t type) {
+    for (size_t i = 0; i < device_count; i++) {
+        if (devices[i].type == type) {
+            return &devices[i];
+        }
+    }
+}
+
+device_t *get_device_by_number(uint8_t number) { return &devices[number]; }
+
 uint8_t get_device_number(device_t *device) {
     for (size_t i = 0; i < device_count; i++) {
         if (&devices[i] == device) {
@@ -87,7 +100,19 @@ uint8_t get_device_number(device_t *device) {
     return 255;
 }
 
-device_t *get_device_by_number(uint8_t number) { return &devices[number]; }
+int device_send(device_t *device, device_t *origin, void *value, void *argument) {
+    if (device->callbacks->receive == NULL) {
+        return 1;
+    }
+    return device->callbacks->receive(device->object, origin, value, argument);
+}
+
+int device_signal(device_t *device, device_t *origin, uint32_t value, void *argument) {
+    if (device->callbacks->signal == NULL) {
+        return 1;
+    }
+    return device->callbacks->signal(device->object, origin, value, argument);
+}
 
 int device_link(device_t *device, void **destination, uint16_t index, void *argument) {
     if (index == 0) {
@@ -213,7 +238,9 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
     switch (phase) {
     case DEVICE_CONSTRUCTING:
         if (device->callbacks->construct != NULL) {
-            device->callbacks->construct(device->object, device);
+            if (device->callbacks->construct(device->object, device) != 0) {
+                return device_set_phase(device, DEVICE_DISABLED);
+            }
         }
         break;
     case DEVICE_DESTRUCTING:

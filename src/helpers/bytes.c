@@ -1,4 +1,4 @@
-#include "bytes.h";
+#include "bytes.h"
 
 uint16_t swap_bytes_ba(uint16_t AB) {
     return (AB>>8)|(AB<<8);

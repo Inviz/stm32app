@@ -1,12 +1,11 @@
-
 #include <libopencm3/stm32/adc.h>
 
 /* semihosting Initializing */
 extern void initialise_monitor_handles(void);
 
 /* default values for CO_CANopenInit() */
-#define NMT_CONTROL                                                                                                    \
-    CO_NMT_STARTUP_TO_OPERATIONAL                                                                                      \
+#define NMT_CONTROL                                                                                                                        \
+    CO_NMT_STARTUP_TO_OPERATIONAL                                                                                                          \
     | CO_NMT_ERR_ON_ERR_REG | CO_ERR_REG_GENERIC_ERR | CO_ERR_REG_COMMUNICATION
 #define FIRST_HB_TIME 501
 #define SDO_SRV_TIMEOUT_TIME 1000
@@ -14,14 +13,12 @@ extern void initialise_monitor_handles(void);
 #define SDO_CLI_BLOCK true
 #define OD_STATUS_BITS NULL
 
-#define CO_GET_CO(obj) CO_##obj
 #define CO_GET_CNT(obj) OD_CNT_##obj
+#define OD_GET(entry, index) OD_ENTRY_##entry
 
 #include "main.h"
-#include "storage/CO_storageAbstract.h"
-#include "FreeRTOS.h"
-#include "OD.h"
 #include "semphr.h"
+#include "storage/CO_storageAbstract.h"
 #include "task.h"
 
 #include "CO_application.h"
@@ -30,8 +27,16 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
     (void)xTask;      /* unused*/
     (void)pcTaskName; /* may be unused*/
     log_printf("System - Stack overflow! %s", pcTaskName);
+    while (1) {
+    }
 }
- 
+
+void vApplicationMallocFailedHook(void) {
+    log_printf("System - Malloc failed! %s");
+    while (1) {
+    }
+}
+
 typedef struct {
     uint8_t nodeId;   /* read from dip switches or nonvolatile memory, configurable
                          by LSS slave */
@@ -50,10 +55,7 @@ CO_config_communication_t CO_config_communication = {.nodeId = 4, .bitRate = 100
 CO_storage_t CO_storage;
 CO_storage_entry_t storageEntries[] = {
     /* Entirety of persistent section OD */
-    {.addr = &OD_PERSIST_COMM,
-     .len = sizeof(OD_PERSIST_COMM),
-     .subIndexOD = 2,
-     .attr = CO_storage_cmd | CO_storage_restore},
+    {.addr = &OD_PERSIST_COMM, .len = sizeof(OD_PERSIST_COMM), .subIndexOD = 2, .attr = CO_storage_cmd | CO_storage_restore},
 
     /* Negotiated LSS settings */
     {.addr = &CO_config_communication,
@@ -68,11 +70,11 @@ TaskHandle_t TaskCANOpenMainlineHandle;
 SemaphoreHandle_t TaskMainlineSemaphore = NULL;
 SemaphoreHandle_t TaskProcessingSemaphore = NULL;
 
-
 static CO_ReturnError_t initialize_memory(void) {
     uint32_t heapMemoryUsed = 0;
     /* Allocate memory */
     CO = CO_new(NULL, &heapMemoryUsed);
+    CANptr = CO->CANmodule;
     if (CO == NULL) {
         log_printf("Error: Can't allocate memory\n");
         return CO_ERROR_OUT_OF_MEMORY;
@@ -91,12 +93,11 @@ static CO_ReturnError_t initialize_storage(uint32_t *storageInitError) {
 
     CO_ReturnError_t err;
 
-    err = CO_storageAbstract_init(&CO_storage, CO->CANmodule, NULL, OD_ENTRY_H1010_storeParameters,
-                               OD_ENTRY_H1011_restoreDefaultParameters, storageEntries, storageEntriesCount,
-                               storageInitError);
+    err = CO_storageAbstract_init(&CO_storage, CO->CANmodule, NULL, OD_ENTRY_H1010_storeParameters, OD_ENTRY_H1011_restoreDefaultParameters,
+                                  storageEntries, storageEntriesCount, storageInitError);
 
-    if (err != CO_ERROR_NO && err != CO_ERROR_DATA_CORRUPT) {
-        log_printf("Error: Storage %d\n", (int)*storageInitError);
+    if (false && err != CO_ERROR_NO && err != CO_ERROR_DATA_CORRUPT) {
+        error_printf("Error: Storage %d\n", (int)*storageInitError);
         return err;
     }
 
@@ -122,8 +123,8 @@ static CO_ReturnError_t initialize_communication(void) {
 
     /* Initialize CANopen driver */
     err = CO_CANinit(CO, CANptr, CO_config_communication.bitRate);
-    if (err != CO_ERROR_NO) {
-        log_printf("Error: CAN initialization failed: %d\n", err);
+    if (false && err != CO_ERROR_NO) {
+        error_printf("Error: CAN initialization failed: %d\n", err);
         return err;
     }
 
@@ -137,7 +138,7 @@ static CO_ReturnError_t initialize_communication(void) {
     CO_LSSslave_initCfgStoreCallback(CO->LSSslave, NULL, LSSStoreConfigCallback);
 
     if (err != CO_ERROR_NO) {
-        log_printf("Error: LSS slave initialization failed: %d\n", err);
+        error_printf("Error: LSS slave initialization failed: %d\n", err);
         return err;
     }
 
@@ -159,7 +160,6 @@ static void TaskCANOpenProcessingCallback(void *object) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 #endif
-
 
 static CO_ReturnError_t initialize_callbacks(CO_t *co) {
     /* Mainline tasks */
@@ -231,7 +231,7 @@ static CO_ReturnError_t initialize_canopen(uint32_t *errInfo) {
     if (err == CO_ERROR_NODE_ID_UNCONFIGURED_LSS) {
         return CO_ERROR_NO;
     }
-    
+
     /* Execute optional external application code */
     app_communicationReset(CO);
 
@@ -261,11 +261,14 @@ static CO_NMT_reset_cmd_t CO_reset(CO_NMT_reset_cmd_t reset) {
                 initError = storageInitError;
             }
         }
-        app_programBoot();
+        app_programConfigure(CO);
 #endif
-        if (err == CO_ERROR_NO) err = initialize_communication();
-        if (err == CO_ERROR_NO) err = initialize_canopen(&initError);
-        if (err == CO_ERROR_NO) err = app_programStart(&CO_config_communication.bitRate, &CO_config_communication.nodeId);
+        if (err == CO_ERROR_NO)
+            err = initialize_communication();
+        if (err == CO_ERROR_NO)
+            err = initialize_canopen(&initError);
+        if (err == CO_ERROR_NO)
+            err = app_programStart(&CO_config_communication.bitRate, &CO_config_communication.nodeId);
         if (err != CO_ERROR_NO) {
             if (err == CO_ERROR_OD_PARAMETERS) {
                 log_printf("CANopen - Error in Object Dictionary entry 0x%X\n", initError);
@@ -322,8 +325,8 @@ static void TaskCANOpenMainline(void *pvParameters) {
 
     while (true) {
         TickType_t current_tick = xTaskGetTickCount();
-        uint32_t timeout = 0xffffffffUL;
-        uint32_t us_since_last_tick = (current_tick - last_tick) * US_PER_TICK;
+        uint32_t timeout = -1;
+        uint32_t us_since_last_tick = TICKS_DIFF(current_tick, last_tick) * US_PER_TICK;
 
         reset = CO_process(CO, false, us_since_last_tick, &timeout);
 
@@ -348,8 +351,8 @@ static void TaskCANOpenProcessing(void *pvParameters) {
 
     while (true) {
         TickType_t current_tick = xTaskGetTickCount();
-        uint32_t timeout = 0xffffffffUL;
-        uint32_t us_since_last_tick = (current_tick - last_tick) * US_PER_TICK;
+        uint32_t timeout = -1;
+        uint32_t us_since_last_tick = TICKS_DIFF(current_tick, last_tick) * US_PER_TICK;
 
         /* Execute external application code */
         app_peripheralRead(CO, us_since_last_tick, &timeout);
@@ -405,33 +408,29 @@ int main(void) {
     return 0;
 }
 
+#ifdef CO_CAN_INTERFACE
 #ifdef STMF32F1
-    void usb_lp_can_rx0_isr(void) {
-        CO_CANRxInterrupt(CO->CANmodule);
-    }
-    void usb_lp_can_rx1_isr(void) {
-        CO_CANRxInterrupt(CO->CANmodule);
-    }
-    void usb_hp_can_tx_isr(void) {
-        CO_CANTxInterrupt(CO->CANmodule);
-    }
+#if CO_CAN_RX_FIFO_INDEX == 0 || !defined(CO_CAN_RX_FIFO_INDEX)
+void usb_hp_can_tx_isr(void) { CO_CANTxInterrupt(CO->CANmodule); }
+void usb_lp_can_rx0_isr(void) { CO_CANRxInterrupt(CO->CANmodule); }
 #else
-    void can1_rx0_isr(void) {
-        CO_CANRxInterrupt(CO->CANmodule);
-    }
-    void can1_rx1_isr(void) {
-        CO_CANRxInterrupt(CO->CANmodule);
-    }
-    void can1_tx_isr(void) {
-        CO_CANTxInterrupt(CO->CANmodule);
-    }
-    void can2_rx0_isr(void) {
-        CO_CANRxInterrupt(CO->CANmodule);
-    }
-    void can2_rx1_isr(void) {
-        CO_CANRxInterrupt(CO->CANmodule);
-    }
-    void can2_tx_isr(void) {
-        CO_CANTxInterrupt(CO->CANmodule);
-    }
+void usb_lp_can_rx1_isr(void) { CO_CANRxInterrupt(CO->CANmodule); }
+#endif
+#else
+#if CO_CAN_INTERFACE == CAN1
+#if CO_CAN_RX_FIFO_INDEX == 0
+void can1_tx_isr(void) { CO_CANTxInterrupt(CO->CANmodule); }
+void can1_rx0_isr(void) { CO_CANRxInterrupt(CO->CANmodule); }
+#else
+void can1_rx1_isr(void) { CO_CANRxInterrupt(CO->CANmodule); }
+#endif
+#else
+#if CO_CAN_RX_FIFO_INDEX == 0
+void can2_tx_isr(void) { CO_CANTxInterrupt(CO->CANmodule); }
+void can2_rx0_isr(void) { CO_CANRxInterrupt(CO->CANmodule); }
+#else
+void can2_rx1_isr(void) { CO_CANRxInterrupt(CO->CANmodule); }
+#endif
+#endif
+#endif
 #endif

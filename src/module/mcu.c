@@ -60,7 +60,7 @@ static int module_mcu_tick(module_mcu_t *mcu, uint32_t time_passed, uint32_t *ne
 
 static int module_mcu_link(module_mcu_t *mcu) {
     (void)mcu;
-    return 0;
+    return device_link(mcu->device, (void **)&mcu->storage, mcu->config->storage_index, NULL);
 }
 
 static int module_mcu_phase(module_mcu_t *mcu, device_phase_t phase) {

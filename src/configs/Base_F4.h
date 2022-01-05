@@ -16,7 +16,7 @@
 
         Created:      1/3/2022 7:32:53 PM
         Created By:   
-        Modified:     1/4/2022 9:33:32 AM
+        Modified:     1/5/2022 8:43:36 PM
         Modified By:  
 
     Device Info:
@@ -59,15 +59,21 @@ typedef struct {
         uint8_t highestSub_indexSupported;
         char family[8];
         char board[10];
-    } x7000_moduleMCU;
+    } x6000_moduleMCU;
     struct {
         uint8_t highestSub_indexSupported;
         uint32_t disabled;
-        uint8_t rxPort;
-        uint8_t rxPin;
-        uint8_t txPort;
-        uint8_t txPin;
-    } x7030_moduleCAN;
+        uint8_t TX_Port;
+        uint8_t TX_Pin;
+        uint8_t RX_Port;
+        uint8_t RX_Pin;
+        uint8_t RX_Pin;
+    } x6100_moduleCAN_1;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint16_t transportIndex;
+        uint16_t transportAddress;
+    } x6200_I2C_EEPROM;
 } Base_F4_RAM_t;
 
 #ifndef Base_F4_ATTR_RAM
@@ -84,15 +90,17 @@ extern Base_F4_ATTR_OD OD_t *Base_F4;
 /*******************************************************************************
     Object dictionary entries - shortcuts
 *******************************************************************************/
-#define Base_F4_ENTRY_H7000 &Base_F4->list[0]
-#define Base_F4_ENTRY_H7030 &Base_F4->list[1]
+#define Base_F4_ENTRY_H6000 &Base_F4->list[0]
+#define Base_F4_ENTRY_H6100 &Base_F4->list[1]
+#define Base_F4_ENTRY_H6200 &Base_F4->list[2]
 
 
 /*******************************************************************************
     Object dictionary entries - shortcuts with names
 *******************************************************************************/
-#define Base_F4_ENTRY_H7000_moduleMCU &Base_F4->list[0]
-#define Base_F4_ENTRY_H7030_moduleCAN &Base_F4->list[1]
+#define Base_F4_ENTRY_H6000_moduleMCU &Base_F4->list[0]
+#define Base_F4_ENTRY_H6100_moduleCAN_1 &Base_F4->list[1]
+#define Base_F4_ENTRY_H6200_I2C_EEPROM &Base_F4->list[2]
 
 
 /*******************************************************************************

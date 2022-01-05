@@ -124,6 +124,65 @@ void devices_dma_notify(uint8_t unit, uint8_t index) {
     }
 }
 
+void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+    uint32_t dma_address = dma_get_address(unit);
+    dma_disable_channel_or_stream(dma_address, stream);
+    dma_reset_channel_or_stream(dma_address, stream);
+    nvic_disable_irq(nvic_dma_get_channel_base(unit) + stream);
+}
+
+void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+	uint32_t dma_address = dma_get_address(unit);
+
+	dma_channel_reset(dma_address, stream);
+
+	dma_set_peripheral_address(dma_address, stream, periphery_address);
+	dma_set_memory_address(dma_address, stream, (uint32_t)data);
+	dma_set_number_of_data(dma_address, stream, size);
+	dma_set_read_from_peripheral(dma_address, stream);
+	dma_enable_memory_increment_mode(dma_address, stream);
+	dma_set_peripheral_size(dma_address, stream, DMA_PSIZE_8BIT);
+	dma_set_memory_size(dma_address, stream, DMA_MSIZE_8BIT);
+	dma_set_priority(dma_address, stream, DMA_PL_VERY_HIGH);
+
+    rcc_periph_clock_enable(dma_get_clock_address(unit));
+	dma_enable_transfer_complete_interrupt(dma_address, stream);
+
+	dma_enable_channel(DMA1, stream);
+}
+
+void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+    uint32_t dma_address = dma_get_address(unit);
+    dma_disable_channel_or_stream(dma_address, stream);
+    dma_reset_channel_or_stream(dma_address, stream);
+    nvic_enable_irq(nvic_dma_get_channel_base(unit) + stream);
+}
+
+
+void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+    uint32_t dma_address = dma_get_address(unit);
+
+    dma_channel_select(dma_address, stream, channel);
+    dma_set_peripheral_address(dma_address, stream, periphery_address);
+    dma_set_memory_address(dma_address, stream, (uint32_t)data);
+    dma_set_number_of_data(dma_address, stream, size);
+
+    dma_set_read_from_memory(dma_address, stream);
+    dma_enable_memory_increment_mode(dma_address, stream);
+
+    dma_set_peripheral_size(dma_address, stream, DMA_PSIZE_8BIT);
+    dma_set_memory_size(dma_address, stream, DMA_MSIZE_8BIT);
+    dma_set_priority(dma_address, stream, DMA_PL_VERY_HIGH);
+
+    dma_enable_transfer_complete_interrupt(dma_address, stream);
+
+    rcc_periph_clock_enable(dma_get_clock_address(unit));
+    nvic_set_priority(nvic_dma_get_channel_base(unit) + stream, 1);
+    nvic_enable_irq(nvic_dma_get_channel_base(unit) + stream);
+
+    dma_enable_channel_or_stream(dma_address, stream);
+}
+
 #ifdef DMA_CHANNEL1
 void dma_channel_select(uint32_t dma, uint8_t stream, uint8_t channel) {}
 #else

@@ -26,8 +26,14 @@
 #define CO_APPLICATION_H
 
 #include "CANopen.h"
-#include "devices/devices.h"
+#include "devices.h"
 
+#define CO_CAN_SJW COO_CANmodule->sjw
+#define CO_CAN_SEG_PH1 COO_CANmodule->seg_ph1
+#define CO_CAN_SEG_PH2 COO_CANmodule->seg_ph2
+#define CO_CAN_PROP transport_can->config->prop
+#define CO_CAN_BRP transport_can->config->brp
+#define CO_CAN_BITRATE transport_can->config->bitrate
 
 extern size_t devices_enumerate(device_t *destination);
 
@@ -36,8 +42,7 @@ extern size_t devices_enumerate(device_t *destination);
  * additional, realtime thread.
  */
 
-
-CO_ReturnError_t app_programBoot(void);
+CO_ReturnError_t app_programConfigure(CO_t *co);
 
 /**
  * Function is called once on the program startup, after Object dictionary
@@ -50,9 +55,7 @@ CO_ReturnError_t app_programBoot(void);
  *
  * @return @ref CO_ReturnError_t CO_ERROR_NO in case of success.
  */
-CO_ReturnError_t app_programStart(uint16_t *bitRate,
-                                  uint8_t *nodeId);
-
+CO_ReturnError_t app_programStart(uint16_t *bitRate, uint8_t *nodeId);
 
 /**
  * Function is called after CANopen communication reset.
@@ -61,12 +64,10 @@ CO_ReturnError_t app_programStart(uint16_t *bitRate,
  */
 void app_communicationReset(CO_t *co);
 
-
 /**
  * Function is called just before program ends.
  */
 void app_programEnd(void);
-
 
 /**
  * Function is called cyclically from main().
@@ -85,7 +86,6 @@ void app_programEnd(void);
  */
 void app_programAsync(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us);
 
-
 /**
  * Function is called cyclically from realtime thread at constant intervals.
  *
@@ -97,7 +97,6 @@ void app_programAsync(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us);
  */
 void app_programRt(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us);
 
-
 /**
  * Function is called in the beginning of the realtime thread.
  *
@@ -106,7 +105,6 @@ void app_programRt(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us);
  */
 void app_peripheralRead(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us);
 
-
 /**
  * Function is called in the end of the realtime thread.
  *
@@ -114,7 +112,5 @@ void app_peripheralRead(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us)
  * @param timer1usDiff Time difference since last call in microseconds
  */
 void app_peripheralWrite(CO_t *co, uint32_t timer1usDiff, uint32_t *timerNext_us);
-
-
 
 #endif /* CO_APPLICATION_H */

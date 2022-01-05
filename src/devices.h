@@ -61,23 +61,38 @@ typedef enum { DEVICE_TX_DONE, DEVICE_RX_DONE, DEVICE_TIMER } device_signal_t;
 char *string_from_phase(device_phase_t phase);
 
 typedef enum {
-    MODULE_MCU = 0x7000,
-    MODULE_ADC = 0x7100,
-    MODULE_SPI = 0x7120,
-    MODULE_CAN = 0x7140,
-    DEVICE_CIRCUIT = 0x7400,
-    DEVICE_EPAPER = 0x7500,
-    DEVICE_SENSOR = 0x7600,
-    DEVICE_TOUCHSCREEN = 0x7700
+    // custom devices
+    DEVICE_CIRCUIT = 0x3800,
+
+    // basic features
+    MODULE_MCU = 0x6000,
+    MODULE_TIMER = 0x6020,
+    MODULE_ADC = 0x6020,
+
+    // communication modules
+    TRANSPORT_CAN = 0x6100,
+    TRANSPORT_SPI = 0x6120,
+    TRANSPORT_USART = 0x6140,
+    TRANSPORT_I2C = 0x6160,
+    TRANSPORT_MODBUS = 0x6180,
+
+    // input devices
+    INPUT_SENSOR = 0x6800,
+
+    CONTROL_TOUCHSCREEN = 0x6900,
+
+    // output devices
+    SCREEN_EPAPER = 0x7000,
 } device_type_t;
 
 typedef struct device_callbacks_t device_callbacks_t;
 
 typedef struct {
     device_type_t type;              /* OD index of a first device of this type */
+    uint8_t seq;                     /* Sequence number of the device in its family  */
+    int16_t index;                   /* Actual OD address of this device */
     device_phase_t phase;            /* Current lifecycle phase of the device */
     uint32_t phase_delay;            /* Current lifecycle phase of the device */
-    int16_t index;                   /* Actual OD address of this device */
     void *object;                    /* Pointer to the device own struct */
     size_t struct_size;              /* Memory requirements for device struct */
     OD_entry_t *config;              /* OD entry containing configuration for device*/
@@ -133,8 +148,13 @@ size_t devices_enumerate_type(device_type_t type, device_callbacks_t *callbacks,
 /* Find device with given index and write it to the given pointer */
 int device_link(device_t *device, void **destination, uint16_t index, void *arg);
 
+/* Send value from device to another */
+int device_send(device_t *device, device_t *target, void *value, void *argument);
+
 /* Find device by index in the global list of registered devices */
 device_t *find_device(uint16_t index);
+/* Find device by type in the global list of registered devices */
+device_t *find_device_by_type(uint16_t type);
 /* Get numeric index of a device in a global array */
 uint8_t get_device_number(device_t *device);
 /* Return device from a global array by its index */

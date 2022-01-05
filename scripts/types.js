@@ -1,10 +1,15 @@
 const fs = require('fs');
-const inflection = require('inflection')
+const inflection = require('inflection');
+const { stringify } = require('querystring');
 
 const underscore = (string) => {
   return inflection.underscore(
-    string.replace(/([A-Z])([A-Z]+)/, (m, f, rest) => f + rest.toLowerCase())
-  ).replace(/__/g, '_')
+    string
+      .replace(/(\d)([A-Z])/, (m, f, rest) => f + rest.toLowerCase())
+      .replace(/([A-Z])([A-Z]+)/, (m, f, rest) => f + rest.toLowerCase())
+  )
+  .replace(/__/g, '_')
+  .replace(/([a-z])_(\d)/g, '$1$2')
 }
 
 const xml = fs.readFileSync(process.argv[2]).toString();
@@ -35,7 +40,7 @@ var toHex = function (rgb) {
   return hex;
 };
 
-od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x(.*?)_(device|module)([^_\s,;]+)/g, (match, struct, index, type, name) => {
+od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x(.*?)_([a-z]+)([^_\s,;]+)/g, (match, struct, index, type, name) => {
   struct = struct.replace(/\n\s+/g, '\n    ')
   struct = struct.replace(/( )([^; ]+);/g, (m, w, v) => w + underscore(v) + ';')
   struct = struct.replace(/[^;]+;(?:\n|$)/, ''); // remove highest index entry
@@ -56,7 +61,7 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x(.*?)_(device|module)([^_\s,;]+)/g, (match,
   const defs = [];
 
   const typeName = `${type}_${name}_${subtype}_t`
-  const filePath = `./src/${type}s/${name}.h`;
+  const filePath = `./src/${type}/${name}.h`;
 
   struct.split(/;/).map((pair, attributeIndex) => {
     if (!pair) return;

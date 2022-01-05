@@ -21,18 +21,18 @@
     OD data initialization of all groups
 *******************************************************************************/
 Base_F1_ATTR_RAM Base_F1_RAM_t Base_F1_RAM = {
-    .x7000_moduleMCU = {
+    .x6000_moduleMCU = {
         .highestSub_indexSupported = 0x03,
         .family = {'S', 'T', 'M', '3', '2', 'F', '1', 0},
         .board = {'S', 'T', 'M', '3', '2', 'F', '1', '0', '3', 0}
     },
-    .x7030_moduleCAN_1 = {
+    .x6100_moduleCAN_1 = {
         .highestSub_indexSupported = 0x05,
         .disabled = 0x00000000,
-        .rxPort = 0x01,
-        .rxPin = 0x0B,
-        .txPort = 0x01,
-        .txPin = 0x0C
+        .TX_Port = 0x01,
+        .TX_Pin = 0x0C,
+        .RX_Port = 0x01,
+        .RX_Pin = 0x0B
     }
 };
 
@@ -42,64 +42,64 @@ Base_F1_ATTR_RAM Base_F1_RAM_t Base_F1_RAM = {
     All OD objects (constant definitions)
 *******************************************************************************/
 typedef struct {
-    OD_obj_record_t o_7000_moduleMCU[3];
-    OD_obj_record_t o_7030_moduleCAN_1[6];
+    OD_obj_record_t o_6000_moduleMCU[3];
+    OD_obj_record_t o_6100_moduleCAN_1[6];
 } Base_F1Objs_t;
 
 static CO_PROGMEM Base_F1Objs_t Base_F1Objs = {
-    .o_7000_moduleMCU = {
+    .o_6000_moduleMCU = {
         {
-            .dataOrig = &Base_F1_RAM.x7000_moduleMCU.highestSub_indexSupported,
+            .dataOrig = &Base_F1_RAM.x6000_moduleMCU.highestSub_indexSupported,
             .subIndex = 0,
             .attribute = ODA_SDO_R,
             .dataLength = 1
         },
         {
-            .dataOrig = &Base_F1_RAM.x7000_moduleMCU.family[0],
+            .dataOrig = &Base_F1_RAM.x6000_moduleMCU.family[0],
             .subIndex = 2,
             .attribute = ODA_SDO_RW | ODA_STR,
             .dataLength = 7
         },
         {
-            .dataOrig = &Base_F1_RAM.x7000_moduleMCU.board[0],
+            .dataOrig = &Base_F1_RAM.x6000_moduleMCU.board[0],
             .subIndex = 3,
             .attribute = ODA_SDO_RW | ODA_STR,
             .dataLength = 9
         }
     },
-    .o_7030_moduleCAN_1 = {
+    .o_6100_moduleCAN_1 = {
         {
-            .dataOrig = &Base_F1_RAM.x7030_moduleCAN_1.highestSub_indexSupported,
+            .dataOrig = &Base_F1_RAM.x6100_moduleCAN_1.highestSub_indexSupported,
             .subIndex = 0,
             .attribute = ODA_SDO_R,
             .dataLength = 1
         },
         {
-            .dataOrig = &Base_F1_RAM.x7030_moduleCAN_1.disabled,
+            .dataOrig = &Base_F1_RAM.x6100_moduleCAN_1.disabled,
             .subIndex = 1,
             .attribute = ODA_SDO_RW | ODA_MB,
             .dataLength = 4
         },
         {
-            .dataOrig = &Base_F1_RAM.x7030_moduleCAN_1.rxPort,
+            .dataOrig = &Base_F1_RAM.x6100_moduleCAN_1.TX_Port,
             .subIndex = 2,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &Base_F1_RAM.x7030_moduleCAN_1.rxPin,
+            .dataOrig = &Base_F1_RAM.x6100_moduleCAN_1.TX_Pin,
             .subIndex = 3,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &Base_F1_RAM.x7030_moduleCAN_1.txPort,
+            .dataOrig = &Base_F1_RAM.x6100_moduleCAN_1.RX_Port,
             .subIndex = 4,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &Base_F1_RAM.x7030_moduleCAN_1.txPin,
+            .dataOrig = &Base_F1_RAM.x6100_moduleCAN_1.RX_Pin,
             .subIndex = 5,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
@@ -112,8 +112,8 @@ static CO_PROGMEM Base_F1Objs_t Base_F1Objs = {
     Object dictionary
 *******************************************************************************/
 static Base_F1_ATTR_OD OD_entry_t Base_F1List[] = {
-    {0x7000, 0x03, ODT_REC, &Base_F1Objs.o_7000_moduleMCU, NULL},
-    {0x7030, 0x06, ODT_REC, &Base_F1Objs.o_7030_moduleCAN_1, NULL},
+    {0x6000, 0x03, ODT_REC, &Base_F1Objs.o_6000_moduleMCU, NULL},
+    {0x6100, 0x06, ODT_REC, &Base_F1Objs.o_6100_moduleCAN_1, NULL},
     {0x0000, 0x00, 0, NULL, NULL}
 };
 

@@ -16,7 +16,7 @@
 
         Created:      1/3/2022 7:56:15 PM
         Created By:   
-        Modified:     1/4/2022 12:45:35 AM
+        Modified:     1/4/2022 5:58:09 PM
         Modified By:  
 
     Device Info:
@@ -59,15 +59,15 @@ typedef struct {
         uint8_t highestSub_indexSupported;
         char family[8];
         char board[10];
-    } x7000_moduleMCU;
+    } x6000_moduleMCU;
     struct {
         uint8_t highestSub_indexSupported;
         uint32_t disabled;
-        uint8_t rxPort;
-        uint8_t rxPin;
-        uint8_t txPort;
-        uint8_t txPin;
-    } x7030_moduleCAN_1;
+        uint8_t TX_Port;
+        uint8_t TX_Pin;
+        uint8_t RX_Port;
+        uint8_t RX_Pin;
+    } x6100_moduleCAN_1;
 } Base_F1_RAM_t;
 
 #ifndef Base_F1_ATTR_RAM
@@ -84,15 +84,15 @@ extern Base_F1_ATTR_OD OD_t *Base_F1;
 /*******************************************************************************
     Object dictionary entries - shortcuts
 *******************************************************************************/
-#define Base_F1_ENTRY_H7000 &Base_F1->list[0]
-#define Base_F1_ENTRY_H7030 &Base_F1->list[1]
+#define Base_F1_ENTRY_H6000 &Base_F1->list[0]
+#define Base_F1_ENTRY_H6100 &Base_F1->list[1]
 
 
 /*******************************************************************************
     Object dictionary entries - shortcuts with names
 *******************************************************************************/
-#define Base_F1_ENTRY_H7000_moduleMCU &Base_F1->list[0]
-#define Base_F1_ENTRY_H7030_moduleCAN_1 &Base_F1->list[1]
+#define Base_F1_ENTRY_H6000_moduleMCU &Base_F1->list[0]
+#define Base_F1_ENTRY_H6100_moduleCAN_1 &Base_F1->list[1]
 
 
 /*******************************************************************************

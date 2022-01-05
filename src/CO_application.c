@@ -1,38 +1,71 @@
 #include "CO_application.h"
-#include "devices/circuit.h"
-#include "devices/devices.h"
-#include "devices/epaper.h"
-#include "devices/modbus.h"
-#include "devices/sensor.h"
-#include "modules/adc.h"
-#include "modules/can.h"
-#include "modules/mcu.h"
-#include "modules/spi.h"
+#include "devices.h"
+#include "device/circuit.h"
+#include "screen/epaper.h"
+//#include "devices/modbus.h"
+#include "input/sensor.h"
+#include "module/adc.h"
+#include "module/mcu.h"
+#include "transport/can.h"
+#include "transport/spi.h"
+#include "transport/usart.h"
+#include "transport/i2c.h"
 
 #include "OD.h"
+#include "CANopen.h"
 
 // Initialize all devices of all types found in OD
 // If devices is NULL, it will only count the devices
 size_t devices_enumerate(device_t *destination) {
     size_t count = 0;
     count += devices_enumerate_type(MODULE_MCU, &module_mcu_callbacks, sizeof(module_mcu_t), destination, count);
-    count += devices_enumerate_type(MODULE_CAN, &module_can_callbacks, sizeof(module_can_t), destination, count);
     count += devices_enumerate_type(MODULE_ADC, &module_adc_callbacks, sizeof(module_adc_t), destination, count);
-    count += devices_enumerate_type(MODULE_SPI, &module_spi_callbacks, sizeof(module_spi_t), destination, count);
+    count += devices_enumerate_type(TRANSPORT_CAN, &transport_can_callbacks, sizeof(transport_can_t), destination, count);
+    count += devices_enumerate_type(TRANSPORT_SPI, &transport_spi_callbacks, sizeof(transport_spi_t), destination, count);
+    //count += devices_enumerate_type(MODULE_USART, &transport_usart_callbacks, sizeof(transport_usart_t), destination, count);
+    count += devices_enumerate_type(TRANSPORT_I2C, &transport_i2c_callbacks, sizeof(transport_i2c_t), destination, count);
     count += devices_enumerate_type(DEVICE_CIRCUIT, &device_circuit_callbacks, sizeof(device_circuit_t), destination, count);
-    count += devices_enumerate_type(DEVICE_EPAPER, &device_epaper_callbacks, sizeof(device_epaper_t), destination, count);
-    count += devices_enumerate_type(DEVICE_SENSOR, &device_sensor_callbacks, sizeof(device_sensor_t), destination, count);
+    count += devices_enumerate_type(SCREEN_EPAPER, &screen_epaper_callbacks, sizeof(screen_epaper_t), destination, count);
+    count += devices_enumerate_type(INPUT_SENSOR, &input_sensor_callbacks, sizeof(input_sensor_t), destination, count);
     return count;
 }
 
 /******************************************************************************/
-CO_ReturnError_t app_programBoot() {
+CO_ReturnError_t app_programConfigure(CO_t *co) {
     devices_allocate();
     devices_set_phase(DEVICE_CONSTRUCTING);
     devices_set_phase(DEVICE_LINKING);
     devices_set_phase(DEVICE_STARTING);
 
-    return 0;
+
+    /* Find CAN module that is used for CANopen*/
+    transport_can_t *can;
+    for (size_t i = 0; i < device_count; i++) {
+        if (devices[i].type == TRANSPORT_CAN && devices[i].phase != DEVICE_DISABLED) {
+            can = ((transport_can_t *) devices[i].object);
+            if (!can->config->canopen) {
+                can->config = NULL;
+            } else {
+                break;
+            }
+        }
+    }
+
+    /* Use that module to configure parameters*/
+    if (can == NULL) {
+        return 1;
+    } else {
+        co->CANmodule->port = can->device->seq == 0 ? CAN1 : CAN2;
+        co->CANmodule->rxFifoIndex = can->config->canopen_fifo_index;
+        co->CANmodule->sjw = can->config->sjw;
+        co->CANmodule->prop = can->config->prop;
+        co->CANmodule->brp = can->config->brp;
+        co->CANmodule->ph_seg1 = can->config->ph_seg1;
+        co->CANmodule->ph_seg2 = can->config->ph_seg2;
+        co->CANmodule->bitrate = can->config->bitrate;
+        return 0;
+    }
+
 }
 
 /******************************************************************************/

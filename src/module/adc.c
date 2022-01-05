@@ -1,12 +1,10 @@
-#include "modules/adc.h"
+#include "module/adc.h"
 #include "helpers/dma.h"
-
-module_adc_t *modules_adc[OD_CNT_MODULE_ADC];
 
 /* ADC must be within range */
 static int module_adc_validate(OD_entry_t *config_entry) {
     module_adc_config_t *config = (module_adc_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
-    return config->index == 0;
+    return 0;
 }
 
 static int module_adc_construct(module_adc_t *adc, device_t *device) {
@@ -18,26 +16,26 @@ static int module_adc_construct(module_adc_t *adc, device_t *device) {
         return 0;
     }
 
-    switch (adc->config->index) {
-    case 1:
+    switch (adc->device->seq) {
+    case 0:
         adc->address = ADC1;
         adc->clock = RCC_ADC1;
         break;
-    case 2:
+    case 1:
 #ifdef ADC2_BASE
         adc->address = ADC2;
         adc->clock = RCC_ADC2;
         break;
 #endif
         return 1;
-    case 3:
+    case 2:
 #ifdef ADC3_BASE
         adc->address = ADC3;
         adc->clock = RCC_ADC3;
         break;
 #endif
         return 1;
-    case 4:
+    case 3:
 #ifdef ADC4_BASE
         adc->clock = RCC_ADC4;
         adc->address = ADC4;
@@ -47,7 +45,6 @@ static int module_adc_construct(module_adc_t *adc, device_t *device) {
     default:
         return 1;
     }
-    modules_adc[adc->config->index - 1] = adc;
 
     return 0;
 }
@@ -151,11 +148,10 @@ static int module_adc_receive(module_adc_t *adc, device_t *device, void *value, 
     (void)device;
     (void)value;
     if (module_adc_integrate_samples(adc) == 0) {
-        log_printf("ADC%i - Measurement ready %i\n", adc->config->index, adc->values[1]);
+        log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->values[1]);
         for (size_t i = 0; i < adc->channel_count; i++) {
             size_t channelIndex = adc->channels[i];
-            adc->subscribers[channelIndex]->callbacks->receive(adc->subscribers[channelIndex]->object, adc->device, (void *)adc->values[i],
-                                                               (void *)channel);
+            device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->values[i], (void *)channel);
         }
     }
     return 0;
