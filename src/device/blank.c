@@ -45,14 +45,6 @@ static int device_blank_resume(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
-
-static int device_blank_tick(device_blank_t *blank, uint32_t time_passed, uint32_t *next_tick) {
-    (void)blank;
-    (void)time_passed;
-    (void)next_tick;
-    return 0;
-}
-
 static int device_blank_link(device_blank_t *blank) {
     (void)blank;
     return 0;
@@ -71,7 +63,6 @@ device_callbacks_t device_blank_callbacks = {.validate = device_blank_validate,
                                              .stop = (int (*)(void *))device_blank_stop,
                                              .pause = (int (*)(void *))device_blank_pause,
                                              .resume = (int (*)(void *))device_blank_resume,
-                                             .tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))device_blank_tick,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))device_blank_accept,
                                              .phase = (int (*)(void *, device_phase_t phase))device_blank_phase,
                                              .write_values = OD_write_device_blank_property};

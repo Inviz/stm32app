@@ -51,12 +51,6 @@ static int input_sensor_resume(input_sensor_t *sensor) {
     return 0;
 }
 
-static int input_sensor_tick(input_sensor_t *sensor, uint32_t time_passed, uint32_t *next_tick) {
-    (void)sensor;
-    (void)time_passed;
-    (void)next_tick;
-    return 0;
-}
 
 // pass over adc value to the linked device
 static int input_sensor_receive(input_sensor_t *sensor, device_t *device, void *value, void *channel) {
@@ -91,7 +85,6 @@ device_callbacks_t input_sensor_callbacks = {
     .stop = (int (*)(void *))input_sensor_stop,
     .pause = (int (*)(void *))input_sensor_pause,
     .resume = (int (*)(void *))input_sensor_resume,
-    .tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))input_sensor_tick,
     .receive = (int (*)(void *, device_t *device, void *value, void *channel))input_sensor_receive,
     .accept = (int (*)(void *, device_t *device, void *channel))input_sensor_accept,
     .phase = (int (*)(void *, device_phase_t phase))input_sensor_phase,

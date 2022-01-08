@@ -5,8 +5,8 @@ const { stringify } = require('querystring');
 const underscore = (string) => {
   return inflection.underscore(
     string
-      .replace(/(\d)([A-Z])/, (m, f, rest) => f + rest.toLowerCase())
-      .replace(/([A-Z])([A-Z]+)/, (m, f, rest) => f + rest.toLowerCase())
+      .replace(/(\d)([A-Z])/g, (m, f, rest) => f + rest.toLowerCase())
+      .replace(/([A-Z])([A-Z]+)/g, (m, f, rest) => f + rest.toLowerCase())
   )
   .replace(/__/g, '_')
   .replace(/([a-z])_(\d)/g, '$1$2')

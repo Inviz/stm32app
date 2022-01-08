@@ -1,5 +1,5 @@
 #include "usart.h"
-#include "helpers/dma.h"
+#include "lib/dma.h"
 
 /* USART must be within range */
 static int transport_usart_validate(OD_entry_t *config_entry) {
@@ -14,7 +14,7 @@ static int transport_usart_construct(transport_usart_t *usart, device_t *device)
     usart->dma_rx_address = dma_get_address(usart->config->dma_rx_unit);
     usart->dma_tx_address = dma_get_address(usart->config->dma_tx_unit);
 
-    usart->dma_rx_buffer = pvPortMalloc(usart->config->dma_rx_buffer_size);
+    usart->dma_rx_buffer = malloc(usart->config->dma_rx_buffer_size);
 
     if (usart->dma_rx_address == 0 || usart->dma_tx_address == 0) {
         return 0;
@@ -79,7 +79,7 @@ static int transport_usart_accept(transport_usart_t *usart, device_t *target, vo
 }
 
 static int transport_usart_destruct(transport_usart_t *usart) {
-    vPortFree(usart->dma_rx_buffer);
+    free(usart->dma_rx_buffer);
     return 0;
 }
 

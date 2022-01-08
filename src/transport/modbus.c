@@ -26,12 +26,12 @@ static int transport_modbus_validate(OD_entry_t *config_entry) {
 static int transport_modbus_construct(transport_modbus_t *modbus, device_t *device) {
     modbus->device = device;
     modbus->config = (transport_modbus_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
-    modbus->rx_buffer = pvPortMalloc(modbus->config->rx_buffer_size);
+    modbus->rx_buffer = malloc(modbus->config->rx_buffer_size);
     return modbus->config->disabled;
 }
 
 static int transport_modbus_destruct(transport_modbus_t *modbus) {
-    vPortFree(modbus->rx_buffer);
+    free(modbus->rx_buffer);
     return 0;
 }
 
@@ -221,7 +221,6 @@ int transport_modbus_read_coils(transport_modbus_t *modbus, uint8_t recipient, u
     return transport_modbus_request(modbus, recipient, index, MODBUS_READ_COIL_STATUS, length, data);
 }
 
-1;
 int transport_modbus_read_discrete_input(transport_modbus_t *modbus, uint8_t recipient, uint16_t index, uint8_t *data) {
     return transport_modbus_read_discrete_inputs(modbus, recipient, index, 1, data);
 }

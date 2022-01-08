@@ -418,13 +418,6 @@ static int screen_epaper_resume(screen_epaper_t *epaper) {
     return CO_ERROR_NO;
 }
 
-static int screen_epaper_tick(screen_epaper_t *epaper, uint32_t time_passed, uint32_t *next_tick) {
-    (void)epaper;
-    (void)time_passed;
-    (void)next_tick;
-    return CO_ERROR_NO;
-}
-
 static ODR_t OD_write_screen_epaper_values_property(OD_stream_t *stream, const void *buf, OD_size_t count,
                                                     OD_size_t *countWritten) {
     screen_epaper_t *epaper = stream->object;
@@ -467,6 +460,5 @@ device_callbacks_t screen_epaper_callbacks = {.validate = screen_epaper_validate
                                               .link = (int (*)(void *))screen_epaper_link,
                                               .pause = (int (*)(void *))screen_epaper_pause,
                                               .resume = (int (*)(void *))screen_epaper_resume,
-                                              .tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))screen_epaper_tick,
                                               .phase = (int (*)(void *, device_phase_t phase))screen_epaper_phase,
                                               .write_values = OD_write_screen_epaper_values_property};

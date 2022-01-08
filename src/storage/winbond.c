@@ -26,15 +26,12 @@ static int storage_winbond_construct(storage_winbond_t *winbond, device_t *devic
     winbond->config = (storage_winbond_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return winbond->config->disabled;
 }
-
 static int storage_winbond_start(storage_winbond_t *winbond) {
-    (void)winbond;
-    return 0;
+    return storage_winbond_command(winbond, 0xAB);
 }
 
 static int storage_winbond_stop(storage_winbond_t *winbond) {
-    (void)winbond;
-    return 0;
+    return storage_winbond_command(winbond, 0xB9);
 }
 
 static int storage_winbond_pause(storage_winbond_t *winbond) {
@@ -73,7 +70,6 @@ device_callbacks_t storage_winbond_callbacks = {.validate = storage_winbond_vali
                                              .stop = (int (*)(void *))storage_winbond_stop,
                                              .pause = (int (*)(void *))storage_winbond_pause,
                                              .resume = (int (*)(void *))storage_winbond_resume,
-                                             .tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))storage_winbond_tick,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))storage_winbond_accept,
                                              .phase = (int (*)(void *, device_phase_t phase))storage_winbond_phase,
                                              .write_values = OD_write_storage_winbond_property};

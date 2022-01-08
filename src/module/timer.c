@@ -47,12 +47,6 @@ static int module_timer_resume(module_timer_t *blank) {
     return 0;
 }
 
-static int module_timer_tick(module_timer_t *blank, uint32_t time_passed, uint32_t *next_tick) {
-    (void)blank;
-    (void)time_passed;
-    (void)next_tick;
-    return 0;
-}
 
 static int module_timer_link(module_timer_t *blank) {
     (void)blank;
@@ -120,7 +114,6 @@ device_callbacks_t module_timer_callbacks = {.validate = module_timer_validate,
                                              .stop = (int (*)(void *))module_timer_stop,
                                              .pause = (int (*)(void *))module_timer_pause,
                                              .resume = (int (*)(void *))module_timer_resume,
-                                             .tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_timer_tick,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))module_timer_accept,
                                              .phase = (int (*)(void *, device_phase_t phase))module_timer_phase,
                                              .write_values = OD_write_module_timer_property};

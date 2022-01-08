@@ -39,6 +39,11 @@ static int transport_can_start(transport_can_t *can) {
       }
     #endif
 
+    // Only configure CAN interface if it's not claimed by CANopenNode
+    if (can->canopen == NULL) {
+
+    }
+
     return 0;
 }
 
@@ -75,6 +80,11 @@ static int transport_can_phase(transport_can_t *can, device_phase_t phase) {
     return 0;
 }
 
+// CANopenNode's driver configures its CAN interface so we dont have to
+static int transport_can_accept(transport_can_t *can, device_t *origin, void *arg) {
+    can->canopen = origin;
+}
+
 device_callbacks_t transport_can_callbacks = {
     .validate = transport_can_validate,
     .construct = (int (*)(void *, device_t *))transport_can_construct,
@@ -83,7 +93,6 @@ device_callbacks_t transport_can_callbacks = {
     .stop = (int (*)(void *))transport_can_stop,
     .pause = (int (*)(void *))transport_can_pause,
     .resume = (int (*)(void *))transport_can_resume,
-    .tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))transport_can_tick,
-    //.accept = (int (*)(void *, device_t *device, void *channel))transport_can_accept,
+    .accept = (int (*)(void *, device_t *device, void *channel))transport_can_accept,
     .phase = (int (*)(void *, device_phase_t phase))transport_can_phase,
     .write_values = OD_write_transport_can_property};

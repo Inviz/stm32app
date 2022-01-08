@@ -1,10 +1,11 @@
 /* Generalize dma api for STMF1 that dont support DMA streams with STMF2+ that do.
 The former need to configure stream to be the same as channel*/
 
-#include <devices.h>
+#include <core/device.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/dma.h>
 #include <libopencm3/stm32/rcc.h>
+#include "lib/vpool.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -43,6 +44,15 @@ void dma_channel_select(uint32_t dma, uint8_t stream, uint8_t channel) {}
 void dma_set_read_from_peripheral(uint32_t dma, uint8_t stream);
 /* F1 compatability method*/
 void dma_set_read_from_memory(uint32_t dma, uint8_t stream);
+
+/* Read from circular buffer into memory pool from interrupt*/
+void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t buffer_size, uint16_t *cursor, struct vpool *pool);
+
+/* Combine DMA unit and index into a pointer */
+void *device_dma_pack_source(uint8_t unit, uint8_t index);
+
+/* Check if pointer contains packed unit/index info */
+bool_t device_dma_match_source(void *source, uint8_t unit, uint8_t index);
 
 #endif
 

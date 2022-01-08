@@ -1,10 +1,10 @@
 #include "module/adc.h"
-#include "helpers/dma.h"
+#include "lib/dma.h"
 
 /* ADC must be within range */
 static int module_adc_validate(OD_entry_t *config_entry) {
     module_adc_config_t *config = (module_adc_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
-    return 0;
+    return config->disabled != 0;
 }
 
 static int module_adc_construct(module_adc_t *adc, device_t *device) {
@@ -222,15 +222,15 @@ size_t module_adc_integrate_samples(module_adc_t *adc) {
 void module_adc_channels_alloc(module_adc_t *adc, size_t channel_count) {
     adc->sample_buffer_size = adc->config->sample_count_per_channel * channel_count;
     adc->measurements_per_second = (1000000 / (adc->config->interval));
-    adc->channels = pvPortMalloc(channel_count * sizeof(size_t));
-    adc->values = pvPortMalloc(channel_count * sizeof(uint32_t));
-    adc->accumulators = pvPortMalloc(channel_count * sizeof(uint32_t));
-    adc->sample_buffer = pvPortMalloc(adc->sample_buffer_size * sizeof(uint16_t));
+    adc->channels = malloc(channel_count * sizeof(size_t));
+    adc->values = malloc(channel_count * sizeof(uint32_t));
+    adc->accumulators = malloc(channel_count * sizeof(uint32_t));
+    adc->sample_buffer = malloc(adc->sample_buffer_size * sizeof(uint16_t));
 }
 
 void module_adc_channels_free(module_adc_t *adc) {
-    vPortFree(adc->sample_buffer);
-    vPortFree(adc->values);
-    vPortFree(adc->channels);
-    vPortFree(adc->accumulators);
+    free(adc->sample_buffer);
+    free(adc->values);
+    free(adc->channels);
+    free(adc->accumulators);
 }

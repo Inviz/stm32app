@@ -1,4 +1,5 @@
 #include "dma.h"
+#include "lib/vpool.h"
 
 uint32_t dma_get_address(uint8_t index) {
     switch (index) {
@@ -116,11 +117,45 @@ void devices_dma_notify(uint8_t unit, uint8_t index) {
     uint8_t number = devices_dma[DMA_INDEX(unit, index)];
     if (number != DMA_UNREGISTERED_INDEX) {
         device_t *device = get_device_by_number(number - 1);
-        if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TCIF)) {
-            if (device->callbacks->signal(device->object, NULL, DMA_TCIF, (void *)(&"DMA")) == 0) {
-                dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TCIF);
+        void *source = (void *)(uint32_t)((unit << 0) + (index << 16));
+        if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
+            error_printf("DMA Error in channel %i", index);
+            if (device->callbacks->signal(device->object, NULL, SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
+                dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
+            }
+        } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
+            if (device->callbacks->signal(device->object, NULL, SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
+                dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
             }
         }
+    }
+}
+
+void *device_dma_pack_source(uint8_t unit, uint8_t index) {
+    return (void *) (uint32_t) ((unit << 0) + (index << 8));
+}
+
+bool_t device_dma_match_source(void *source, uint8_t unit, uint8_t index) {
+    return unit == (((uint32_t)source) & 0xff) && index == (((uint32_t)source) >> 8 & 0xff);
+}
+
+uint16_t device_dma_get_buffer_position(uint8_t unit, uint8_t index, uint16_t buffer_size) {
+    return buffer_size - dma_get_number_of_data(dma_get_address(unit), index);
+}
+
+void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t buffer_size, uint16_t *cursor, struct vpool *pool) {
+    /* Calculate current position in buffer and check for new data available */
+    uint16_t pos = device_dma_get_buffer_position(unit, index, buffer_size);
+    if (pos != *cursor) {                       /* Check change in received data */
+        if (pos > *cursor) {   
+            vpool_insert(pool, UINT16_MAX, buffer[*cursor], pos - *cursor);
+        } else {
+            vpool_insert(pool, UINT16_MAX, buffer[*cursor], buffer_size - *cursor);
+            if (pos > 0) {
+                vpool_insert(pool, UINT16_MAX, buffer[0], pos);
+            }
+        }
+        *cursor = pos;                          /* Save current position as old for next transfers */
     }
 }
 

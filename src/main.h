@@ -1,19 +1,14 @@
-#ifndef CO_MAIN_H
-#define CO_MAIN_H
+#ifndef INC_MAIN
+#define INC_MAIN
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-
-#include "CANopen.h"
-#include "OD.h"
-#include "FreeRTOS.h"
-
-extern CO_t *CO;
-
-
+#if defined(APP_MOTHERSHIP)
+    #include "app/mothership.h"
+#endif
 
 
 #ifdef __cplusplus
