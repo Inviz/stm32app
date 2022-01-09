@@ -49,20 +49,6 @@ enum device_phase {
     DEVICE_DESTRUCTING
 };
 
-enum device_signal {
-    SIGNAL_TIMER,
-    SIGNAL_TIMEOUT,
-
-    SIGNAL_DMA_ERROR,
-    SIGNAL_DMA_TRANSFERRING,
-    SIGNAL_DMA_IDLE,
-
-    SIGNAL_RX_COMPLETE,
-    SIGNAL_TX_COMPLETE
-
-    SIGNAL_CATCHUP
-};
-
 char *string_from_phase(device_phase_t phase);
 
 enum device_type {
@@ -176,6 +162,9 @@ uint32_t device_gpio_get(uint8_t port, uint8_t pin);
 
 /* Check if event will invoke input tick on this device */
 bool_t device_can_handle_event(device_t *device, app_event_t *event);
+
+bool_t app_thread_notify(app_thread_t *thread);
+bool_t app_thread_notify_from_isr(app_thread_t *thread);
 
 #ifdef __cplusplus
 }

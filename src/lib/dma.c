@@ -120,11 +120,11 @@ void devices_dma_notify(uint8_t unit, uint8_t index) {
         void *source = (void *)(uint32_t)((unit << 0) + (index << 16));
         if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
             error_printf("DMA Error in channel %i", index);
-            if (device->callbacks->signal(device->object, NULL, SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
+            if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
                 dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
             }
         } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
-            if (device->callbacks->signal(device->object, NULL, SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
+            if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
                 dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
             }
         }

@@ -40,6 +40,21 @@ struct app {
     app_threads_t *threads;
 };
 
+enum app_signal {
+    APP_SIGNAL_TIMER,
+    APP_SIGNAL_TIMEOUT,
+
+    APP_SIGNAL_DMA_ERROR,
+    APP_SIGNAL_DMA_TRANSFERRING,
+    APP_SIGNAL_DMA_IDLE,
+
+    APP_SIGNAL_RX_COMPLETE,
+    APP_SIGNAL_TX_COMPLETE,
+
+    APP_SIGNAL_CATCHUP
+};
+
+
 // Initialize array of all devices found in OD that can be initialized
 int app_allocate(app_t **app, OD_t *od, size_t (*enumerator)(app_t *app, OD_t *od, device_t *devices));
 // Destruct all devices and release memory

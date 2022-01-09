@@ -159,12 +159,12 @@ int transport_spi_write(transport_spi_t *spi, device_t *writer, void *argument, 
 
 
 static int transport_spi_write_complete(transport_spi_t *spi) {}
-static int transport_spi_signal(transport_spi_t *spi, device_t *device, device_signal_t signal, void *source) {
+static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_signal_t signal, void *source) {
     switch (signal) {
-    case SIGNAL_DMA_IDLE:
+    case APP_SIGNAL_DMA_IDLE:
         transport_spi_write_complete(spi);
         break;
-    case SIGNAL_TIMEOUT:
+    case APP_SIGNAL_TIMEOUT:
         if ((uint32_t)source == DEVICE_REQUESTING) {
             if (transport_spi_read_is_idle(spi)) {
                 transport_spi_read_complete(spi);
@@ -173,7 +173,7 @@ static int transport_spi_signal(transport_spi_t *spi, device_t *device, device_s
             }
         }
         break;
-    case SIGNAL_DMA_TRANSFERRING: // transfer (half) complete
+    case APP_SIGNAL_DMA_TRANSFERRING: // transfer (half) complete
         // If it's RX DMA, we still want to wait until IDLE signal
         if (dma_match_source(source, spi->config->dma_rx_unit, spi->config->dma_rx_stream)) {
             device_dma_ingest(spi->config->dma_rx_unit, spi->config->dma_rx_stream, spi->rx_buffer, spi->config->rx_buffer_size,

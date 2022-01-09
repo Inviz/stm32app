@@ -17,6 +17,6 @@ typedef struct device_ticks device_ticks_t;         /* List of device tick handl
 typedef struct device_callbacks device_callbacks_t; /* Method list to essentially subclass devices */
 typedef enum device_type device_type_t;             /* List of device groups found in Object Dictionary*/
 typedef enum device_phase device_phase_t;           /* All phases that device can be in*/
-typedef enum device_signal device_signal_t;         /* Things that device tell each other */
+typedef enum app_signal app_signal_t;         /* Things that device tell each other */
 
 #endif

@@ -1,4 +1,5 @@
 #include "thread.h"
+#include "core/device.h"
 #include "event.h"
 
 int device_tick_allocate(device_tick_t **destination,
@@ -134,10 +135,10 @@ static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_even
  */
 void app_thread_execute(app_thread_t *thread) {
     thread->last_time = xTaskGetTickCount();
-    size_t tick_index = app_thread_get_tick_index(thread);                                   // which device tick handles this thread
-    device_t *first_device = app_thread_filter_devices(thread);                              // linked list of devices declaring the tick
+    size_t tick_index = app_thread_get_tick_index(thread);      // which device tick handles this thread
+    device_t *first_device = app_thread_filter_devices(thread); // linked list of devices declaring the tick
     app_event_t event = {.producer = thread->device->app->device, .type = APP_EVENT_THREAD_START}; // incoming event from the queue
-    size_t deferred_count = 0;                                                               // Counter of re-queued events
+    size_t deferred_count = 0;                                                                     // Counter of re-queued events
 
     if (first_device == NULL) {
         log_printf("No devices subsribe to thread #%i\n", thread_index);
@@ -149,7 +150,7 @@ void app_thread_execute(app_thread_t *thread) {
         app_thread_event_dispatch(thread, &event, first_device, tick_index);
         deferred_count += app_thread_event_requeue(thread, &event, previous_event_status);
         if (!app_thread_event_queue_shift(thread, &event, deferred_count)) {
-          app_thread_event_sleep(thread, &event);
+            app_thread_event_sleep(thread, &event);
         }
     }
 }
@@ -175,13 +176,11 @@ static inline bool_t app_thread_should_notify_device(app_thread_t *thread, app_e
     }
 }
 
-/* Notify all interested devices of a new event.
- * - Device may want to own the event exclusvely, in that case other devices will not receive it
- * - Device may be busy during processing other event, when the new event it wants to exclusively handle arrives. Event will be kept in a
- *   queue for the device to catch up later. Input thread unlike others will off-load it a special thread called "catchup" to remain
- *   responsive
- * - Device may indicate that it is able to process event when it frees up, allowing other free devices to process it the mean while.
- * - Device may set up a software timer to wake thread at specific time in future, in that case a synthetic wakeup event will be dispatched
+/* Notify all interested devices of a new event. Each device can request to:
+ * - process event exclusively, so other devices will not receive it
+ * - keep event in the queue for a device that is currently busy
+ * - keep event in the queue while device is busy, unless other devices want to handle it
+ * - wake up on software timer at specific time in future
  */
 static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index) {
     // Tick at least once every minute if no devices scheduled it sooner
@@ -217,38 +216,60 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
     }
 }
 
+/* Find a queue to insert deferred message so it doesn't get lost. A thread may put it back to its own queue at the end, put it into
+ * another thread queue, or even into a queue not owned by any thread. This can be used to create lightweight threads that only have a
+ * notification mailbox slot, but then can still retain events elsewhere.  */
+static inline QueueHandle_t app_thread_get_catchup_queue(app_thread_t *thread) {
+    // input thread will off-load its deferred event to `catchup` thread queue to keep input thread fast
+    if (thread == thread->device->app->threads->input) {
+        return thread->device->app->threads->catchup->queue;
+    } else {
+        return thread->queue;
+    }
+}
+
 /*
-  A routed event may be exclusively claimed by device that was busy to process it at the time. In order to avoid losing the event,
-  it gets reinserted into the queue, and keep ingesting events. When all is left in the queue is deferred events, the thread will
-  sleep and wait for either new events or notification from device that freed up and is ready to process one of deferred events.
+  A routed event may be claimed for exclusive processing by device that is too busy to process it right away. In that case event then gets
+  pushed to the back of the queue, so the thread can keep on processing other events. When all is left in the queue is deferred events, the
+  thread will sleep and wait for either new events or notification from device that is now ready to process a deferred event.
 */
 static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status) {
+    QueueHandle_t queue;
+
     switch (event->status) {
     case APP_EVENT_WAITING:
         log_printf("No devices are listening to event: #%i\n", event.type);
         break;
 
-    // Some busy device wanted to handle event, so it now has to be re-queued
+    // Some busy device wants to handle event later, so the event has to be re-queued
     case APP_EVENT_DEFERRED:
     case APP_EVENT_ADDRESSED:
-        if (thread == thread->device->app->threads->input) {
-            // input thread will off-load event to catchup thread queue directly without waking it up
-            event->status = APP_EVENT_WAITING;
-            xQueueSend(thread->device->app->threads->catchup->queue, &event, 0);
-        } else if (thread->queue) {
-            // Other threads with queue will put the event at the back of the queue
-            event->status = APP_EVENT_DEFERRED;
-            xQueueSend(thread->queue, &event, 0);
-            if (previous_status != APP_EVENT_DEFERRED) {
-                return 1;
+        queue = app_thread_get_catchup_queue(thread);
+        if (queue != NULL) {
+            // If event is reinserted back into the same queue it came from, the thread has
+            // to keep the records about that to avoid popping the event right back
+            if (queue == thread->queue) {
+                event->status = APP_EVENT_DEFERRED;
+            // Otherwise event status gets reset, so receiving thread has a chance to do its own bookkeeping
+            // The thread does not automatically get woken up either, since that requires sending notification
+            } else {
+                event->status = APP_EVENT_WAITING;
+            }
+
+            // If the target queue is full, event gets lost. 
+            if (xQueueSend(queue, &event, 0)) {
+                if (event->status == APP_EVENT_DEFERRED && previous_status != APP_EVENT_DEFERRED) {
+                    return 1;
+                }
             }
         } else {
-            // Threads without a queue will leave event linger in the only available notification slot
+            // Threads without a queue will leave event stored in the only available notification slot
             // New events will overwrite the deferred event that wasnt handled in time
         }
         break;
 
-    // Events that were deferred need to be marked as handled by device
+    // When a device catches up with deferred event, it has to mark it as processed or else the event
+    // will keep on being requeued
     case APP_EVENT_HANDLED:
         if (previous_status == APP_EVENT_DEFERRED && thread->queue) {
             return -1;
@@ -256,37 +277,39 @@ static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event,
         break;
 
     case APP_EVENT_RECEIVED:
-      break;
+        break;
     }
 
     return 0;
 }
+/*
+  Thread ingests new event from queue and dispatches it for devices to handle.
 
+  Unlike others, input thread off-loads its deferred events to a queue of a `catchup` thread to keep its own queue clean. This happens
+  transparently to devices, as they dont know of that special thread existance.
+  */
 static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_event_t *event, size_t deferred_count) {
-  // Threads without queues receieve their events via notification slot
-  if (thread->queue == NULL) {
-    return false;
-  }
+    // Threads without queues receieve their events via notification slot
+    if (thread->queue == NULL) {
+        return false;
+    }
 
-  // There is no need to shift queue if all events in the queue are deferred
-  if (deferred_count > 0 && deferred_count == uxQueueMessagesWaiting(thread->queue)) {
-    return false;
-  }
+    // There is no need to shift queue if all events in the queue are deferred
+    if (deferred_count > 0 && deferred_count == uxQueueMessagesWaiting(thread->queue)) {
+        return false;
+    }
 
-  // Try getting an event out of the queue without blocking. Thread blocks on notification signal instead
-  return xQueueReceive(thread->queue, &event, 0);
+    // Try getting an event out of the queue without blocking. Thread blocks on notification signal instead
+    return xQueueReceive(thread->queue, &event, 0);
 }
 
 /*
-  Thread ingests new event from queue (or mailbox) and dispatches it for devices to handle.
-  - When there aren't any more events that devices can process right now, thread goes to sleep.
-  - A device that was previously busy can send a signal that it is ready to catch up with events,
-    in that case thread will attempt to dispatch all the events in the queue
-  - New events may be published to the queue waking up the thread. If the event was not added to the top
-    of the queue, and the queued had deferred events in it, the thread will need to rotate the whole 
-    queue to get to to the new events. This is a necessary overhead since FreeRTOS only allows taking
-    the first event in the queue. To avoid input thread to be bogged down by deferred events, it
-    will off-load its deferred events to a special catch up thread. Other threads will go through rotation.
+  Threads go to sleep to allow threads with lower priority to run, when they dont have any more events that can be processed right now.
+  - Publishing new events notifies the thread to wake up. If an event was published to the back of the queue that had deferred events in it,
+    the thread will need to rotate the whole queue to get to to the new events. This is a necessary overhead since FreeRTOS only allows
+    taking the first event in the queue.
+  - A device that was previously busy can send a `APP_SIGNAL_CATCHUP` notification, indicationg that it is ready to catch up with events
+    that it deferred previously. In that case thread will attempt to re-dispatch all the events in the queue.
 */
 static void app_thread_event_sleep(app_thread_t *thread, app_event_t *event) {
     // threads are expected to receive notifications in order to wake up
@@ -301,7 +324,7 @@ static void app_thread_event_sleep(app_thread_t *thread, app_event_t *event) {
             if (!xQueueReceive(thread->queue, &event, 0)) {
                 log_printf("Error: Thread #%i woken up by notification but its queue is empty\n", tick_index);
             }
-        } else if (notification != SIGNAL_CATCHUP) {
+        } else if (notification != APP_SIGNAL_CATCHUP) {
             // if thread doesnt have queue, event is passed as address in notification slot instead
             // publisher will have to ensure the event memory survives until thread is ready for it.
             memcpy(event, (uint32_t *)notification, sizeof(app_event_t));
@@ -309,11 +332,11 @@ static void app_thread_event_sleep(app_thread_t *thread, app_event_t *event) {
     }
 }
 
-bool_t app_thread_notify(app_thread_t *thread) { return xTaskNotify(thread->task, SIGNAL_CATCHUP, eIncrement); }
+bool_t app_thread_notify(app_thread_t *thread) { return xTaskNotify(thread->task, APP_SIGNAL_CATCHUP, eIncrement); }
 
 bool_t app_thread_notify_from_isr(app_thread_t *thread) {
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    bool_t result = xTaskNotifyFromISR(thread->task, SIGNAL_CATCHUP, eIncrement, &xHigherPriorityTaskWoken);
+    bool_t result = xTaskNotifyFromISR(thread->task, APP_SIGNAL_CATCHUP, eIncrement, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     return result;
 }
