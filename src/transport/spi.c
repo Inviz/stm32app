@@ -158,16 +158,16 @@ int transport_spi_write(transport_spi_t *spi, device_t *writer, void *argument, 
 }
 
 
-static int transport_spi_tx_complete(transport_spi_t *spi) {}
+static int transport_spi_write_complete(transport_spi_t *spi) {}
 static int transport_spi_signal(transport_spi_t *spi, device_t *device, device_signal_t signal, void *source) {
     switch (signal) {
     case SIGNAL_DMA_IDLE:
-        transport_spi_tx_complete(spi);
+        transport_spi_write_complete(spi);
         break;
     case SIGNAL_TIMEOUT:
         if ((uint32_t)source == DEVICE_REQUESTING) {
             if (transport_spi_read_is_idle(spi)) {
-                transport_spi_tx_complete(spi);
+                transport_spi_read_complete(spi);
             } else {
                 transport_spi_schedule_rx_timeout(spi);
             }
@@ -180,7 +180,7 @@ static int transport_spi_signal(transport_spi_t *spi, device_t *device, device_s
                               &spi->rx_buffer_cursor, &spi->rx_pool);
             transport_spi_schedule_rx_timeout(spi);
         } else {
-            transport_spi_tx_complete(spi);
+            transport_spi_write_complete(spi);
         }
         break;
     }

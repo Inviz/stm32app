@@ -106,6 +106,9 @@
 #define configCHECK_FOR_STACK_OVERFLOW    2
 #define configUSE_MALLOC_FAILED_HOOK 1
 
+
+#define configQUEUE_REGISTRY_SIZE 10
+
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 		0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )

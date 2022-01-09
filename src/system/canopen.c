@@ -199,6 +199,7 @@ static int system_canopen_async_tick(system_canopen_t *canopen, void *argument, 
     return 0;
 }
 
+/* CANopen accepts its input from interrupts */
 static int system_canopen_input_tick(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void) argument;
     uint32_t us_since_last = (thread->current_time - tick->last_time) * 1000;
@@ -241,6 +242,15 @@ static int system_canopen_phase(system_canopen_t *canopen, device_phase_t phase)
     return 0;
 }
 
+static bool_t system_canopen_thread_wakeup(app_thread_t *thread) {
+    app_event_t event = {
+        .type = APP_EVENT_WAKEUP,
+        .producer = thread->device->app->canopen,
+    };
+
+    return app_thread_publish_from_isr(thread, &event);
+}
+
 device_callbacks_t system_canopen_callbacks = {
     .validate = system_canopen_validate,
     .construct = (int (*)(void *, device_t *))system_canopen_construct,
@@ -258,56 +268,57 @@ device_callbacks_t system_canopen_callbacks = {
     .phase = (int (*)(void *, device_phase_t phase))system_canopen_phase,
     .write_values = OD_write_system_canopen_property};
 
+
 int system_canopen_initialize_callbacks(system_canopen_t *canopen) {
     app_t *app = canopen->device->app;
 
     /* Mainline tasks */
     if (CO_GET_CNT(EM) == 1) {
-        CO_EM_initCallbackPre(canopen->instance->em, (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+        CO_EM_initCallbackPre(canopen->instance->em, (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
     }
     if (CO_GET_CNT(NMT) == 1) {
-        CO_NMT_initCallbackPre(canopen->instance->NMT, (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+        CO_NMT_initCallbackPre(canopen->instance->NMT, (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
     }
 #if (CO_CONFIG_SRDO) & CO_CONFIG_SRDO_SRV_ENABLE
     for (int16_t i = 0; i < CO_GET_CNT(SRDO); i++) {
-        CO_SRDO_initCallbackPre(&canopen->instance->SRDO[i], (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+        CO_SRDO_initCallbackPre(&canopen->instance->SRDO[i], (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
     }
 #endif
 #if (CO_CONFIG_HB_CONS) & CO_CONFIG_HB_CONS_ENABLE
     if (CO_GET_CNT(HB_CONS) == 1) {
-        CO_HBconsumer_initCallbackPre(canopen->instance->HBCons, (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+        CO_HBconsumer_initCallbackPre(canopen->instance->HBCons, (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
     }
 #endif
 #if (CO_CONFIG_TIME) & CO_CONFIG_TIME_ENABLE
     if (CO_GET_CNT(TIME) == 1) {
-        CO_TIME_initCallbackPre(canopen->instance->TIME, (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+        CO_TIME_initCallbackPre(canopen->instance->TIME, (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
     }
 #endif
 #if (CO_CONFIG_SDO_CLI) & CO_CONFIG_SDO_CLI_ENABLE
     for (int16_t i = 0; i < CO_GET_CNT(SDO_CLI); i++) {
         CO_SDOclient_initCallbackPre(&canopen->instance->SDOclient[i], (void *)&app->threads->input,
-                                     (void (*)(void *))app_thread_wake_from_isr);
+                                     (void (*)(void *))system_canopen_thread_wakeup);
     }
 #endif
     for (int16_t i = 0; i < CO_GET_CNT(SDO_SRV); i++) {
         CO_SDOserver_initCallbackPre(&canopen->instance->SDOserver[i], (void *)&app->threads->input,
-                                     (void (*)(void *))app_thread_wake_from_isr);
+                                     (void (*)(void *))system_canopen_thread_wakeup);
     }
 #if (CO_CONFIG_LSS) & CO_CONFIG_LSS_MASTER
-    CO_LSSmaster_initCallbackPre(canopen->instance->LSSmaster, (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+    CO_LSSmaster_initCallbackPre(canopen->instance->LSSmaster, (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
 #endif
 #if (CO_CONFIG_LSS) & CO_CONFIG_LSS_SLAVE
-    CO_LSSslave_initCallbackPre(canopen->instance->LSSslave, (void *)&app->threads->input, (void (*)(void *))app_thread_wake_from_isr);
+    CO_LSSslave_initCallbackPre(canopen->instance->LSSslave, (void *)&app->threads->input, (void (*)(void *))system_canopen_thread_wakeup);
 #endif
 /* Processing tasks */
 #if (CO_CONFIG_SYNC) & CO_CONFIG_SYNC_ENABLE
     if (CO_GET_CNT(SYNC) == 1) {
-        CO_SYNC_initCallbackPre(canopen->instance->SYNC, (void *)&app->threads->async, (void (*)(void *))app_thread_wake_from_isr);
+        CO_SYNC_initCallbackPre(canopen->instance->SYNC, (void *)&app->threads->async, (void (*)(void *))system_canopen_thread_wakeup);
     }
 #endif
 #if (CO_CONFIG_PDO) & CO_CONFIG_RPDO_ENABLE
     for (int i = 0; i < CO_NO_RPDO; i++) {
-        CO_RPDO_initCallbackPre(c & anopen->instance->RPDO[i], (void *)&app->threads->async, app_thread_wake_from_isr);
+        CO_RPDO_initCallbackPre(c & anopen->instance->RPDO[i], (void *)&app->threads->async, system_canopen_thread_wakeup);
     }
 #endif
 }

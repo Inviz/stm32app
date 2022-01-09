@@ -8,8 +8,9 @@ Any app type can be cast to this type and get access to generic config values an
 extern "C" {
 #endif
 
-#define malloc(size) malloc(size)
-#define free(pointer) free(pointer)
+#include "FreeRTOS.h"
+#define malloc(size) pvPortMalloc(size)
+#define free(pointer) vPortFree(pointer)
 #define app_error_report(app, errorBit, errorCode, index) CO_errorReport(app->canopen->instance->em, errorBit, errorCode, index)
 #define app_error_reset(app, errorBit, errorCode, index) CO_errorReset(app->canopen->instance->em, errorBit, errorCode, index)
 

@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#include "core/app.h"
 #include "301/CO_ODinterface.h"
+#include "core/app.h"
 #include "core/thread.h"
 #include "lib/gpio.h"
 
@@ -55,7 +55,10 @@ enum device_signal {
 
     SIGNAL_DMA_ERROR,
     SIGNAL_DMA_TRANSFERRING,
-    SIGNAL_DMA_IDLE
+    SIGNAL_DMA_IDLE,
+
+    SIGNAL_RX_COMPLETE,
+    SIGNAL_TX_COMPLETE
 };
 
 char *string_from_phase(device_phase_t phase);
@@ -97,7 +100,6 @@ enum device_type {
 #define device_error_reset(device, errorBit, errorCode)                                                                                    \
     CO_errorReset(device->app->canopen->instance->em, errorBit, errorCode, device->index)
 
-
 struct device {
     device_type_t type;              /* OD index of a first device of this type */
     uint8_t seq;                     /* Sequence number of the device in its family  */
@@ -111,8 +113,10 @@ struct device {
     OD_entry_t *values;              /* OD entry containing mutable values (optinal) */
     OD_extension_t values_extension; /* OD IO handlers for mutable changes */
     device_callbacks_t *callbacks;   /* Per-class methods and callbacks */
-    device_ticks_t *ticks;            /* Per-device thread subscription */
+    device_ticks_t *ticks;           /* Per-device thread subscription */
     app_t *app;                      /* Reference to root device */
+    uint32_t event_subscriptions;    /* Mask for different event types that device recieves */
+    bool_t *h;
 };
 
 struct device_callbacks {
@@ -129,11 +133,11 @@ struct device_callbacks {
     int (*accept)(void *object, device_t *origin, void *argument);                  /* Accept linking request*/
     int (*signal)(void *object, device_t *origin, uint32_t signal, void *argument); /* Send signal to device */
 
-    int (*input_tick)(void *object, void *arg, device_tick_t *tick, app_thread_t *thread);  /* Logic that needs immediate response */
-    int (*async_tick)(void *object, void *arg, device_tick_t *tick, app_thread_t *thread);  /* Work that needs to be done later */
-    int (*output_tick)(void *object, void *arg, device_tick_t *tick, app_thread_t *thread); /* Medmium importance periphery work*/
-    int (*poll_tick)(void *object, void *arg, device_tick_t *tick, app_thread_t *thread);   /* Low-importance periodical work*/
-    int (*idle_tick)(void *object, void *arg, device_tick_t *tick, app_thread_t *thread);   /* Lowest priority work that i*/
+    int (*input_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);  /* Processing input events asap */
+    int (*async_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);  /* Work that needs to be done later */
+    int (*output_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread); /* Medmium importance periphery work*/
+    int (*poll_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);   /* Low-importance periodical work*/
+    int (*idle_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);   /* Lowest priority work that i*/
 
     ODR_t (*read_config)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
     ODR_t (*write_config)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
@@ -167,6 +171,9 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
 void device_gpio_set(uint8_t port, uint8_t pin);
 void device_gpio_clear(uint8_t port, uint8_t pin);
 uint32_t device_gpio_get(uint8_t port, uint8_t pin);
+
+/* Check if event will invoke input tick on this device */
+bool_t device_can_handle_event(device_t *device, app_event_t *event);
 
 #ifdef __cplusplus
 }

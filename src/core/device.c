@@ -155,6 +155,10 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
     }
 }
 
+bool_t device_can_handle_event(device_t *device, app_event_t *event) {
+  return event->type & device->event_subscriptions;
+}
+
 inline void device_gpio_set(uint8_t port, uint8_t pin) { return gpio_set(GPIOX(port), pin); }
 inline void device_gpio_clear(uint8_t port, uint8_t pin) { return gpio_clear(GPIOX(port), pin); }
 inline uint32_t device_gpio_get(uint8_t port, uint8_t pin) { return gpio_get(GPIOX(port), pin); }

@@ -66,7 +66,7 @@ static int transport_spi_schedule_rx_timeout(transport_spi_t *spi);
 static int transport_spi_read_is_idle(transport_spi_t *spi);
 
 /* Initiate Tx transmission */
-int transport_spi_write(transport_spi_t *spi, device_t *writer, void *argument, uint8_t *tx_buffer, uint16_t tx_size) {
+int transport_spi_write(transport_spi_t *spi, device_t *writer, void *argument, uint8_t *tx_buffer, uint16_t tx_size);
 
 /* Initiate Rx transmission */
 int transport_spi_read(transport_spi_t *spi, device_t *reader, void *argument);

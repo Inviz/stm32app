@@ -136,11 +136,11 @@ static int transport_usart_signal(transport_usart_t *usart, device_t *device, in
     (void)source;
     switch (interrupt) {
     case DMA_TCIF: // DMA_TCIF, transfer complete
-        usart->target_device->callbacks->signal(usart->target_device->object, usart->device, DEVICE_TX_DONE, usart->target_argument);
+        usart->target_device->callbacks->signal(usart->target_device->object, usart->device, SIGNAL_TX_COMPLETE, usart->target_argument);
         transport_usart_tx_dma_stop(usart);
         break;
     case USART_CR1_IDLEIE: // USART IDLE, probably complete transfer
-        usart->target_device->callbacks->signal(usart->target_device->object, usart->device, DEVICE_RX_DONE, usart->target_argument);
+        usart->target_device->callbacks->signal(usart->target_device->object, usart->device, SIGNAL_RX_COMPLETE, usart->target_argument);
         break;
     }
 
