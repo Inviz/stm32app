@@ -244,9 +244,10 @@ static int system_canopen_phase(system_canopen_t *canopen, device_phase_t phase)
 
 static bool_t system_canopen_thread_wakeup(app_thread_t *thread) {
     app_event_t event = {
-        .type = APP_EVENT_WAKEUP,
+        .type = APP_EVENT_MESSAGE_CANOPEN,
         .producer = thread->device->app->canopen,
     };
+
 
     return app_thread_publish_from_isr(thread, &event);
 }

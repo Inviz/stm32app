@@ -37,10 +37,8 @@ struct app_threads {
 struct device_tick {
     uint32_t last_time;    /* Previous time the tick fired */
     uint32_t next_time;    /* Next time tick will fire */
-    uint32_t interval;     /* Optional period of ticks firing*/
     device_t *next_device; /* Next device having the same tick */
     device_t *prev_device; /* Previous device handling the same tick*/
-    // void *argument;        /* Startup-time argument */
     int (*callback)(void *object, void *argument, device_tick_t *tick, app_thread_t *thread);
 };
 

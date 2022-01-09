@@ -5,16 +5,20 @@
 
 #define APP_EVENT_NEEDS_TO_BE_CONSUMED 10
 enum app_event_type {
-    APP_EVENT_WAKEUP,
-    APP_EVENT_READY,
-
-    APP_EVENT_INPUT,  // Incoming data to be processed
-    APP_EVENT_OUTPUT, // Outgoing data to be processed
+    // Internal events that dont need subscription
+    APP_EVENT_THREAD_START = 32, // Set up a schedule, prepare for work
+    APP_EVENT_THREAD_STOP,       // Deallocate and destruct working objects
+    APP_EVENT_THREAD_SCHEDULE,   // Wake up by software timer
+ 
+    APP_EVENT_INPUT = 0, // Incoming data to be processed
+    APP_EVENT_OUTPUT,    // Outgoing data to be processed
 
     APP_EVENT_MESSAGE_SPI = APP_EVENT_NEEDS_TO_BE_CONSUMED,
     APP_EVENT_MESSAGE_I2C,
     APP_EVENT_MESSAGE_USART,
     APP_EVENT_MESSAGE_MODBUS,
+    APP_EVENT_MESSAGE_CANOPEN
+
 };
 
 /* Is event owned by some specific device */

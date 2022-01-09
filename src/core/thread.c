@@ -105,40 +105,38 @@ size_t app_thread_get_tick_index(app_thread_t *thread) {
     return -1;
 }
 
-static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, size_t tick_index, device_t *first_device);
-static void app_thread_event_defer(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status, uint32_t *deferred_count);
-static void app_thread_event_ingest(app_thread_t *thread, app_event_t *event, size_t deferred_count);
+static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index);
+static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status);
+static void app_thread_event_sleep(app_thread_t *thread, app_event_t *event);
+static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_event_t *event, size_t deferred_count);
 
 /* A generic RTOS task function that handles all typical configurations of threads. It supports following features or combinations of
   them:
   - Waking up devices on individual software timers to simulate delays and periodical work
   - Aborting or speeding up the software timer
-  - Broadcasting events to multiple listeners
-  - Broadcasting events to first taker
-  - Deferring events for later handling if device was busy
+  - Broadcasting events to multiple listeners OR first taker
+  - Re-queuing events for later processing if a receiving device was busy
   - Maintaining queue of events OR lightweight event event mailbox slot.
 
   An app has at least five of these threads with different priorities. Devices declare "ticks" which act as callbacks for a corresponding
   thread. This way devices can prioritize parts of their logic to play well in shared environment. For example devices may afford doing
-  long-er processing of data in background without fearing of blocking networking or handling inputs for the whole app. Another benefit of
+  longer processing of data in background without fearing of blocking networking or handling inputs for the whole app. Another benefit of
   allowing device to run logic with different priorities is responsiveness and flexibility. An high-priority input event may tell device to
   abort longer task and do something else instead.
 
   A downside of multiple devices sharing the same thread, is that there is no time-slicing of work within a thread between devices.
   Essentially, until a device finishes its work the whole thread (including processing of new events) is blocked, unless a thread with
   higher priority tells the device to stop. So devices still need to be mindful of blocking the cpu. There can be a few solutions to this:
-  - Devices can split their workload into chunks.  Execution control would need to be yielded after executing each chunk by using software
-    timer to wake later to execute the next chunk. The downside to this is that each chunk can only be scheduled with resolution of a time
-  slice (1ms).
+  - Devices can split their workload into chunks. Execution control would need to be yielded after executing each chunk. It can be done
+  either by using software to schedule next tickin future (with 1ms resolution) or right away (effectively simulating RTOS yield)
   - Devices can also create their own custom threads with own queues, leveraging all the dispatching and queue-management mechanisms. In
     this case RTOS will use time-slicing to periodically break up execution and allow other threads to work.
  */
 void app_thread_execute(app_thread_t *thread) {
     thread->last_time = xTaskGetTickCount();
-    app_t *app = thread->device->app;
     size_t tick_index = app_thread_get_tick_index(thread);                                   // which device tick handles this thread
     device_t *first_device = app_thread_filter_devices(thread);                              // linked list of devices declaring the tick
-    app_event_t event = {.producer = thread->device->app->device, .type = APP_EVENT_WAKEUP}; // incoming event from the queue
+    app_event_t event = {.producer = thread->device->app->device, .type = APP_EVENT_THREAD_START}; // incoming event from the queue
     size_t deferred_count = 0;                                                               // Counter of re-queued events
 
     if (first_device == NULL) {
@@ -147,10 +145,33 @@ void app_thread_execute(app_thread_t *thread) {
     }
 
     while (true) {
-        app_event_status_t previous_event_status = event.status == APP_EVENT_DEFERRED;
+        app_event_status_t previous_event_status = event.status;
         app_thread_event_dispatch(thread, &event, first_device, tick_index);
-        app_thread_event_defer(thread, &event, previous_event_status, &deferred_count);
-        app_thread_event_ingest(thread, &event, deferred_count);
+        deferred_count += app_thread_event_requeue(thread, &event, previous_event_status);
+        if (!app_thread_event_queue_shift(thread, &event, deferred_count)) {
+          app_thread_event_sleep(thread, &event);
+        }
+    }
+}
+
+/*
+  Devices may indicate which types of events they want to be notified about. But there're also internal synthetic events that they receieve
+  unconditionally.
+*/
+static inline bool_t app_thread_should_notify_device(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick) {
+    switch (event->type) {
+    // Ticks get notified when thread starts and stops, so they can construct/destruct or schedule a periodical timer
+    case APP_EVENT_THREAD_START:
+    case APP_EVENT_THREAD_STOP:
+        return true;
+
+    // Ticks that set up software timer will recieve schedule event in time
+    case APP_EVENT_THREAD_SCHEDULE:
+        return tick->next_time <= thread->current_time;
+
+    // Devices have to subscribe to other types of events manually
+    default:
+        return device_can_handle_event(device, event);
     }
 }
 
@@ -159,10 +180,10 @@ void app_thread_execute(app_thread_t *thread) {
  * - Device may be busy during processing other event, when the new event it wants to exclusively handle arrives. Event will be kept in a
  *   queue for the device to catch up later. Input thread unlike others will off-load it a special thread called "catchup" to remain
  *   responsive
- * - Device may indicate that it is able to process event when it frees up, allowing other free devices to process it meanwhile.
- * - Device may set up a software timer to wake thread at specific time in future, in that case a synthetic wakeup event will be routed
+ * - Device may indicate that it is able to process event when it frees up, allowing other free devices to process it the mean while.
+ * - Device may set up a software timer to wake thread at specific time in future, in that case a synthetic wakeup event will be dispatched
  */
-static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, size_t tick_index, device_t *first_device) {
+static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index) {
     // Tick at least once every minute if no devices scheduled it sooner
     thread->current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
     thread->next_time = thread->last_time + 60000;
@@ -172,8 +193,7 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
     for (device_t *device = first_device; device; device = tick->next_device) {
         tick = device_tick_by_index(device, tick_index);
 
-        if (event->type == APP_EVENT_WAKEUP ? tick->next_time <= thread->current_time   // Wakeup events only run when time is right
-                                            : device_can_handle_event(device, event)) { // others need matching
+        if (app_thread_should_notify_device(thread, event, device, tick)) {
 
             // Tick callback may change event status, set software timer or both
             tick->callback(device->object, &event, tick, thread);
@@ -188,7 +208,9 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
             }
         }
 
-        // Device may request thread to wake up at specific time without any events
+        // Device may request thread to wake up at specific time without waiting for external events by settings next_time of its ticks
+        // - To wake up periodically device should re-schedule its tick after each run
+        // - To yield control until other events are processed device should set schedule to current time of a thread
         if (tick->next_time >= thread->current_time && thread->next_time > tick->next_time) {
             thread->next_time = tick->next_time;
         }
@@ -200,7 +222,7 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
   it gets reinserted into the queue, and keep ingesting events. When all is left in the queue is deferred events, the thread will
   sleep and wait for either new events or notification from device that freed up and is ready to process one of deferred events.
 */
-static void app_thread_event_defer(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status, uint32_t *deferred_count) {
+static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status) {
     switch (event->status) {
     case APP_EVENT_WAITING:
         log_printf("No devices are listening to event: #%i\n", event.type);
@@ -218,7 +240,7 @@ static void app_thread_event_defer(app_thread_t *thread, app_event_t *event, app
             event->status = APP_EVENT_DEFERRED;
             xQueueSend(thread->queue, &event, 0);
             if (previous_status != APP_EVENT_DEFERRED) {
-                *deferred_count++;
+                return 1;
             }
         } else {
             // Threads without a queue will leave event linger in the only available notification slot
@@ -229,54 +251,69 @@ static void app_thread_event_defer(app_thread_t *thread, app_event_t *event, app
     // Events that were deferred need to be marked as handled by device
     case APP_EVENT_HANDLED:
         if (previous_status == APP_EVENT_DEFERRED && thread->queue) {
-            *deferred_count--;
+            return -1;
         }
         break;
+
+    case APP_EVENT_RECEIVED:
+      break;
     }
+
+    return 0;
+}
+
+static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_event_t *event, size_t deferred_count) {
+  // Threads without queues receieve their events via notification slot
+  if (thread->queue == NULL) {
+    return false;
+  }
+
+  // There is no need to shift queue if all events in the queue are deferred
+  if (deferred_count > 0 && deferred_count == uxQueueMessagesWaiting(thread->queue)) {
+    return false;
+  }
+
+  // Try getting an event out of the queue without blocking. Thread blocks on notification signal instead
+  return xQueueReceive(thread->queue, &event, 0);
 }
 
 /*
-  - Thread ingests new events from a queue and dispatches them for devices to handle.
+  Thread ingests new event from queue (or mailbox) and dispatches it for devices to handle.
   - When there aren't any more events that devices can process right now, thread goes to sleep.
   - A device that was previously busy can send a signal that it is ready to catch up with events,
     in that case thread will attempt to dispatch all the events in the queue
   - New events may be published to the queue waking up the thread. If the event was not added to the top
-    of the queue, the thread will need to go rotate the whole queue to get to new events. This is a necessary
-    overhead of how queues work in FreeRTOS. To avoid input thread to be clogged down by deferred events, it
-    will off-load its deferred events to a special catch up thread.
+    of the queue, and the queued had deferred events in it, the thread will need to rotate the whole 
+    queue to get to to the new events. This is a necessary overhead since FreeRTOS only allows taking
+    the first event in the queue. To avoid input thread to be bogged down by deferred events, it
+    will off-load its deferred events to a special catch up thread. Other threads will go through rotation.
 */
-static void app_thread_event_ingest(app_thread_t *thread, app_event_t *event, size_t deferred_count) {
-    // Should the thread block?
-    if (thread->queue != NULL                                                              // threads without queue block right away
-        || (deferred_count > 0 && deferred_count == uxQueueMessagesWaiting(thread->queue)) // if all events in queue are deferredt
-        || !xQueueReceive(thread->queue, &event, 0)) // or else it will try to get new events from queue
-    {
-        // threads are expected to receive notifications in order to wake up
-        uint32_t notification = ulTaskNotifyTake(true, pdMS_TO_TICKS(TIME_DIFF(thread->next_time, thread->current_time)));
-        if (notification == 0) {
-            // if no notification was recieved within scheduled time, it means thread is woken up by schedule
-            // so synthetic wake upevent is generated
-            *event = (app_event_t){.producer = thread->device->app->device, .type = APP_EVENT_WAKEUP};
-        } else {
-            if (thread->queue != NULL) {
-                // otherwise there must be a new message in queue
-                if (!xQueueReceive(thread->queue, &event, 0)) {
-                    log_printf("Error: Thread #%i woken up by notification but its queue is empty\n", tick_index);
-                }
-            } else if (notification != APP_EVENT_READY) {
-                // if thread doesnt have queue, event is passed as address in notification slot instead
-                // publisher will have to ensure the event memory survives until thread is ready for it.
-                memcpy(event, (uint32_t *)notification, sizeof(app_event_t));
+static void app_thread_event_sleep(app_thread_t *thread, app_event_t *event) {
+    // threads are expected to receive notifications in order to wake up
+    uint32_t notification = ulTaskNotifyTake(true, pdMS_TO_TICKS(TIME_DIFF(thread->next_time, thread->current_time)));
+    if (notification == 0) {
+        // if no notification was recieved within scheduled time, it means thread is woken up by schedule
+        // so synthetic wake upevent is generated
+        *event = (app_event_t){.producer = thread->device->app->device, .type = APP_EVENT_THREAD_SCHEDULE};
+    } else {
+        if (thread->queue != NULL) {
+            // otherwise there must be a new message in queue
+            if (!xQueueReceive(thread->queue, &event, 0)) {
+                log_printf("Error: Thread #%i woken up by notification but its queue is empty\n", tick_index);
             }
+        } else if (notification != SIGNAL_CATCHUP) {
+            // if thread doesnt have queue, event is passed as address in notification slot instead
+            // publisher will have to ensure the event memory survives until thread is ready for it.
+            memcpy(event, (uint32_t *)notification, sizeof(app_event_t));
         }
     }
 }
 
-bool_t app_thread_notify(app_thread_t *thread) { return xTaskNotify(thread->task, APP_EVENT_READY, eIncrement); }
+bool_t app_thread_notify(app_thread_t *thread) { return xTaskNotify(thread->task, SIGNAL_CATCHUP, eIncrement); }
 
 bool_t app_thread_notify_from_isr(app_thread_t *thread) {
     static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    bool_t result = xTaskNotifyFromISR(thread->task, APP_EVENT_READY, eIncrement, &xHigherPriorityTaskWoken);
+    bool_t result = xTaskNotifyFromISR(thread->task, SIGNAL_CATCHUP, eIncrement, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     return result;
 }

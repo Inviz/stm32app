@@ -59,6 +59,8 @@ enum device_signal {
 
     SIGNAL_RX_COMPLETE,
     SIGNAL_TX_COMPLETE
+
+    SIGNAL_CATCHUP
 };
 
 char *string_from_phase(device_phase_t phase);
