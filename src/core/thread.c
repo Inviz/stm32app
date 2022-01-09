@@ -238,7 +238,7 @@ static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event,
 
     switch (event->status) {
     case APP_EVENT_WAITING:
-        log_printf("No devices are listening to event: #%i\n", event.type);
+        log_printf("No devices are listening to event: #%i\n", event->type);
         break;
 
     // Some busy device wants to handle event later, so the event has to be re-queued
@@ -250,17 +250,19 @@ static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event,
             // to keep the records about that to avoid popping the event right back
             if (queue == thread->queue) {
                 event->status = APP_EVENT_DEFERRED;
-            // Otherwise event status gets reset, so receiving thread has a chance to do its own bookkeeping
-            // The thread does not automatically get woken up either, since that requires sending notification
+                // Otherwise event status gets reset, so receiving thread has a chance to do its own bookkeeping
+                // The thread does not automatically get woken up either, since that requires sending notification
             } else {
                 event->status = APP_EVENT_WAITING;
             }
 
-            // If the target queue is full, event gets lost. 
+            // If the target queue is full, event gets lost.
             if (xQueueSend(queue, &event, 0)) {
                 if (event->status == APP_EVENT_DEFERRED && previous_status != APP_EVENT_DEFERRED) {
                     return 1;
                 }
+            } else {
+                log_printf("The queue doesnt have any room for deferred event #%i\n", event->type);
             }
         } else {
             // Threads without a queue will leave event stored in the only available notification slot
@@ -304,11 +306,11 @@ static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_even
 }
 
 /*
-  Threads go to sleep to allow threads with lower priority to run, when they dont have any more events that can be processed right now.
-  - Publishing new events notifies the thread to wake up. If an event was published to the back of the queue that had deferred events in it,
-    the thread will need to rotate the whole queue to get to to the new events. This is a necessary overhead since FreeRTOS only allows
-    taking the first event in the queue.
-  - A device that was previously busy can send a `APP_SIGNAL_CATCHUP` notification, indicationg that it is ready to catch up with events
+  A thread goes to sleep to allow tasks with lower priority to run, when it does not have any events that can be processed right now.
+  - Publishing new events also sends the notification for the thread to wake up. If an event was published to the back of the queue that had
+  deferred events in it, the thread will need to rotate the whole queue to get to to the new events. This is due to FreeRTOS only allowing
+  to take first event in the queue.
+  - A device that was previously busy can send a `APP_SIGNAL_CATCHUP` notification, indicating that it is ready to catch up with events
     that it deferred previously. In that case thread will attempt to re-dispatch all the events in the queue.
 */
 static void app_thread_event_sleep(app_thread_t *thread, app_event_t *event) {
