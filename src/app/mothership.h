@@ -6,8 +6,8 @@ extern "C" {
 #endif
 
 #include "core/app.h"
-#include "system/canopen.h"
 #include "system/mcu.h"
+#include "system/canopen.h"
 //#include "device/circuit.h"
 //#include "devices/modbus.h"
 #include "input/sensor.h"
@@ -29,6 +29,7 @@ typedef struct {
     OD_t *dictionary;
     app_mothership_config_t *config;
     app_values_t *values;
+    app_threads_t *threads;
     system_mcu_t *mcu;
     system_canopen_t *canopen;
 } app_mothership_t;

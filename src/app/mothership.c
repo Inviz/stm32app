@@ -23,8 +23,9 @@ static int app_mothership_validate(OD_entry_t *config_entry) {
 }
 
 static int app_mothership_construct(app_mothership_t *mothership, device_t *device) {
-    mothership->device = device;
     mothership->config = (app_mothership_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+
+    app_threads_allocate((app_t *) mothership);
     return mothership->config->disabled;
 }
 
@@ -64,16 +65,17 @@ static int app_mothership_phase(app_mothership_t *mothership, device_phase_t pha
 // If devices is NULL, it will only count the devices
 size_t app_mothership_enumerate_devices(app_t *app, OD_t *od, device_t *destination) {
     size_t count = 0;
-    count += devices_enumerate_type(app, od, APP, &app_mothership_callbacks, sizeof(app_mothership_t), destination, count);
-    count += devices_enumerate_type(app, od, SYSTEM_MCU, &system_mcu_callbacks, sizeof(system_mcu_t), destination, count);
-    count += devices_enumerate_type(app, od, MODULE_ADC, &module_adc_callbacks, sizeof(module_adc_t), destination, count);
-    count += devices_enumerate_type(app, od, TRANSPORT_CAN, &transport_can_callbacks, sizeof(transport_can_t), destination, count);
-    //count += devices_enumerate_type(app, od, TRANSPORT_SPI, &transport_spi_callbacks, sizeof(transport_spi_t), destination, count);
-    //count += devices_enumerate_type(MODULE_USART, &transport_usart_callbacks, sizeof(transport_usart_t), destination, count);
-    //count += devices_enumerate_type(app, od, TRANSPORT_I2C, &transport_i2c_callbacks, sizeof(transport_i2c_t), destination, count);
-    //count += devices_enumerate_type(app, od, DEVICE_CIRCUIT, &device_circuit_callbacks, sizeof(device_circuit_t), destination, count);
-    //count += devices_enumerate_type(app, OD, SCREEN_EPAPER, &screen_epaper_callbacks, sizeof(screen_epaper_t), destination, count);
-    //count += devices_enumerate_type(app, od, INPUT_SENSOR, &input_sensor_callbacks, sizeof(input_sensor_t), destination, count);
+    count += app_device_type_enumerate(app, od, APP, &app_mothership_callbacks, sizeof(app_mothership_t), destination, count);
+    count += app_device_type_enumerate(app, od, SYSTEM_MCU, &system_mcu_callbacks, sizeof(system_mcu_t), destination, count);
+    count += app_device_type_enumerate(app, od, SYSTEM_CANOPEN, &system_canopen_callbacks, sizeof(system_canopen_t), destination, count);
+    count += app_device_type_enumerate(app, od, MODULE_ADC, &module_adc_callbacks, sizeof(module_adc_t), destination, count);
+    count += app_device_type_enumerate(app, od, TRANSPORT_CAN, &transport_can_callbacks, sizeof(transport_can_t), destination, count);
+    //count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_callbacks, sizeof(transport_spi_t), destination, count);
+    //count += app_device_type_enumerate(MODULE_USART, &transport_usart_callbacks, sizeof(transport_usart_t), destination, count);
+    //count += app_device_type_enumerate(app, od, TRANSPORT_I2C, &transport_i2c_callbacks, sizeof(transport_i2c_t), destination, count);
+    //count += app_device_type_enumerate(app, od, DEVICE_CIRCUIT, &device_circuit_callbacks, sizeof(device_circuit_t), destination, count);
+    //count += app_device_type_enumerate(app, OD, SCREEN_EPAPER, &screen_epaper_callbacks, sizeof(screen_epaper_t), destination, count);
+    //count += app_device_type_enumerate(app, od, INPUT_SENSOR, &input_sensor_callbacks, sizeof(input_sensor_t), destination, count);
     return count;
 }
 

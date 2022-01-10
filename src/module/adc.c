@@ -8,7 +8,6 @@ static int module_adc_validate(OD_entry_t *config_entry) {
 }
 
 static int module_adc_construct(module_adc_t *adc, device_t *device) {
-    adc->device = device;
     adc->config = (module_adc_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
 
     adc->dma_address = dma_get_address(adc->config->dma_unit);
@@ -55,6 +54,9 @@ static int module_adc_destruct(module_adc_t *adc) {
 }
 
 static int module_adc_start(module_adc_t *adc) {
+    if (adc->channel_count == 0) {
+        return 1;
+    }
     module_adc_channels_alloc(adc, adc->channel_count);
 
     // create array of used channels

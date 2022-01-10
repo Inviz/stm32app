@@ -4,16 +4,10 @@
 
 extern void initialise_monitor_handles(void);
 
-// Global variable is only used in interrupts
-app_t *app;
-
-/* main ***********************************************************************/
-int main(void) {
-#ifdef SEMIHOSTING
-    initialise_monitor_handles(); /* This Function MUST come before the first log_printf() */
-#endif
-    log_printf("App - Enumerating...\n");
+static void app_boot(app_t *app) {
 #if APP_MOTHERSHIP
+    log_printf("App - Mothership ...\n");
+    log_printf("App - Enumerating devices ...\n");
     app_allocate(&app, OD, app_mothership_enumerate_devices);
 #endif
     log_printf("App - Constructing...\n");
@@ -24,10 +18,18 @@ int main(void) {
 
     log_printf("App - Starting...\n");
     app_set_phase(app, DEVICE_STARTING);
+}
 
+
+
+int main(void) {
+#ifdef SEMIHOSTING
+    initialise_monitor_handles();
+#endif
+    app_t *app;
+    app_boot(app); 
     log_printf("App - Starting tasks...\n");
     vTaskStartScheduler();
-    for (;;)
-        ;
+    while (true) { }
     return 0;
 }

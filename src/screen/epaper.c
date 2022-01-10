@@ -16,7 +16,6 @@ static int screen_epaper_validate(OD_entry_t *config_entry) {
 }
 
 static int screen_epaper_construct(screen_epaper_t *epaper, device_t *device) {
-    epaper->device = device;
     epaper->config = (screen_epaper_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     epaper->values = (screen_epaper_values_t *)OD_getPtr(device->values, 0x01, 0, NULL);
     return 1;//epaper->config->disabled;

@@ -54,27 +54,6 @@
 #define CO_CONFIG_CRC16 (CO_CONFIG_CRC16_ENABLE)
 #endif
 
-#ifdef DEBUG
-#include <stdio.h>
-#define log_printf printf
-#define error_printf printf
-#else
-#define log_printf(...)
-#define error_printf(...)
-#endif
-  
-
-#ifdef DEBUG
-#include <stdio.h>
-#define log_printf printf
-#define error_printf printf
-#else
-#define log_printf(...)
-#define error_printf(...)
-#endif
-  
-
-
   
  #ifndef CO_CONFIG_FIFO
  #define CO_CONFIG_FIFO (CO_CONFIG_FIFO_ENABLE | \

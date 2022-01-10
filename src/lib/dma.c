@@ -104,29 +104,25 @@ uint8_t dma_get_interrupt_for_channel_or_stream(uint32_t dma, uint8_t index) {
 #endif
 }
 
-uint8_t devices_dma[DMA_BUFFER_SIZE] = {DMA_UNREGISTERED_INDEX};
+volatile uint32_t *devices_dma[DMA_BUFFER_SIZE];
 
 void device_register_dma(uint8_t unit, uint8_t index, device_t *device) {
-
-    devices_dma[DMA_INDEX(unit, index)] = get_device_number(device);
+    devices_dma[DMA_INDEX(unit, index)] = &device;
 };
 
-void device_unregister_dma(uint8_t unit, uint8_t index) { devices_dma[DMA_INDEX(unit, index)] = DMA_UNREGISTERED_INDEX; };
+void device_unregister_dma(uint8_t unit, uint8_t index) { devices_dma[DMA_INDEX(unit, index)] = NULL; };
 
 void devices_dma_notify(uint8_t unit, uint8_t index) {
-    uint8_t number = devices_dma[DMA_INDEX(unit, index)];
-    if (number != DMA_UNREGISTERED_INDEX) {
-        device_t *device = get_device_by_number(number - 1);
-        void *source = (void *)(uint32_t)((unit << 0) + (index << 16));
-        if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
-            error_printf("DMA Error in channel %i", index);
-            if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
-                dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
-            }
-        } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
-            if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
-                dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
-            }
+    device_t *device = devices_dma[DMA_INDEX(unit, index)];
+    void *source = (void *)(uint32_t)((unit << 0) + (index << 16));
+    if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
+        error_printf("DMA Error in channel %i", index);
+        if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
+            dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
+        }
+    } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
+        if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
+            dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
         }
     }
 }

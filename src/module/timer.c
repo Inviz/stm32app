@@ -22,7 +22,6 @@ static int module_timer_validate(OD_entry_t *config_entry) {
 }
 
 static int module_timer_construct(module_timer_t *blank, device_t *device) {
-    blank->device = device;
     blank->config = (module_timer_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return blank->config->disabled;
 }

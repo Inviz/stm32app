@@ -21,7 +21,6 @@ static int device_blank_validate(OD_entry_t *config_entry) {
 }
 
 static int device_blank_construct(device_blank_t *blank, device_t *device) {
-    blank->device = device;
     blank->config = (device_blank_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return blank->config->disabled;
 }

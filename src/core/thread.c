@@ -1,158 +1,72 @@
 #include "thread.h"
 #include "core/device.h"
-#include "event.h"
 
-int device_tick_allocate(device_tick_t **destination,
-                         int (*callback)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread)) {
-    if (callback != NULL) {
-        *destination = malloc(sizeof(device_tick_t));
-        if (*destination == NULL) {
-            return CO_ERROR_OUT_OF_MEMORY;
-        }
-        (*destination)->callback = callback;
-    }
-    return 0;
-}
+#define MAX_THREAD_SLEEP_TIME_LONG (((uint32_t)-1) / 2)
+#define MAX_THREAD_SLEEP_TIME 60000
+#define IS_IN_ISR (SCB_ICSR & SCB_ICSR_VECTACTIVE)
 
-void device_tick_free(device_tick_t **tick) {
-    if (*tick != NULL) {
-        free(*tick);
-        *tick = NULL;
-    }
-}
-
-int app_thread_allocate(app_thread_t **destination, void *app_or_object, void (*callback)(void *ptr), const char *const name,
-                        uint16_t stack_depth, size_t queue_size, size_t priority, void *argument) {
-    *destination = (app_thread_t *)malloc(sizeof(app_thread_t));
-    app_thread_t *thread = *destination;
-    thread->device = ((app_t *)app_or_object)->device;
-    xTaskCreate(callback, name, stack_depth, (void *)thread, priority, (void *)&thread->task);
-    if (thread->task == NULL) {
-        return CO_ERROR_OUT_OF_MEMORY;
-    }
-    if (queue_size > 0) {
-        thread->queue = xQueueCreate(queue_size, sizeof(app_event_t));
-        vQueueAddToRegistry(thread->queue, name);
-        if (thread->queue == NULL) {
-            return CO_ERROR_OUT_OF_MEMORY;
-        }
-    }
-
-    thread->argument = argument;
-    return 0;
-}
-
-int app_thread_free(app_thread_t **thread) {
-    free(*thread);
-    if ((*thread)->queue != NULL) {
-
-        vQueueDelete((*thread)->queue);
-    }
-    *thread = NULL;
-    return 0;
-}
-
-/* Returns specific member of app_threads_t struct by its numeric index*/
-static inline device_tick_t *device_tick_by_index(device_t *device, size_t index) {
-    device_tick_t *ticks = (device_tick_t *)&device->ticks;
-    return &ticks[index];
-}
-
-/* Returns specific member of device_ticks_t struct by its numeric index*/
-static inline app_thread_t *app_thread_by_index(app_t *app, size_t index) {
-    app_thread_t *threads = (app_thread_t *)&app->threads;
-    return &threads[index];
-}
-
-device_t *app_thread_filter_devices(app_thread_t *thread) {
-    app_t *app = thread->device->app;
-    size_t tick_index = app_thread_get_tick_index(thread);
-    device_t *first_device;
-    device_t *last_device;
-    for (size_t i = 0; i < app->device_count; i++) {
-        device_t *device = &app->device[i];
-        device_tick_t *tick = device_tick_by_index(device, tick_index);
-        // Subscribed devices have corresponding tick handler
-        if (tick == NULL) {
-            continue;
-        }
-
-        // Return first device
-        if (first_device == NULL) {
-            first_device = device;
-        }
-
-        // double link the ticks for fast iteration
-        if (last_device == NULL) {
-            device_tick_by_index(last_device, tick_index)->next_device = device;
-            tick->prev_device = device;
-        }
-    }
-
-    return first_device;
-}
-
-size_t app_thread_get_tick_index(app_thread_t *thread) {
-    for (size_t i = 0; i < sizeof(app_threads_t) / sizeof(app_thread_t *); i++) {
-        if (app_thread_by_index(thread->device->app, i) == thread) {
-            // Both input and immediate threads invoke same input tick
-            if (i > 0) {
-                return i - 1;
-            } else {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index);
-static void app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick);
+static app_signal_t app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index);
+static app_signal_t app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick);
 static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status);
 static void app_thread_event_await(app_thread_t *thread, app_event_t *event);
 static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_event_t *event, size_t deferred_count);
+static inline device_tick_t *device_tick_by_index(device_t *device, size_t index);
+device_tick_t *device_tick_for_thread(device_t *device, app_thread_t *thread);
 
 /* A generic RTOS task function that handles all typical configurations of threads. It supports following features or combinations of
   them:
-  - Waking up devices on individual software timers to simulate delays and periodical work
-  - Aborting or speeding up the software timer
-  - Broadcasting events to multiple listeners OR first taker
+  - Waking up devices on individual timer alarms to simulate delays and periodical work
+  - Aborting or speeding up the timer alarms
+  - Yielding execution to other devices and getting it at the end of event queue
+  - Broadcasting events to specific device, multiple listeners or first taker
   - Re-queuing events for later processing if a receiving device was busy
-  - Maintaining queue of events OR lightweight event event mailbox slot.
+  - Maintaining queue of events or lightweight event event mailbox slot.
 
   An app has at least five of these threads with different priorities. Devices declare "ticks" which act as callbacks for a corresponding
   thread. This way devices can prioritize parts of their logic to play well in shared environment. For example devices may afford doing
-  longer processing of data in background without fearing of blocking networking or handling inputs for the whole app. Another benefit of
+  longer processing of data in background without blocking networking or handling inputs for the whole app. Another benefit of
   allowing device to run logic with different priorities is responsiveness and flexibility. An high-priority input event may tell device to
   abort longer task and do something else instead.
 
-  A downside of multiple devices sharing the same thread, is that there is no time-slicing of work within a thread between devices.
-  Essentially, until a device finishes its work the whole thread (including processing of new events) is blocked, unless a thread with
-  higher priority tells the device to stop. So devices still need to be mindful of blocking the cpu. There can be a few solutions to this:
-  - Devices can split their workload into chunks. Execution control would need to be yielded after executing each chunk. It can be done
-  either by using software to schedule next tickin future (with 1ms resolution) or right away (effectively simulating RTOS yield)
-  - Devices can also create their own custom threads with own queues, leveraging all the dispatching and queue-management mechanisms. In
-    this case RTOS will use time-slicing to periodically break up execution and allow other threads to work.
+  A downside of multiple devices sharing the same thread, is that there is no automatic time-slicing of work. Whole thread (including
+  processing of new events) is blocked until a device finishes its work, unless a thread with higher priority tells the device to stop.
+  Devices still need to be mindful of blocking the cpu within a scope of its task priority. There can be a few solutions to this:
+  - Devices can split their workload into chunks. Execution control would need to be yielded after each chunk. It can be done
+  either by using alarm to schedule next tick in future (with 1ms resolution) or right after the thread goes through its queue of events
+  (effectively simulating RTOS yield)
+  - Devices can also create their own custom threads with own queues, leveraging all the dispatching and queue-management mechanisms
+  available to app-wide threads. In this case RTOS will use time-slicing to periodically break up execution and allow other threads to work.
  */
 void app_thread_execute(app_thread_t *thread) {
-    thread->last_time = xTaskGetTickCount();
+    thread->current_time = xTaskGetTickCount();
+    thread->last_time = thread->current_time;
+    thread->next_time = thread->current_time + MAX_THREAD_SLEEP_TIME;
     size_t tick_index = app_thread_get_tick_index(thread);      // Which device tick handles this thread
     size_t deferred_count = 0;                                  // Counter of re-queued events
     device_t *first_device = app_thread_filter_devices(thread); // linked list of devices declaring the tick
-    app_event_t event = {.producer = thread->device->app->device, .type = APP_EVENT_THREAD_START}; // incoming event from the queue
+    app_event_t event = {.producer = thread->device->app->device, .type = APP_EVENT_THREAD_START};
 
     if (first_device == NULL) {
-        log_printf("No devices subsribe to thread #%i\n", thread_index);
-        return;
+        log_printf("~ %s:  does not have any listener devices and will self-terminate\n", pcTaskGetTaskName(thread->task));
+        vTaskDelete(NULL);
+        portYIELD();
     }
 
     while (true) {
         app_event_status_t previous_event_status = event.status;
+
+        // route event to its listeners
         app_thread_event_dispatch(thread, &event, first_device, tick_index);
+
+        // keep event for later processing if needed
         deferred_count += app_thread_event_requeue(thread, &event, previous_event_status);
+
+        // move to the next event
         if (!app_thread_event_queue_shift(thread, &event, deferred_count)) {
+            // wait for external notifications or scheduled wakeup
             app_thread_event_await(thread, &event);
         }
+        log_printf("~ %s:  received event: #%i\n", pcTaskGetTaskName(thread->task), event.type);
     }
 }
 
@@ -162,41 +76,46 @@ void app_thread_execute(app_thread_t *thread) {
 */
 static inline bool_t app_thread_should_notify_device(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick) {
     switch (event->type) {
-    // Ticks get notified when thread starts and stops, so they can construct/destruct or schedule a periodical timer
+    // Ticks get notified when thread starts and stops, so they can construct/destruct or schedule a periodical alarm
     case APP_EVENT_THREAD_START:
     case APP_EVENT_THREAD_STOP:
         return true;
 
-    // Ticks that set up software timer will recieve schedule event in time
-    case APP_EVENT_THREAD_SCHEDULE:
+    // Ticks that set up software alarm will recieve schedule event in time
+    case APP_EVENT_THREAD_ALARM:
         return tick->next_time <= thread->current_time;
 
-    // Devices have to subscribe to other types of events manually
     default:
-        return device_can_handle_event(device, event);
+        if (event->consumer == device) {
+            // Events targeted to a specific reciepeint will always be received
+            return true;
+        } else {
+            // Devices have to subscribe to other types of events manually
+            return device_event_is_subscribed(device, event);
+        }
     }
 }
 
 /* Notify interested devices of a new event. Events may either be targeted to a specific device, or broadcasted to all/*/
 static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index) {
-    // Tick at least once every minute if no devices scheduled it sooner
-    thread->current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
-    thread->next_time = thread->last_time + 60000;
 
     // If event has no indicated reciepent, all devices that are subscribed to thread and event will need to be notified
-    if (event->consumer == NULL) {
-        device_tick_t *tick;
-        for (device_t *device = first_device; device; device = tick->next_device) {
-            tick = device_tick_by_index(device, tick_index);
-            app_thread_event_device_dispatch(thread, event, event->consumer, device_tick_by_index(event->consumer, tick_index));
+    device_t *device = event->consumer ? event->consumer : first_device;
+    device_tick_t *tick;
 
-            // stop broadcasting if device wants this event for itself 
-            if (event->status >= APP_EVENT_HANDLED) {
-                break;
-            }
+    for (device_t *device = first_device; device; device = tick->next_device) {
+        tick = device_tick_by_index(device, tick_index);
+        app_signal_t signal = app_thread_event_device_dispatch(thread, event, device, tick);
+        
+        // let tick know that it has events to catch up later
+        if (signal == APP_SIGNAL_BUSY) {
+            tick->catchup = thread;
         }
-    } else {
-        app_thread_event_device_dispatch(thread, event, event->consumer, device_tick_by_index(event->consumer, tick_index));
+
+        // stop broadcasting if device wants this event for itself
+        if (event->status >= APP_EVENT_HANDLED || event->consumer != NULL) {
+            break;
+        }
     }
 }
 
@@ -209,7 +128,7 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
 static void app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick) {
     if (app_thread_should_notify_device(thread, event, device, tick)) {
         // Tick callback may change event status, set software timer or both
-        tick->callback(device->object, &event, tick, thread);
+        tick->callback(device->object, event, tick, thread);
         tick->last_time = thread->current_time;
 
         // Mark event as processed
@@ -221,26 +140,28 @@ static void app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *
     // Device may request thread to wake up at specific time without waiting for external events by settings next_time of its ticks
     // - To wake up periodically device should re-schedule its tick after each run
     // - To yield control until other events are processed device should set schedule to current time of a thread
-    if (tick->next_time >= thread->current_time && thread->next_time > tick->next_time) {
+    if (tick->next_time != 0 && thread->next_time > tick->next_time) {
         thread->next_time = tick->next_time;
     }
 }
 
-/* Find a queue to insert deferred message so it doesn't get lost. A thread may put it back to its own queue at the end, put it into
- * another thread queue, or even into a queue not owned by any thread. This can be used to create lightweight threads that only have a
- * notification mailbox slot, but then can still retain events elsewhere.  */
-static inline QueueHandle_t app_thread_get_catchup_queue(app_thread_t *thread) {
-    // input thread will off-load its deferred event to `catchup` thread queue to keep input thread fast
+/* Some threads may want to redirect their stale messages to another thread */
+static inline app_thread_t *app_thread_get_catchup_thread(app_thread_t *thread) {
     if (thread == thread->device->app->threads->input) {
-        return thread->device->app->threads->catchup->queue;
+        return thread->device->app->threads->catchup;
     } else {
-        return thread->queue;
+        return thread;
     }
 }
 
+/* Find a queue to insert deferred message to so it doesn't get lost. A thread may put it back to its own queue at the end, put it into
+ * another thread queue, or even into a queue not owned by any thread. This can be used to create lightweight threads that only have a
+ * notification mailbox slot, but then can still retain events elsewhere.  */
+static inline QueueHandle_t app_thread_get_catchup_queue(app_thread_t *thread) { return app_thread_get_catchup_thread(thread)->queue; }
+
 /*
-  A routed event may be claimed for exclusive processing by device that is too busy to process it right away. In that case event then gets
-  pushed to the back of the queue, so the thread can keep on processing other events. When all is left in the queue is deferred events, the
+  A broadcasted event may be claimed for exclusive processing by device that is too busy to process it right away. In that case event then
+  gets pushed to the back of the queue, so the thread can keep on processing other events. When all is left in queue is deferred events, the
   thread will sleep and wait for either new events or notification from device that is now ready to process a deferred event.
 */
 static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event, app_event_status_t previous_status) {
@@ -260,9 +181,9 @@ static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event,
             // to keep the records about that to avoid popping the event right back
             if (queue == thread->queue) {
                 event->status = APP_EVENT_DEFERRED;
-                // Otherwise event status gets reset, so receiving thread has a chance to do its own bookkeeping
-                // The thread does not automatically get woken up either, since that requires sending notification
             } else {
+                // Otherwise event status gets reset, so receiving thread has a chance to do its own bookkeeping
+                // The thread will not wake up automatically, since that requires sending notification
                 event->status = APP_EVENT_WAITING;
             }
 
@@ -294,6 +215,7 @@ static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event,
 
     return 0;
 }
+
 /*
   Thread ingests new event from queue and dispatches it for devices to handle.
 
@@ -324,78 +246,221 @@ static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_even
     that it deferred previously. In that case thread will attempt to re-dispatch all the events in the queue.
 */
 static void app_thread_event_await(app_thread_t *thread, app_event_t *event) {
-    // threads are expected to receive notifications in order to wake up
-    uint32_t notification = ulTaskNotifyTake(true, pdMS_TO_TICKS(TIME_DIFF(thread->next_time, thread->current_time)));
-    if (notification == 0) {
-        // if no notification was recieved within scheduled time, it means thread is woken up by schedule
-        // so synthetic wake upevent is generated
-        *event = (app_event_t){.producer = thread->device->app->device, .type = APP_EVENT_THREAD_SCHEDULE};
-    } else {
-        if (thread->queue != NULL) {
-            // otherwise there must be a new message in queue
-            if (!xQueueReceive(thread->queue, &event, 0)) {
-                log_printf("Error: Thread #%i woken up by notification but its queue is empty\n", tick_index);
+
+    for (bool_t stop = false; stop == false;) {
+        // task gets blocked expecting notification, with a timeout to simulate software alarm.
+        int32_t timeout = thread->next_time - thread->current_time;
+
+        // if notifications keep being published, the timeout may not happen in time causing alarm to lag behind.
+        // in that case timer has to be adjusted to be fired after all events and notifications are processed.
+        if (timeout < 0) {
+            timeout = 0;
+        }
+
+        // threads are expected to receive external notifications in order to wake up
+        if (timeout > 0) {
+            log_printf("~ %s:  will sleep for %ims\n", pcTaskGetTaskName(thread->task), (int)timeout);
+        }
+
+        uint32_t notification = ulTaskNotifyTake(true, pdMS_TO_TICKS((uint32_t)timeout));
+
+        switch (notification) {
+        case APP_SIGNAL_OK:
+            // if no notification was recieved (value of signal being zero) within scheduled time,
+            // it means that thread is woken up by schedule so synthetic wake up event is broadcasted
+            *event = (app_event_t){.producer = thread->device->app->device, .type = APP_EVENT_THREAD_ALARM};
+            thread->next_time = thread->current_time + MAX_THREAD_SLEEP_TIME;
+            log_printf("~ %s:  woke up on alert after %lims\n", pcTaskGetTaskName(thread->task),
+                       ((xTaskGetTickCount() - thread->last_time) * portTICK_PERIOD_MS));
+            stop = true;
+            break;
+
+        case APP_SIGNAL_RESCHEDULE:
+            // something wants the thread to wake up earlier than its current schedule.
+            // next_time must be already updated with new time, so the thread can just go into blocked state again
+            log_printf("~ %s:  will reschedule\n", pcTaskGetTaskName(thread->task));
+            break;
+
+        case APP_SIGNAL_CATCHUP:
+            // something tells thread that it is now ready to process messages that it asked to keep deferred
+            log_printf("~ %s:  got signal for catchup\n", pcTaskGetTaskName(thread->task));
+            __attribute__((fallthrough));
+        default:
+            // event publishers set address of event in notification slot instead of a signal
+            // it is only read in threads that dont use queues
+            if (thread->queue != NULL) {
+                // threads with queue that receieve notification expect a new message in queue
+                if (!xQueueReceive(thread->queue, &event, 0)) {
+                    log_printf("~ %s:  was woken up by notification but its queue is empty\n", pcTaskGetTaskName(thread->task));
+                }
+            } else if (notification > 50) {
+                // if thread doesnt have queue, event is passed as address in notification slot instead.
+                // publisher will have to ensure that event memory survives until thread is ready for it.
+                memcpy(event, (uint32_t *)notification, sizeof(app_event_t));
             }
-        } else if (notification != APP_SIGNAL_CATCHUP) {
-            // if thread doesnt have queue, event is passed as address in notification slot instead
-            // publisher will have to ensure the event memory survives until thread is ready for it.
-            memcpy(event, (uint32_t *)notification, sizeof(app_event_t));
+        }
+    }
+
+    // current time will only update after waking up
+    thread->last_time = thread->current_time;
+    thread->current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+}
+
+bool_t app_thread_notify_generic(app_thread_t *thread, uint32_t value, bool_t overwrite) {
+    if (IS_IN_ISR) {
+        static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        bool_t result = xTaskNotifyFromISR(thread->task, value, overwrite ? eSetValueWithOverwrite : eSetValueWithoutOverwrite,
+                                           &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        return result;
+    } else {
+        return xTaskNotify(thread->task, value, overwrite ? eSetValueWithOverwrite : eSetValueWithoutOverwrite);
+    }
+}
+
+bool_t app_thread_publish_generic(app_thread_t *thread, app_event_t *event, bool_t to_front) {
+    if (IS_IN_ISR) {
+        static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        bool_t result = false;
+        if (thread->queue == NULL || xQueueGenericSendFromISR(thread->queue, event, &xHigherPriorityTaskWoken, to_front)) {
+            result = xTaskNotifyFromISR(thread->task, (uint32_t)event, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
+        };
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        return result;
+    } else {
+        if (thread->queue == NULL || xQueueGenericSend(thread->queue, event, 0, to_front)) {
+            return xTaskNotify(thread->task, (uint32_t)event, eSetValueWithOverwrite);
+        } else {
+            return false;
         }
     }
 }
 
-bool_t app_thread_notify(app_thread_t *thread) { return xTaskNotify(thread->task, APP_SIGNAL_CATCHUP, eIncrement); }
-
-bool_t app_thread_notify_from_isr(app_thread_t *thread) {
-    static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    bool_t result = xTaskNotifyFromISR(thread->task, APP_SIGNAL_CATCHUP, eIncrement, &xHigherPriorityTaskWoken);
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-    return result;
+void app_thread_schedule(app_thread_t *thread, uint8_t time) {
+    if (thread->next_time > time)
+        thread->next_time = time;
+    if (eTaskGetState(thread->task) == eBlocked) {
+        app_thread_reschedule(thread);
+    }
+}
+void app_thread_tick_schedule(app_thread_t *thread, device_tick_t *tick, uint32_t time) {
+    tick->next_time = time;
+    app_thread_schedule(thread, time);
 }
 
-bool_t app_thread_publish_generic(app_thread_t *thread, app_event_t *event, bool_t to_front) {
-    if (thread->queue == NULL || xQueueGenericSend(thread->queue, event, 0, to_front)) {
-        return xTaskNotify(thread->task, (uint32_t)event, eSetValueWithOverwrite);
-        ;
-    } else {
-        return false;
+int device_tick_allocate(device_tick_t **destination,
+                         int (*callback)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread)) {
+    if (callback != NULL) {
+        *destination = malloc(sizeof(device_tick_t));
+        if (*destination == NULL) {
+            return CO_ERROR_OUT_OF_MEMORY;
+        }
+        (*destination)->callback = callback;
+    }
+    return 0;
+}
+
+void device_tick_free(device_tick_t **tick) {
+    if (*tick != NULL) {
+        free(*tick);
+        *tick = NULL;
     }
 }
 
-bool_t app_thread_publish_generic_from_isr(app_thread_t *thread, app_event_t *event, bool_t to_front) {
-    static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    bool_t result = false;
-    if (thread->queue == NULL || xQueueGenericSendFromISR(thread->queue, event, &xHigherPriorityTaskWoken, to_front)) {
-        result = xTaskNotifyFromISR(thread->task, (uint32_t)event, eSetValueWithOverwrite, &xHigherPriorityTaskWoken);
-    };
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-    return result;
-}
-
-void device_tick_schedule(device_tick_t *tick, uint32_t next_time) { tick->next_time = next_time; }
-
-void device_tick_delay(device_tick_t *tick, app_thread_t *thread, uint32_t timeout) {
-    device_tick_schedule(tick, thread->current_time + timeout);
-}
-
-/* Schedule the tick to re-run immediately after exhausting its event queue */
-void device_tick_yield(device_tick_t *tick, app_thread_t *thread) { tick->next_time = thread->current_time; }
-
-void device_
-
-    int
-    device_ticks_allocate(device_t *device) {
-    device->ticks = (device_ticks_t *)malloc(sizeof(device_ticks_t));
-    if (device->ticks == NULL || //
-        device_tick_allocate(&device->ticks->input, device->callbacks->input_tick) ||
-        device_tick_allocate(&device->ticks->output, device->callbacks->output_tick) ||
-        device_tick_allocate(&device->ticks->async, device->callbacks->async_tick) ||
-        device_tick_allocate(&device->ticks->poll, device->callbacks->poll_tick) ||
-        device_tick_allocate(&device->ticks->idle, device->callbacks->idle_tick)) {
+int app_thread_allocate(app_thread_t **destination, void *app_or_object, void (*callback)(void *ptr), const char *const name,
+                        uint16_t stack_depth, size_t queue_size, size_t priority, void *argument) {
+    *destination = (app_thread_t *)malloc(sizeof(app_thread_t));
+    app_thread_t *thread = *destination;
+    thread->device = ((app_t *)app_or_object)->device;
+    xTaskCreate(callback, name, stack_depth, (void *)thread, priority, (void *)&thread->task);
+    if (thread->task == NULL) {
         return CO_ERROR_OUT_OF_MEMORY;
     }
+    if (queue_size > 0) {
+        thread->queue = xQueueCreate(queue_size, sizeof(app_event_t));
+        if (thread->queue == NULL) {
+            return CO_ERROR_OUT_OF_MEMORY;
+        }
+#if configQUEUE_REGISTRY_SIZE > 0
+        vQueueAddToRegistry(thread->queue, name);
+#endif
+    }
 
+    thread->argument = argument;
     return 0;
+}
+
+int app_thread_free(app_thread_t **thread) {
+    free(*thread);
+    if ((*thread)->queue != NULL) {
+        vQueueDelete((*thread)->queue);
+    }
+    *thread = NULL;
+    return 0;
+}
+
+/* Returns specific member of app_threads_t struct by its numeric index*/
+static inline device_tick_t *device_tick_by_index(device_t *device, size_t index) { return ((device_tick_t **)device->ticks)[index]; }
+
+/* Returns specific member of device_ticks_t struct by its numeric index*/
+static inline app_thread_t *app_thread_by_index(app_t *app, size_t index) { return ((app_thread_t **)app->threads)[index]; }
+
+/* Returns device tick handling given thread */
+device_tick_t *device_tick_for_thread(device_t *device, app_thread_t *thread) {
+    return device_tick_by_index(device, app_thread_get_tick_index(thread));
+}
+
+device_t *app_thread_filter_devices(app_thread_t *thread) {
+    app_t *app = thread->device->app;
+    size_t tick_index = app_thread_get_tick_index(thread);
+    device_t *first_device = NULL;
+    device_t *last_device = NULL;
+    for (size_t i = 0; i < app->device_count; i++) {
+        device_t *device = &app->device[i];
+        device_tick_t *tick = device_tick_by_index(device, tick_index);
+        // Subscribed devices have corresponding tick handler
+        if (tick == NULL) {
+            continue;
+        }
+
+        // Return first device
+        if (first_device == NULL) {
+            first_device = device;
+        }
+
+        // double link the ticks for fast iteration
+        if (last_device != NULL) {
+            device_tick_by_index(last_device, tick_index)->next_device = device;
+            tick->prev_device = device;
+        }
+
+        last_device = device;
+    }
+
+    return first_device;
+}
+
+size_t app_thread_get_tick_index(app_thread_t *thread) {
+    for (size_t i = 0; i < sizeof(app_threads_t) / sizeof(app_thread_t *); i++) {
+        if (app_thread_by_index(thread->device->app, i) == thread) {
+            // Both input and immediate threads invoke same input tick
+            if (i > 0) {
+                return i - 1;
+            } else {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int device_ticks_allocate(device_t *device) {
+    device->ticks = malloc(sizeof(device_ticks_t));
+    return device_tick_allocate(&device->ticks->input, device->callbacks->input_tick) ||
+           device_tick_allocate(&device->ticks->output, device->callbacks->output_tick) ||
+           device_tick_allocate(&device->ticks->async, device->callbacks->async_tick) ||
+           device_tick_allocate(&device->ticks->poll, device->callbacks->poll_tick) ||
+           device_tick_allocate(&device->ticks->idle, device->callbacks->idle_tick);
 }
 
 int device_ticks_free(device_t *device) {
@@ -409,15 +474,13 @@ int device_ticks_free(device_t *device) {
 }
 
 int app_threads_allocate(app_t *app) {
-    if (app_thread_allocate(&app->threads->input, app, (void (*)(void *ptr))app_thread_execute, "App: Input", 200, 50, 5, NULL) ||
-        app_thread_allocate(&app->threads->async, app, (void (*)(void *ptr))app_thread_execute, "App: Async", 200, 1, 4, NULL) ||
-        app_thread_allocate(&app->threads->output, app, (void (*)(void *ptr))app_thread_execute, "App: Output", 200, 1, 3, NULL) ||
-        app_thread_allocate(&app->threads->poll, app, (void (*)(void *ptr))app_thread_execute, "App: Poll", 200, 1, 2, NULL) ||
-        app_thread_allocate(&app->threads->idle, app, (void (*)(void *ptr))app_thread_execute, "App: Idle", 200, 1, 1, NULL)) {
-        return CO_ERROR_OUT_OF_MEMORY;
-    } else {
-        return 0;
-    }
+    app->threads = malloc(sizeof(app_threads_t));
+    return app_thread_allocate(&app->threads->input, app, (void (*)(void *ptr))app_thread_execute, "App: Input", 200, 20, 5, NULL) ||
+           app_thread_allocate(&app->threads->catchup, app, (void (*)(void *ptr))app_thread_execute, "App: Catchup", 200, 100, 5, NULL) ||
+           app_thread_allocate(&app->threads->async, app, (void (*)(void *ptr))app_thread_execute, "App: Async", 200, 1, 4, NULL) ||
+           app_thread_allocate(&app->threads->output, app, (void (*)(void *ptr))app_thread_execute, "App: Output", 200, 1, 3, NULL) ||
+           app_thread_allocate(&app->threads->poll, app, (void (*)(void *ptr))app_thread_execute, "App: Poll", 200, 1, 2, NULL) ||
+           app_thread_allocate(&app->threads->idle, app, (void (*)(void *ptr))app_thread_execute, "App: Idle", 200, 0, 1, NULL);
 }
 
 int app_threads_free(app_t *app) {
@@ -428,4 +491,9 @@ int app_threads_free(app_t *app) {
     app_thread_free(&app->threads->idle);
     free(app->threads);
     return 0;
+}
+
+app_event_t *app_event_from_vpool(app_event_t *event, struct vpool *vpool) {
+    vpool_export(vpool, &event->data, &event->size);
+    return event;
 }

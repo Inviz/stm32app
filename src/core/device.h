@@ -59,8 +59,7 @@ enum device_type {
 
     // basic features
     SYSTEM_MCU = 0x6000,
-    SYSTEM_CANOPEN = 0x6020,
-    SYSTEM_RTOS = 0x6040,
+    SYSTEM_CANOPEN = 0x6010,
 
     // internal mcu modules
     MODULE_TIMER = 0x6100,
@@ -82,11 +81,6 @@ enum device_type {
     // output devices
     SCREEN_EPAPER = 0x7000,
 };
-
-#define device_error_report(device, errorBit, errorCode)                                                                                   \
-    CO_errorReport(device->app->canopen->instance->em, errorBit, errorCode, device->index)
-#define device_error_reset(device, errorBit, errorCode)                                                                                    \
-    CO_errorReset(device->app->canopen->instance->em, errorBit, errorCode, device->index)
 
 struct device {
     device_type_t type;              /* OD index of a first device of this type */
@@ -121,11 +115,13 @@ struct device_callbacks {
     int (*accept)(void *object, device_t *origin, void *argument);                  /* Accept linking request*/
     int (*signal)(void *object, device_t *origin, uint32_t signal, void *argument); /* Send signal to device */
 
-    int (*input_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);  /* Processing input events asap */
-    int (*async_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);  /* Work that needs to be done later */
-    int (*output_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread); /* Medmium importance periphery work*/
-    int (*poll_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);   /* Low-importance periodical work*/
-    int (*idle_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);   /* Lowest priority work that i*/
+    app_signal_t (*report)(void *object, app_event_t *event); /* Somebody processed the event */
+
+    app_signal_t (*input_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);  /* Processing input events asap */
+    app_signal_t (*async_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);  /* Work that needs to be done later */
+    app_signal_t (*output_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread); /* Medmium importance periphery work*/
+    app_signal_t (*poll_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);   /* Low-importance periodical work*/
+    app_signal_t (*idle_tick)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);   /* Lowest priority work that i*/
 
     ODR_t (*read_config)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
     ODR_t (*write_config)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
@@ -161,10 +157,32 @@ void device_gpio_clear(uint8_t port, uint8_t pin);
 uint32_t device_gpio_get(uint8_t port, uint8_t pin);
 
 /* Check if event will invoke input tick on this device */
-bool_t device_can_handle_event(device_t *device, app_event_t *event);
+bool_t device_event_is_subscribed(device_t *device, app_event_t *event);
+void device_event_subscribe(device_t *device, app_event_type_t type);
 
-bool_t app_thread_notify(app_thread_t *thread);
-bool_t app_thread_notify_from_isr(app_thread_t *thread);
+/* Attempt to store event in a memory destination if it's not occupied yet */
+bool_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
+                                               app_event_status_t ready_status, app_event_status_t busy_status,
+                                               app_event_handler_t handler);
+
+/* Consume event if not busy, otherwise keep it enqueued for later without allowing others to take it  */
+#define device_event_handle(device, event, destination)                                                                                    \
+    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
+/* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
+#define device_event_handle_and_process(device, event, destination, handler)                                                               \
+    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_DEFERRED, (app_event_handler_t)handler)
+/* Consume event if not busy, otherwise allow devices to process it if */
+#define device_event_accept(device, event, destination)                                                                                    \
+    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_ADDRESSED)
+/* Consume event with a given handler if not busy, otherwise allow devices to process it if */
+#define device_event_accept_and_process(device, event, destination, handler)                                                               \
+    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_ADDRESSED, (app_event_handler_t)handler)
+/* Process event and let others receieve it too */
+#define device_event_receive(device, event, destination)                                                                                   \
+    device_event_accept_generic(device, event, destination, APP_EVENT_RECEIEVED, APP_EVENT_RECEIEVED)
+/* Process event with a given handler and let others receieve it too */
+#define device_event_receive_and_process(device, event, destination, handler)                                                              \
+    device_event_accept_generic(device, event, destination, APP_EVENT_RECEIEVED, APP_EVENT_RECEIEVED, (app_event_handler_t)handler)
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,6 @@ static int input_sensor_validate(OD_entry_t *config_entry) {
 }
 
 static int input_sensor_construct(input_sensor_t *sensor, device_t *device) {
-    sensor->device = device;
     sensor->config = (input_sensor_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return sensor->config->disabled;
 }

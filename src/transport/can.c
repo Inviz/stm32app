@@ -21,7 +21,6 @@ static int transport_can_validate(OD_entry_t *config_entry) {
 }
 
 static int transport_can_construct(transport_can_t *can, device_t *device) {
-    can->device = device;
     can->config = (transport_can_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return can->config->disabled;
 }
@@ -62,13 +61,6 @@ static int transport_can_resume(transport_can_t *can) {
     return 0;
 }
 
-static int transport_can_tick(transport_can_t *can, uint32_t time_passed, uint32_t *next_tick) {
-    (void)can;
-    (void)time_passed;
-    (void)next_tick;
-    return 0;
-}
-
 static int transport_can_link(transport_can_t *can) {
     (void)can;
     return 0;
@@ -82,7 +74,9 @@ static int transport_can_phase(transport_can_t *can, device_phase_t phase) {
 
 // CANopenNode's driver configures its CAN interface so we dont have to
 static int transport_can_accept(transport_can_t *can, device_t *origin, void *arg) {
+    (void) arg; 
     can->canopen = origin;
+    return 0;
 }
 
 device_callbacks_t transport_can_callbacks = {

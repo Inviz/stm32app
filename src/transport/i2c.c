@@ -29,7 +29,6 @@ static void transport_i2c_tx_dma_start(transport_i2c_t *i2c, uint8_t *data, uint
 }
 
 static int transport_i2c_construct(transport_i2c_t *i2c, device_t *device) {
-    i2c->device = device;
     i2c->config = (transport_i2c_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return i2c->config->disabled;
 }

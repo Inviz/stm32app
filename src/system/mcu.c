@@ -21,7 +21,6 @@ static int system_mcu_validate(OD_entry_t *config_entry) {
 }
 
 static int system_mcu_construct(system_mcu_t *mcu, device_t *device) {
-    mcu->device = device;
     mcu->config = (system_mcu_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return mcu->config->disabled;
 }
@@ -48,13 +47,6 @@ static int system_mcu_pause(system_mcu_t *mcu) {
 
 static int system_mcu_resume(system_mcu_t *mcu) {
     (void)mcu;
-    return 0;
-}
-
-static int system_mcu_tick(system_mcu_t *mcu, uint32_t time_passed, uint32_t *next_tick) {
-    (void)mcu;
-    (void)time_passed;
-    (void)next_tick;
     return 0;
 }
 

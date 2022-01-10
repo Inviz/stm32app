@@ -24,7 +24,6 @@ static int transport_modbus_validate(OD_entry_t *config_entry) {
 }
 
 static int transport_modbus_construct(transport_modbus_t *modbus, device_t *device) {
-    modbus->device = device;
     modbus->config = (transport_modbus_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     modbus->rx_buffer = malloc(modbus->config->rx_buffer_size);
     return modbus->config->disabled;
@@ -118,11 +117,11 @@ static void transport_modbus_ingest_buffer(transport_modbus_t *modbus) {
 static int transport_modbus_signal(transport_modbus_t *modbus, device_t *device, int signal, char *source) {
     switch (signal) {
         /* usart is idle, need to wait 3.5 characters to start reading */
-        case DEVICE_RX_DONE:
-            module_timer_set(modbus->timer, modbus->device, modbus->idle_timeout, DEVICE_RX_DONE);
+        case APP_SIGNAL_RX_COMPLETE:
+            module_timer_set(modbus->timer, modbus->device, modbus->idle_timeout, APP_SIGNAL_RX_COMPLETE);
             break;
         /* 3.5 characters delay time is over, ready to process messages in buffer */
-        case DEVICE_TIMER:
+        case APP_SIGNAL_TIMEOUT:
             transport_modbus_ingest_buffer(modbus);
             break;
     }

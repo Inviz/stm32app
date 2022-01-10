@@ -7,7 +7,6 @@ static int transport_spi_validate(OD_entry_t *config_entry) {
 }
 
 static int transport_spi_construct(transport_spi_t *spi, device_t *device) {
-    spi->device = device;
     spi->config = (transport_spi_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     switch (spi->device->seq) {
     case 0:
@@ -18,32 +17,42 @@ static int transport_spi_construct(transport_spi_t *spi, device_t *device) {
 #ifdef SPI2_BASE
         spi->clock = RCC_SPI2;
         spi->address = SPI2;
+        break;
+#else
         return 1;
 #endif
-        break;
     case 2:
 #ifdef SPI3_BASE
         spi->clock = RCC_SPI3;
         spi->address = SPI3;
+        break;
+#else
         return 1;
 #endif
-        break;
     case 3:
 #ifdef SPI4_BASE
         spi->clock = RCC_SPI4;
         spi->address = SPI4;
+        break;
+#else
+        return 1;
 #endif
     case 4:
 #ifdef SPI5_BASE
         spi->clock = RCC_SPI5;
         spi->address = SPI5;
+        break;
+#else
+        return 1;
 #endif
     case 5:
 #ifdef SPI6_BASE
         spi->clock = RCC_SPI6;
         spi->address = SPI6;
-#endif
         break;
+#else
+        return 1;
+#endif
     default:
         return 1;
     }
@@ -88,7 +97,7 @@ static int transport_spi_start(transport_spi_t *spi) {
         clock = SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
         polarity = SPI_CR1_CPHA_CLK_TRANSITION_2;
         break;
-    case 0:
+    default:
         clock = SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
         polarity = SPI_CR1_CPHA_CLK_TRANSITION_1;
         break;
@@ -124,21 +133,7 @@ static int transport_spi_stop(transport_spi_t *spi) {
 static int transport_spi_allocate_rx_buffer(transport_spi_t *spi) {
     spi->rx_buffer = malloc(spi->config->rx_buffer_size);
     spi->rx_buffer_cursor = 0;
-}
-
-int transport_spi_read(transport_spi_t *spi, device_t *reader, void *argument) {
-    spi->reader = reader;
-    spi->reader_argument = argument;
-    if (spi->rx_buffer == NULL) {
-        int error = transport_spi_allocate_rx_buffer(spi);
-        if (error != 0) {
-            return error;
-        }
-    }
-    device_dma_rx_start((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_rx_unit, spi->config->dma_rx_stream,
-                        spi->config->dma_rx_channel, spi->rx_buffer, spi->config->rx_buffer_size);
-    // schedule timeout to detect end of rx transmission
-    transport_spi_schedule_rx_timeout(spi);
+    return spi->rx_buffer == NULL;
 }
 
 static int transport_spi_schedule_rx_timeout(transport_spi_t *spi) {
@@ -149,16 +144,41 @@ static int transport_spi_read_is_idle(transport_spi_t *spi) {
     return device_dma_get_buffer_position(spi->config->dma_rx_unit, spi->config->dma_rx_stream, spi->config->rx_buffer_size) ==
            spi->rx_buffer_cursor;
 }
-
-int transport_spi_write(transport_spi_t *spi, device_t *writer, void *argument, uint8_t *tx_buffer, uint16_t tx_size) {
-    spi->writer = writer;
-    spi->writer_argument = argument;
+static app_signal_t transport_spi_on_write(transport_spi_t *spi, app_event_t *event) {
     device_dma_tx_start((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_tx_unit, spi->config->dma_tx_stream,
-                        spi->config->dma_tx_channel, tx_buffer, tx_size);
+                        spi->config->dma_tx_channel, event->data, event->size);
+    return APP_SIGNAL_OK;
 }
 
+static app_signal_t transport_spi_on_read(transport_spi_t *spi, app_event_t *event) {
+    if (spi->rx_buffer == NULL) {
+        int error = transport_spi_allocate_rx_buffer(spi);
+        if (error != 0) {
+            return error;
+        }
+    }
+    device_dma_rx_start((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_rx_unit, spi->config->dma_rx_stream,
+                        spi->config->dma_rx_channel, spi->rx_buffer, spi->config->rx_buffer_size);
+    // schedule timeout to detect end of rx transmission
+    transport_spi_schedule_rx_timeout(spi);
+    return APP_SIGNAL_OK;
+}
 
-static int transport_spi_write_complete(transport_spi_t *spi) {}
+//todo: Read DR register
+static app_signal_t transport_spi_write_complete(transport_spi_t *spi) {
+    device_event_erase(spi->device, &spi->writing);
+    device_tick_catchup(spi->device, spi->device->ticks->input);
+}
+
+/* Send the resulting read contents back via a queue */
+static app_signal_t transport_spi_read_complete(transport_spi_t *spi) {
+    app_event_t *response = app_event_from_vpool(
+        &(app_event_t){.type = APP_EVENT_PERIPHERY_RESPONSE, .producer = spi->device, .consumer = spi->reading.producer}, &spi->rx_pool);
+    device_event_erase(spi->device, &spi->reading);
+    app_publish(spi->device->app, &response);
+    device_tick_catchup(spi->device, spi->device->ticks->input);
+}
+
 static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_signal_t signal, void *source) {
     switch (signal) {
     case APP_SIGNAL_DMA_IDLE:
@@ -188,10 +208,22 @@ static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_sign
     return 0;
 }
 
+static int transport_spi_input_tick(transport_spi_t *spi, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
+    switch (event->type) {
+    case APP_EVENT_PERIPHERY_READ:
+        return device_event_handle_and_process(spi->device, event, &spi->reading, transport_spi_on_read);
+    case APP_EVENT_PERIPHERY_WRITE:
+        return device_event_handle_and_process(spi->device, event, &spi->writing, transport_spi_on_write);
+    default:
+        return 0;
+    }
+}
+
 device_callbacks_t transport_spi_callbacks = {.validate = transport_spi_validate,
                                               .construct = (int (*)(void *, device_t *))transport_spi_construct,
                                               .destruct = (int (*)(void *))transport_spi_destruct,
                                               .start = (int (*)(void *))transport_spi_start,
+                                              .input_tick = (device_tick_callback_t)transport_spi_input_tick,
                                               .signal =
                                                   (int (*)(void *, device_t *device, uint32_t signal, void *channel))transport_spi_signal,
                                               .stop = (int (*)(void *))transport_spi_stop};

@@ -19,6 +19,19 @@ uint32_t dma_get_address(uint8_t index);
 uint32_t dma_get_clock_address(uint8_t index);
 uint32_t nvic_dma_get_channel_base(uint8_t index);
 
+
+
+
+
+void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
+void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
+
+
+
+
+
+
+
 /* Generalized dma channel/stream enabling */
 void dma_enable_channel_or_stream(uint32_t dma, uint8_t index);
 /* Generalized dma channel/stream disalbing */
@@ -34,6 +47,9 @@ void device_register_dma(uint8_t unit, uint8_t index, device_t *device);
 void device_unregister_dma(uint8_t unit, uint8_t index);
 /* Notify registered device */
 void devices_dma_notify(uint8_t unit, uint8_t index);
+
+
+uint16_t device_dma_get_buffer_position(uint8_t unit, uint8_t index, uint16_t buffer_size);
 
 /* no-op method for consistency */
 #ifdef DMA_CHANNEL1

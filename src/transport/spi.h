@@ -48,10 +48,8 @@ typedef struct {
     uint32_t clock;
     uint32_t address;
     module_timer_t *timer;
-    device_t *reader;          // current reading task initiator
-    void *reader_argument;     // reading task meta argument to pass back
-    device_t *writer;          // current writing task initiator
-    void *writer_argument;     // writing task meta argument to pass back
+    app_event_t reading;      // current reading job
+    app_event_t writing;      // current writing job
     uint8_t *rx_buffer;        // circular buffer for DMA
     uint16_t rx_buffer_cursor; // current ingested position in rx buffer
     struct vpool rx_pool;      // pool that allocates growing memory chunk for recieved messages

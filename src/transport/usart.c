@@ -8,7 +8,6 @@ static int transport_usart_validate(OD_entry_t *config_entry) {
 }
 
 static int transport_usart_construct(transport_usart_t *usart, device_t *device) {
-    usart->device = device;
     usart->config = (transport_usart_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
 
     usart->dma_rx_address = dma_get_address(usart->config->dma_rx_unit);

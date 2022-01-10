@@ -22,7 +22,6 @@ static int storage_winbond_validate(OD_entry_t *config_entry) {
 }
 
 static int storage_winbond_construct(storage_winbond_t *winbond, device_t *device) {
-    winbond->device = device;
     winbond->config = (storage_winbond_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return winbond->config->disabled;
 }
@@ -63,6 +62,63 @@ static int storage_winbond_phase(storage_winbond_t *winbond, device_phase_t phas
     return 0;
 }
 
+static app_signal_t write(storage_winbond_t *winbond, uint8_t *data, size_t size) {
+    app_publish(winbond->device->app, &((app_event_t) {
+        .consumer = winbond->spi,
+        .producer = winbond->device,
+        .data = data,
+        .size = size,
+        .type = APP_EVENT_SPI_READ
+    }));
+    return APP_STEP_BLOCK;
+}
+static app_signal_t read(storage_winbond_t *winbond, size_t size) {
+    app_publish(winbond->device->app, &((app_event_t) {
+        .consumer = winbond->spi,
+        .producer = winbond->device,
+        .type = APP_EVENT_SPI_READ
+    }));
+    return APP_STEP_BLOCK;
+}
+uint8_t *data(storage_winbond_t *winbond) {
+    return 0;
+}
+
+// Query SR signal in a loop to check if device is ready to accept commands
+static app_step_t wait(storage_winbond_t *winbond) {
+    switch (winbond->step_index) {
+        case 0: return send(winbond, (uint8_t[]) { W25_CMD_READ_SR1 }, 1);
+        case 1: return read(winbond, 1);
+        default: return data(winbond)[0] & W25_SR1_BUSY ? APP_STEP_RETRY : APP_STEP_NEXT;
+    }
+}
+
+// Send command and receieve response
+static app_step_t fetch(storage_winbond_t *winbond, uint8_t *data, size_t size, size_t reply_size) {
+    case (winbond->step_index) {
+        case 0: return send(winbond, data, size);
+        case 1: return read(winbond, 2);
+    }
+}
+
+uint16_t *storage_winbond_get_manufacturer(storage_winbond_t *winbond) {
+    switch (task->flow_index) {
+        case 0: return wait(winbond);
+        case 1: return fetch(winbond, (uint8_t[]) { W25_CMD_MANUF_DEVICE, 0xff, 0xff, 0x00 }, 4, 2);
+        default: return (uint16_t *) winbond->command->data;
+    }
+}
+
+uint16_t *storage_winbond_set_writing_protection(app_task_t *task) {
+    switch (task->flow_index) {
+        case 0: return wait(task);
+        case 1: return fetch(task, (uint8_t[]) { W25_CMD_WRITE_EN, 0xff, 0xff, 0x00 }, 4, 2);
+        default: return (uint16_t *) task->data;
+    }
+}
+
+
+
 device_callbacks_t storage_winbond_callbacks = {.validate = storage_winbond_validate,
                                              .construct = (int (*)(void *, device_t *))storage_winbond_construct,
                                              .link = (int (*)(void *))storage_winbond_link,
@@ -71,5 +127,6 @@ device_callbacks_t storage_winbond_callbacks = {.validate = storage_winbond_vali
                                              .pause = (int (*)(void *))storage_winbond_pause,
                                              .resume = (int (*)(void *))storage_winbond_resume,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))storage_winbond_accept,
+                                             .input_tick = (device_tick_callback_t) storage_winbond_input_tick, 
                                              .phase = (int (*)(void *, device_phase_t phase))storage_winbond_phase,
                                              .write_values = OD_write_storage_winbond_property};

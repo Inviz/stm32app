@@ -9,16 +9,13 @@ extern "C" {
 #endif
 
 #include "FreeRTOS.h"
-#define malloc(size) pvPortMalloc(size)
-#define free(pointer) vPortFree(pointer)
-#define app_error_report(app, errorBit, errorCode, index) CO_errorReport(app->canopen->instance->em, errorBit, errorCode, index)
-#define app_error_reset(app, errorBit, errorCode, index) CO_errorReset(app->canopen->instance->em, errorBit, errorCode, index)
-
+#include "CANopen.h"
 #include "core/types.h"
 #include "core/device.h"
 #include "core/thread.h"
-#include "system/canopen.h"
-#include "system/mcu.h"
+
+#define malloc(size) pvPortMalloc(size)
+#define free(pointer) vPortFree(pointer)
 
 typedef struct {
     int16_t disabled;
@@ -35,14 +32,15 @@ struct app {
     OD_t *dictionary;
     app_config_t *config;
     app_values_t *values;
+    app_threads_t *threads;
     system_mcu_t *mcu;
     system_canopen_t *canopen;
-    app_threads_t *threads;
 };
 
 enum app_signal {
-    APP_SIGNAL_TIMER,
+    APP_SIGNAL_OK,
     APP_SIGNAL_TIMEOUT,
+    APP_SIGNAL_TIMER,
 
     APP_SIGNAL_DMA_ERROR,
     APP_SIGNAL_DMA_TRANSFERRING,
@@ -51,7 +49,10 @@ enum app_signal {
     APP_SIGNAL_RX_COMPLETE,
     APP_SIGNAL_TX_COMPLETE,
 
-    APP_SIGNAL_CATCHUP
+    APP_SIGNAL_CATCHUP,
+    APP_SIGNAL_RESCHEDULE,
+    APP_SIGNAL_INCOMING,
+    APP_SIGNAL_BUSY
 };
 
 
@@ -62,7 +63,7 @@ int app_free(app_t **app);
 // Transition all devices to given state
 void app_set_phase(app_t *app, device_phase_t phase);
 
-size_t app_devices_enumerate_type(app_t *app, OD_t *od, device_type_t type, device_callbacks_t *callbacks, size_t struct_size,
+size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_callbacks_t *callbacks, size_t struct_size,
                                   device_t *destination, size_t offset);
 
 /* Find device by index in the global list of registered devices */

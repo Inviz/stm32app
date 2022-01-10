@@ -1,5 +1,21 @@
 #ifdef DEBUG
 #include <libopencm3/cm3/scb.h>
+#include "FreeRTOS.h"
+#include <task.h>
+#include "core/types.h"
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    (void)xTask;      /* unused*/
+    (void)pcTaskName; /* may be unused*/
+    log_printf("System - Stack overflow! %s", pcTaskName);
+    while (1) {
+    }
+}
+
+void vApplicationMallocFailedHook(void) {
+    log_printf("System - Malloc failed! %s");
+    while (1) {
+    }
+}
 
 __attribute__((used)) void hardfault_discovery(struct scb_exception_stack_frame *frame);
 __attribute__((used)) void hardfault_discovery(struct scb_exception_stack_frame *frame)

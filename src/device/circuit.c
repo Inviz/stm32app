@@ -34,7 +34,6 @@ static int device_circuit_validate(OD_entry_t *config_entry) {
 }
 
 static int device_circuit_construct(device_circuit_t *circuit, device_t *device) {
-    circuit->device = device;
     circuit->config = (device_circuit_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     circuit->values = (device_circuit_values_t *)OD_getPtr(device->values, 0x01, 0, NULL);
     return 0;
