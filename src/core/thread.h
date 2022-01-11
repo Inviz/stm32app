@@ -60,10 +60,13 @@ enum app_event_type {
 
     APP_EVENT_IDLE = 0, // initial/empty state of an event
 
-    APP_EVENT_PERIPHERY_READ,  // abstract peripherial read events for cases with known receiver
-    APP_EVENT_PERIPHERY_WRITE,
-    APP_EVENT_PERIPHERY_RESPONSE,
-
+    APP_EVENT_READ,  // abstract peripherial read events for cases with known receiver
+    APP_EVENT_WRITE,
+    APP_EVENT_ERASE,
+    APP_EVENT_RESPONSE,
+    APP_EVENT_LOCK,
+    APP_EVENT_UNLOCK,
+    APP_EVENT_INTROSPECTION
 };
 
 /* Is event owned by some specific device */
@@ -133,7 +136,7 @@ void app_thread_device_schedule(app_thread_t *thread, device_t *device, uint32_t
 #define app_thread_publish(thread, event) app_thread_publish_generic(thread, event, 0)
 #define app_publish(app, event) app_thread_publish_generic(app->threads->input, event, 0);
 
-#define app_thread_device_schedule(thread, device, time) app_thread_tick_schedule(device, device_tick_for_thread(device, thread), time);
+#define app_thread_device_schedule(thread, device, time) app_thread_tick_schedule(thread, device_tick_for_thread(device, thread), time);
 
 app_event_t *app_event_from_vpool(app_event_t *event, struct vpool *vpool);
 #ifdef __cplusplus

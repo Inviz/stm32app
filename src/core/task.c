@@ -1,8 +1,17 @@
 #include "task.h"
 
 
-void app_task_execute(app_task_t *task) {
-  switch (task->handler(task)) {
+app_signal_t app_task_handle_event(app_task_t *task, event) {
+
+}
+
+
+app_signal_t app_task_execute(app_task_t *task) {
+  app_task_advance(task);
+}
+void app_task_advance(app_task_t *task) {
+  app_task_signal_t signal = task->handler(task);
+  switch (signal) {
     case APP_TASK_CONTINUE:
       if (task->step_index == 0) {
         task->phase_index++; 
@@ -40,4 +49,5 @@ void app_task_execute(app_task_t *task) {
       task->phase_index++;
       break;
   }
+  return signal;
 }

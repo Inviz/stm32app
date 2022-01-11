@@ -60,7 +60,7 @@ int device_allocate(device_t *device) {
     // by convention each object struct has pointer to device as its first member
     memcpy(device->object, &device, sizeof(device_t *));
     if (device->object == NULL) {
-      return CO_ERROR_OUT_OF_MEMORY;
+        return CO_ERROR_OUT_OF_MEMORY;
     }
     return device_ticks_allocate(device);
 }
@@ -104,7 +104,9 @@ void device_gpio_configure_output_with_value(char *name, uint8_t port, uint16_t 
 
 void device_set_phase(device_t *device, device_phase_t phase) { device_set_temporary_phase(device, phase, 0); }
 
-app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination, app_event_status_t ready_status, app_event_status_t busy_status, app_event_handler_t handler) {
+app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
+                                                     app_event_status_t ready_status, app_event_status_t busy_status,
+                                                     app_event_handler_t handler) {
     // Check if destination can store the incoming event, otherwise device will be considered busy
     if (destination != NULL && destination->type != APP_EVENT_IDLE) {
         event->consumer = device;
@@ -118,6 +120,39 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
         event->status = busy_status;
         return APP_SIGNAL_BUSY;
     }
+}
+
+app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
+                                                  app_task_handler_t handler, app_event_status_t ready_status,
+                                                  app_event_status_t busy_status) {
+    app_signal_t signal = device_event_accept_and_process_generic(device, event, task->issuing_event, ready_status, busy_status, NULL);
+    if (signal == APP_SIGNAL_OK) {
+        task->device = device;
+        task->handler = handler;
+        task->issuing_event = event;
+        task->step_index = task->phase_index = 0;
+        task->thread = thread;
+        task->tick = NULL;
+        task->resulting_event = NULL;
+        task->counter = 0;
+        app_thread_device_schedule(thread, device, thread->current_time);
+    }
+    return signal;
+}
+
+app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
+                                                  app_task_handler_t handler, app_event_status_t ready_status,
+                                                  app_event_status_t busy_status) {
+    if (task->handler != handler) {
+        event->status = busy_status;
+        return APP_SIGNAL_BUSY;
+    }
+    app_signal_t signal = device_event_accept_and_process_generic(device, event, task->resulting_event, ready_status, busy_status, NULL);
+    if (signal == APP_SIGNAL_OK) {
+        task->resulting_event = NULL;
+        app_thread_device_schedule(thread, device, thread->current_time);
+    }
+    return signal;
 }
 
 /* Attempt to store event in a memory destination if it's not occupied yet */
@@ -175,18 +210,13 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
     }
 }
 
-bool_t device_event_is_subscribed(device_t *device, app_event_t *event) {
-  return device->event_subscriptions & event->type;
-}
+bool_t device_event_is_subscribed(device_t *device, app_event_t *event) { return device->event_subscriptions & event->type; }
 
-void device_event_subscribe(device_t *device, app_event_type_t type) {
-  device->event_subscriptions |= type;
-}
-
+void device_event_subscribe(device_t *device, app_event_type_t type) { device->event_subscriptions |= type; }
 
 app_signal_t device_event_report(device_t *device, app_event_t *event) {
     if (event->producer && event->producer->callbacks->report) {
-        return event->producer->callbacks->report(event->producer->object, device);
+        return event->producer->callbacks->report(event->producer->object, event);
     } else {
         return APP_SIGNAL_OK;
     }
@@ -195,6 +225,7 @@ app_signal_t device_event_report(device_t *device, app_event_t *event) {
 app_signal_t device_event_erase(device_t *device, app_event_t *event) {
     device_event_report(device, event);
     memset(event, 0, sizeof(app_event_t));
+    return APP_SIGNAL_OK;
 }
 
 app_signal_t device_tick_catchup(device_t *device, device_tick_t *tick) {

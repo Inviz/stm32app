@@ -10,8 +10,10 @@ struct app_task {
   device_tick_t *tick;
   app_thread_t *thread;
 
-  app_event_t *issuer;
-  app_event_t *result;
+  app_event_t *issuing_event;
+  app_event_t *resulting_event;
+
+  uint32_t counter;
   
   size_t phase_index;
   size_t step_index;
@@ -30,6 +32,7 @@ enum app_task_signal {
   APP_TASK_STEP_HALT
 };
 
-void app_task_execute(app_task_t *task);
+app_signal_t app_task_execute(app_task_t *task);
+app_task_signal_t app_task_advance(app_task_t *task);
 
 #endif

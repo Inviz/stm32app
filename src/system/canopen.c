@@ -178,7 +178,7 @@ static int system_canopen_link(system_canopen_t *canopen) {
     return 0;
 }
 
-static int system_canopen_async_tick(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static int system_canopen_tick_async(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void)argument;
 
     uint32_t us_since_last = (thread->current_time - tick->last_time) * US_PER_TICK;
@@ -202,7 +202,7 @@ static int system_canopen_async_tick(system_canopen_t *canopen, void *argument, 
 }
 
 /* CANopen accepts its input from interrupts */
-static int system_canopen_input_tick(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static int system_canopen_tick_input(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void) argument;
     uint32_t us_since_last = (thread->current_time - tick->last_time) * 1000;
     uint32_t us_until_next = -1;
@@ -228,7 +228,7 @@ static int system_canopen_input_tick(system_canopen_t *canopen, void *argument, 
     return 0;
 }
 
-static int system_canopen_idle_tick(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static int system_canopen_tick_idle(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void) argument;
     (void) tick;
     (void) thread;
@@ -251,7 +251,7 @@ static void app_thread_canopen_notify(app_thread_t *thread) {
     system_canopen_t *canopen = thread->device->app->canopen;
 
     app_event_t event = {
-        .type = APP_EVENT_MESSAGE_CANOPEN,
+        .type = APP_EVENT_RESPONSE,
         .producer = canopen->device,
         .consumer = canopen->device
     };
@@ -269,9 +269,9 @@ device_callbacks_t system_canopen_callbacks = {
     .pause = (int (*)(void *))system_canopen_pause,
     .resume = (int (*)(void *))system_canopen_resume,
 
-    .input_tick = (int (*)(void *, app_event_t *, device_tick_t *, app_thread_t *))system_canopen_input_tick,
-    .async_tick = (int (*)(void *, app_event_t *, device_tick_t *, app_thread_t *))system_canopen_async_tick,
-    .idle_tick = (int (*)(void *, app_event_t *, device_tick_t *, app_thread_t *))system_canopen_idle_tick,
+    .tick_input = (int (*)(void *, app_event_t *, device_tick_t *, app_thread_t *))system_canopen_tick_input,
+    .tick_async = (int (*)(void *, app_event_t *, device_tick_t *, app_thread_t *))system_canopen_tick_async,
+    .tick_idle = (int (*)(void *, app_event_t *, device_tick_t *, app_thread_t *))system_canopen_tick_idle,
 
     .phase = (int (*)(void *, device_phase_t phase))system_canopen_phase,
     .write_values = OD_write_system_canopen_property};

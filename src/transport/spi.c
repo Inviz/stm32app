@@ -173,7 +173,7 @@ static app_signal_t transport_spi_write_complete(transport_spi_t *spi) {
 /* Send the resulting read contents back via a queue */
 static app_signal_t transport_spi_read_complete(transport_spi_t *spi) {
     app_event_t *response = app_event_from_vpool(
-        &(app_event_t){.type = APP_EVENT_PERIPHERY_RESPONSE, .producer = spi->device, .consumer = spi->reading.producer}, &spi->rx_pool);
+        &(app_event_t){.type = APP_EVENT_RESPONSE, .producer = spi->device, .consumer = spi->reading.producer}, &spi->rx_pool);
     device_event_erase(spi->device, &spi->reading);
     app_publish(spi->device->app, &response);
     device_tick_catchup(spi->device, spi->device->ticks->input);
@@ -208,11 +208,11 @@ static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_sign
     return 0;
 }
 
-static int transport_spi_input_tick(transport_spi_t *spi, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
+static int transport_spi_tick_input(transport_spi_t *spi, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
     switch (event->type) {
-    case APP_EVENT_PERIPHERY_READ:
+    case APP_EVENT_READ:
         return device_event_handle_and_process(spi->device, event, &spi->reading, transport_spi_on_read);
-    case APP_EVENT_PERIPHERY_WRITE:
+    case APP_EVENT_WRITE:
         return device_event_handle_and_process(spi->device, event, &spi->writing, transport_spi_on_write);
     default:
         return 0;
@@ -223,7 +223,7 @@ device_callbacks_t transport_spi_callbacks = {.validate = transport_spi_validate
                                               .construct = (int (*)(void *, device_t *))transport_spi_construct,
                                               .destruct = (int (*)(void *))transport_spi_destruct,
                                               .start = (int (*)(void *))transport_spi_start,
-                                              .input_tick = (device_tick_callback_t)transport_spi_input_tick,
+                                              .tick_input = (device_tick_callback_t)transport_spi_tick_input,
                                               .signal =
                                                   (int (*)(void *, device_t *device, uint32_t signal, void *channel))transport_spi_signal,
                                               .stop = (int (*)(void *))transport_spi_stop};

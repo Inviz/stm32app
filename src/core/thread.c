@@ -97,15 +97,16 @@ static inline bool_t app_thread_should_notify_device(app_thread_t *thread, app_e
 }
 
 /* Notify interested devices of a new event. Events may either be targeted to a specific device, or broadcasted to all/*/
-static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index) {
+static app_signal_t app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index) {
 
     // If event has no indicated reciepent, all devices that are subscribed to thread and event will need to be notified
     device_t *device = event->consumer ? event->consumer : first_device;
     device_tick_t *tick;
+    app_signal_t signal;
 
-    for (device_t *device = first_device; device; device = tick->next_device) {
+    while (device) {
         tick = device_tick_by_index(device, tick_index);
-        app_signal_t signal = app_thread_event_device_dispatch(thread, event, device, tick);
+        signal = app_thread_event_device_dispatch(thread, event, device, tick);
         
         // let tick know that it has events to catch up later
         if (signal == APP_SIGNAL_BUSY) {
@@ -116,7 +117,11 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
         if (event->status >= APP_EVENT_HANDLED || event->consumer != NULL) {
             break;
         }
+
+        device = tick->next_device;
     }
+
+    return signal;
 }
 
 /* In response to event, device can request to:
@@ -125,10 +130,12 @@ static void app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, 
  * - keep event in the queue for later processing, but allow other devices to handle it before that
  * - wake up on software timer at specific time in future */
 
-static void app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick) {
+static app_signal_t app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *event, device_t *device, device_tick_t *tick) {
+    app_signal_t signal;
+
     if (app_thread_should_notify_device(thread, event, device, tick)) {
         // Tick callback may change event status, set software timer or both
-        tick->callback(device->object, event, tick, thread);
+         signal = tick->callback(device->object, event, tick, thread);
         tick->last_time = thread->current_time;
 
         // Mark event as processed
@@ -143,10 +150,12 @@ static void app_thread_event_device_dispatch(app_thread_t *thread, app_event_t *
     if (tick->next_time != 0 && thread->next_time > tick->next_time) {
         thread->next_time = tick->next_time;
     }
+
+    return signal;
 }
 
 /* Some threads may want to redirect their stale messages to another thread */
-static inline app_thread_t *app_thread_get_catchup_thread(app_thread_t *thread) {
+inline app_thread_t *app_thread_get_catchup_thread(app_thread_t *thread) {
     if (thread == thread->device->app->threads->input) {
         return thread->device->app->threads->catchup;
     } else {
@@ -456,11 +465,11 @@ size_t app_thread_get_tick_index(app_thread_t *thread) {
 
 int device_ticks_allocate(device_t *device) {
     device->ticks = malloc(sizeof(device_ticks_t));
-    return device_tick_allocate(&device->ticks->input, device->callbacks->input_tick) ||
-           device_tick_allocate(&device->ticks->output, device->callbacks->output_tick) ||
-           device_tick_allocate(&device->ticks->async, device->callbacks->async_tick) ||
-           device_tick_allocate(&device->ticks->poll, device->callbacks->poll_tick) ||
-           device_tick_allocate(&device->ticks->idle, device->callbacks->idle_tick);
+    return device_tick_allocate(&device->ticks->input, device->callbacks->tick_input) ||
+           device_tick_allocate(&device->ticks->output, device->callbacks->tick_output) ||
+           device_tick_allocate(&device->ticks->async, device->callbacks->tick_async) ||
+           device_tick_allocate(&device->ticks->poll, device->callbacks->tick_poll) ||
+           device_tick_allocate(&device->ticks->idle, device->callbacks->tick_idle);
 }
 
 int device_ticks_free(device_t *device) {

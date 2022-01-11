@@ -26,7 +26,7 @@ typedef enum app_task_signal app_task_signal_t;     /* Commands to advance step 
 typedef struct system_canopen system_canopen_t;
 typedef struct system_mcu system_mcu_t;
 
-typedef int (*device_tick_callback_t)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);
+typedef app_signal_t (*device_tick_callback_t)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);
 typedef app_signal_t (*app_event_handler_t)(void *, app_event_t *);
 typedef app_task_signal_t (*app_task_handler_t)(app_task_t *task);
 #ifdef DEBUG
