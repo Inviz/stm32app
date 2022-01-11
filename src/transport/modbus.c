@@ -23,42 +23,42 @@ static int transport_modbus_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int transport_modbus_construct(transport_modbus_t *modbus, device_t *device) {
+static int transport_modbus_phase_constructing(transport_modbus_t *modbus, device_t *device) {
     modbus->config = (transport_modbus_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     modbus->rx_buffer = malloc(modbus->config->rx_buffer_size);
     return modbus->config->disabled;
 }
 
-static int transport_modbus_destruct(transport_modbus_t *modbus) {
+static int transport_modbus_phase_destructing(transport_modbus_t *modbus) {
     free(modbus->rx_buffer);
     return 0;
 }
 
-static int transport_modbus_start(transport_modbus_t *modbus) {
+static int transport_modbus_phase_starting(transport_modbus_t *modbus) {
     (void)modbus;
     device_gpio_clear(modbus->config->rts_port, modbus->config->rts_pin);
     return 0;
 }
 
-static int transport_modbus_stop(transport_modbus_t *modbus) {
+static int transport_modbus_phase_stoping(transport_modbus_t *modbus) {
     (void)modbus;
     device_gpio_clear(modbus->config->rts_port, modbus->config->rts_pin);
     return 0;
 }
 
-static int transport_modbus_pause(transport_modbus_t *modbus) {
+static int transport_modbus_phase_pausing(transport_modbus_t *modbus) {
     (void)modbus;
     return 0;
 }
 
-static int transport_modbus_resume(transport_modbus_t *modbus) {
+static int transport_modbus_phase_resuming(transport_modbus_t *modbus) {
     (void)modbus;
     return 0;
 }
 
-static int transport_modbus_link(transport_modbus_t *modbus) {
-    return device_link(modbus->device, (void **)&modbus->usart, modbus->config->usart_index, NULL) +
-           device_link(modbus->device, (void **)&modbus->timer, modbus->config->timer_index, NULL);
+static int transport_modbus_phase_linking(transport_modbus_t *modbus) {
+    return device_phase_linking(modbus->device, (void **)&modbus->usart, modbus->config->usart_index, NULL) +
+           device_phase_linking(modbus->device, (void **)&modbus->timer, modbus->config->timer_index, NULL);
 }
 
 static int transport_modbus_phase(transport_modbus_t *modbus, device_phase_t phase) {
@@ -74,18 +74,18 @@ static int transport_modbus_phase(transport_modbus_t *modbus, device_phase_t pha
     return 0;
 }
 
-device_callbacks_t transport_modbus_callbacks = {
+device_methods_t transport_modbus_methods = {
     .validate = transport_modbus_validate,
-    .construct = (int (*)(void *, device_t *))transport_modbus_construct,
-    .link = (int (*)(void *))transport_modbus_link,
-    .destruct = (int (*)(void *))transport_modbus_destruct,
-    .start = (int (*)(void *))transport_modbus_start,
-    .stop = (int (*)(void *))transport_modbus_stop,
-    .pause = (int (*)(void *))transport_modbus_pause,
-    .resume = (int (*)(void *))transport_modbus_resume,
+    .phase_constructing = (app_signal_t (*)(void *, device_t *))transport_modbus_phase_constructing,
+    .phase_linking = (app_signal_t (*)(void *))transport_modbus_phase_linking,
+    .phase_destructing = (app_signal_t (*)(void *))transport_modbus_phase_destructing,
+    .phase_starting = (app_signal_t (*)(void *))transport_modbus_phase_starting,
+    .phase_stoping = (app_signal_t (*)(void *))transport_modbus_phase_stoping,
+    .phase_pausing = (app_signal_t (*)(void *))transport_modbus_phase_pausing,
+    .phase_resuming = (app_signal_t (*)(void *))transport_modbus_phase_resuming,
     //.tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))transport_modbus_tick,
     //.accept = (int (*)(void *, device_t *device, void *channel))transport_modbus_accept,
-    .phase = (int (*)(void *, device_phase_t phase))transport_modbus_phase,
+    .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))transport_modbus_phase,
     .write_values = OD_write_transport_modbus_property};
 
 // int transport_modbus_send(transport_modbus_t *modbus, uint8_t *data, uint8_t length) { return 0; }

@@ -34,7 +34,7 @@ int device_signal(device_t *device, device_t *origin, uint32_t value, void *argu
     return device->callbacks->signal(device->object, origin, value, argument);
 }
 
-int device_link(device_t *device, void **destination, uint16_t index, void *argument) {
+int device_phase_linking(device_t *device, void **destination, uint16_t index, void *argument) {
     if (index == 0) {
         return 0;
     }
@@ -122,7 +122,7 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
     }
 }
 
-app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
+app_signal_t device_event_accept_and_phase_starting_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
                                                   app_task_handler_t handler, app_event_status_t ready_status,
                                                   app_event_status_t busy_status) {
     app_signal_t signal = device_event_accept_and_process_generic(device, event, task->issuing_event, ready_status, busy_status, NULL);

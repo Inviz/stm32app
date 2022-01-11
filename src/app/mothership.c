@@ -22,36 +22,36 @@ static int app_mothership_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int app_mothership_construct(app_mothership_t *mothership, device_t *device) {
+static int app_mothership_phase_constructing(app_mothership_t *mothership, device_t *device) {
     mothership->config = (app_mothership_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
 
     app_threads_allocate((app_t *) mothership);
     return mothership->config->disabled;
 }
 
-static int app_mothership_start(app_mothership_t *mothership) {
+static int app_mothership_phase_starting(app_mothership_t *mothership) {
     (void)mothership;
     return 0;
 }
 
-static int app_mothership_stop(app_mothership_t *mothership) {
+static int app_mothership_phase_stoping(app_mothership_t *mothership) {
     (void)mothership;
     return 0;
 }
 
-static int app_mothership_pause(app_mothership_t *mothership) {
+static int app_mothership_phase_pausing(app_mothership_t *mothership) {
     (void)mothership;
     return 0;
 }
 
-static int app_mothership_resume(app_mothership_t *mothership) {
+static int app_mothership_phase_resuming(app_mothership_t *mothership) {
     (void)mothership;
     return 0;
 }
 
-static int app_mothership_link(app_mothership_t *mothership) {
-    device_link(mothership->device, (void **)&mothership->mcu, 0x6000, NULL);
-    device_link(mothership->device, (void **)&mothership->canopen, 0x6010, NULL);
+static int app_mothership_phase_linking(app_mothership_t *mothership) {
+    device_phase_linking(mothership->device, (void **)&mothership->mcu, 0x6000, NULL);
+    device_phase_linking(mothership->device, (void **)&mothership->canopen, 0x6010, NULL);
     return 0;
 }
 
@@ -80,13 +80,13 @@ size_t app_mothership_enumerate_devices(app_t *app, OD_t *od, device_t *destinat
 }
 
 
-device_callbacks_t app_mothership_callbacks = {.validate = app_mothership_validate,
-                                             .construct = (int (*)(void *, device_t *))app_mothership_construct,
-                                             .link = (int (*)(void *))app_mothership_link,
-                                             .start = (int (*)(void *))app_mothership_start,
-                                             .stop = (int (*)(void *))app_mothership_stop,
-                                             .pause = (int (*)(void *))app_mothership_pause,
-                                             .resume = (int (*)(void *))app_mothership_resume,
+device_methods_t app_mothership_methods = {.validate = app_mothership_validate,
+                                             .phase_constructing = (app_signal_t (*)(void *, device_t *))app_mothership_phase_constructing,
+                                             .phase_linking = (app_signal_t (*)(void *))app_mothership_phase_linking,
+                                             .phase_starting = (app_signal_t (*)(void *))app_mothership_phase_starting,
+                                             .phase_stoping = (app_signal_t (*)(void *))app_mothership_phase_stoping,
+                                             .phase_pausing = (app_signal_t (*)(void *))app_mothership_phase_pausing,
+                                             .phase_resuming = (app_signal_t (*)(void *))app_mothership_phase_resuming,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))app_mothership_accept,
-                                             .phase = (int (*)(void *, device_phase_t phase))app_mothership_phase,
+                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))app_mothership_phase,
                                              .write_values = OD_write_app_mothership_property};

@@ -2,7 +2,7 @@
 #include "system/canopen.h"
 
 // Count or initialize all devices in OD of given type
-size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_callbacks_t *callbacks, size_t struct_size,
+size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_methods_t *callbacks, size_t struct_size,
                                   device_t *destination, size_t offset) {
     size_t count = 0;
     for (size_t seq = 0; seq < 128; seq++) {

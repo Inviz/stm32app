@@ -35,7 +35,7 @@ typedef struct {
 } app_mothership_t;
 
 
-extern device_callbacks_t app_mothership_callbacks;
+extern device_methods_t app_mothership_methods;
 
 size_t app_mothership_enumerate_devices(app_t *app, OD_t *od, device_t *destination);
 

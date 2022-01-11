@@ -42,7 +42,7 @@ struct device_circuit_t {
     module_adc_t *adc;;
 };
 
-extern device_callbacks_t device_circuit_callbacks;
+extern device_methods_t device_circuit_methods;
 
 void device_circuit_set_state(device_circuit_t *circuit, bool state);
 bool_t device_circuit_get_state(device_circuit_t *circuit);

@@ -65,7 +65,7 @@ typedef enum {
 
 } transport_modbus_cmd_t;
 
-extern device_callbacks_t transport_modbus_callbacks;
+extern device_methods_t transport_modbus_methods;
 
 
 //int transport_modbus_send(transport_modbus_t *modbus, uint8_t *data, uint8_t length);

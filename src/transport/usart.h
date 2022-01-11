@@ -40,7 +40,7 @@ typedef struct {
     uint8_t *dma_rx_buffer;
 } transport_usart_t;
 
-extern device_callbacks_t transport_usart_callbacks;
+extern device_methods_t transport_usart_methods;
 
 int transport_usart_send(transport_usart_t *usart, char *data, int size);
 

@@ -16,7 +16,7 @@ typedef enum app_event_type app_event_type_t;       /* Possible types of message
 typedef struct device device_t;                     /* Generic object container correspondig to Object Dictionary entry */
 typedef struct device_tick device_tick_t;           /* A device callback running within specific app thread*/
 typedef struct device_ticks device_ticks_t;         /* List of device tick handlers in order corresponding to app threads */
-typedef struct device_callbacks device_callbacks_t; /* Method list to essentially subclass devices */
+typedef struct device_callbacks device_methods_t; /* Method list to essentially subclass devices */
 typedef enum device_type device_type_t;             /* List of device groups found in Object Dictionary*/
 typedef enum device_phase device_phase_t;           /* All phases that device can be in*/
 typedef enum app_signal app_signal_t;               /* Things that device tell each other */

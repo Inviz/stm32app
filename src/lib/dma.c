@@ -155,14 +155,14 @@ void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t bu
     }
 }
 
-void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+void device_dma_rx_phase_stoping(uint8_t unit, uint8_t stream, uint8_t channel) {
     uint32_t dma_address = dma_get_address(unit);
     dma_disable_channel_or_stream(dma_address, stream);
     dma_reset_channel_or_stream(dma_address, stream);
     nvic_disable_irq(nvic_dma_get_channel_base(unit) + stream);
 }
 
-void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+void device_dma_rx_phase_starting(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
 	uint32_t dma_address = dma_get_address(unit);
 
 	dma_channel_reset(dma_address, stream);
@@ -182,7 +182,7 @@ void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t strea
 	dma_enable_channel(DMA1, stream);
 }
 
-void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+void device_dma_tx_phase_stoping(uint8_t unit, uint8_t stream, uint8_t channel) {
     uint32_t dma_address = dma_get_address(unit);
     dma_disable_channel_or_stream(dma_address, stream);
     dma_reset_channel_or_stream(dma_address, stream);
@@ -190,7 +190,7 @@ void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
 }
 
 
-void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+void device_dma_tx_phase_starting(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
     uint32_t dma_address = dma_get_address(unit);
 
     dma_channel_select(dma_address, stream, channel);

@@ -55,7 +55,7 @@ typedef struct {
     struct vpool rx_pool;      // pool that allocates growing memory chunk for recieved messages
 } transport_spi_t;
 
-extern device_callbacks_t transport_spi_callbacks;
+extern device_methods_t transport_spi_methods;
 
 /* Set timer to signal device in specified amount of time */
 static int transport_spi_schedule_rx_timeout(transport_spi_t *spi);

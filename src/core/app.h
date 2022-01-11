@@ -63,7 +63,7 @@ int app_free(app_t **app);
 // Transition all devices to given state
 void app_set_phase(app_t *app, device_phase_t phase);
 
-size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_callbacks_t *callbacks, size_t struct_size,
+size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_methods_t *callbacks, size_t struct_size,
                                   device_t *destination, size_t offset);
 
 /* Find device by index in the global list of registered devices */

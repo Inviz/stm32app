@@ -10,19 +10,18 @@ OD_ACCESSORS(screen, epaper, values, render_count, SUBIDX_EPAPER_RENDER_COUNT, i
 /* Epaper needs DC, CS, BUSY, RESET pins set, as well as screen size */
 static int screen_epaper_validate(OD_entry_t *config_entry) {
     screen_epaper_config_t *config = (screen_epaper_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
-    return config->dc_pin == 0 || config->dc_port == 0 || config->cs_port == 0 || config->cs_pin == 0 ||
-           config->busy_pin == 0 || config->busy_port == 0 || config->reset_port == 0 || config->reset_pin == 0 ||
-           config->width == 0 || config->height == 0;
+    return config->dc_pin == 0 || config->dc_port == 0 || config->cs_port == 0 || config->cs_pin == 0 || config->busy_pin == 0 ||
+           config->busy_port == 0 || config->reset_port == 0 || config->reset_pin == 0 || config->width == 0 || config->height == 0;
 }
 
-static int screen_epaper_construct(screen_epaper_t *epaper, device_t *device) {
+static int screen_epaper_phase_constructing(screen_epaper_t *epaper, device_t *device) {
     epaper->config = (screen_epaper_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     epaper->values = (screen_epaper_values_t *)OD_getPtr(device->values, 0x01, 0, NULL);
-    return 1;//epaper->config->disabled;
+    return 1; // epaper->config->disabled;
 }
 
-static int screen_epaper_link(screen_epaper_t *epaper) {
-    return device_link(epaper->device, (void **)&epaper->spi, epaper->config->spi_index, NULL);
+static int screen_epaper_phase_linking(screen_epaper_t *epaper) {
+    return device_phase_linking(epaper->device, (void **)&epaper->spi, epaper->config->spi_index, NULL);
 }
 
 const unsigned char screen_epaper_lut_full_update[] = {
@@ -94,21 +93,19 @@ static int screen_epaper_set_resetting_phase(screen_epaper_t *epaper) {
     epaper->resetting_phase++;
 
     switch (epaper->resetting_phase) {
-        case 1:
-            device_gpio_set(epaper->config->reset_port, epaper->config->reset_pin);
-            device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
-            break;
-        case 2:
-            device_gpio_clear(epaper->config->reset_port, epaper->config->reset_pin);
-            device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 2000);
-            break;
-        case 3:
-            device_gpio_set(epaper->config->reset_port, epaper->config->reset_pin);
-            device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
-            break;
-        case 4:
-            epaper->resetting_phase = 0;
-            device_set_phase(epaper->device, DEVICE_RUNNING);
+    case 1:
+        device_gpio_set(epaper->config->reset_port, epaper->config->reset_pin);
+        device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
+        break;
+    case 2:
+        device_gpio_clear(epaper->config->reset_port, epaper->config->reset_pin);
+        device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 2000);
+        break;
+    case 3:
+        device_gpio_set(epaper->config->reset_port, epaper->config->reset_pin);
+        device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
+        break;
+    case 4: epaper->resetting_phase = 0; device_set_phase(epaper->device, DEVICE_RUNNING);
     }
     return 0;
 }
@@ -132,67 +129,67 @@ static void screen_epaper_turn_on_part(screen_epaper_t *epaper) {
 /* Initialize the e-Paper register */
 static void screen_epaper_init_mode(screen_epaper_t *epaper, uint8_t mode) {
     uint8_t count;
-    (void) mode;
-    //screen_epaper_reset(epaper);
+    (void)mode;
+    // screen_epaper_reset(epaper);
 
-    //if (Mode == screen_epaper_FULL) {
-        screen_epaper_set_busy_phase(epaper);
-        screen_epaper_send_command(epaper, 0x12); // soft reset
-        screen_epaper_set_busy_phase(epaper);
+    // if (Mode == screen_epaper_FULL) {
+    screen_epaper_set_busy_phase(epaper);
+    screen_epaper_send_command(epaper, 0x12); // soft reset
+    screen_epaper_set_busy_phase(epaper);
 
-        screen_epaper_send_command(epaper, 0x74); // set analog block control
-        screen_epaper_send_data(epaper, 0x54);
-        screen_epaper_send_command(epaper, 0x7E); // set digital block control
-        screen_epaper_send_data(epaper, 0x3B);
+    screen_epaper_send_command(epaper, 0x74); // set analog block control
+    screen_epaper_send_data(epaper, 0x54);
+    screen_epaper_send_command(epaper, 0x7E); // set digital block control
+    screen_epaper_send_data(epaper, 0x3B);
 
-        screen_epaper_send_command(epaper, 0x01); // Driver output control
-        screen_epaper_send_data(epaper, 0xF9);
-        screen_epaper_send_data(epaper, 0x00);
-        screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_command(epaper, 0x01); // Driver output control
+    screen_epaper_send_data(epaper, 0xF9);
+    screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_data(epaper, 0x00);
 
-        screen_epaper_send_command(epaper, 0x11); // data entry mode
-        screen_epaper_send_data(epaper, 0x01);
+    screen_epaper_send_command(epaper, 0x11); // data entry mode
+    screen_epaper_send_data(epaper, 0x01);
 
-        screen_epaper_send_command(epaper, 0x44); // set Ram-X address start/end position
-        screen_epaper_send_data(epaper, 0x00);
-        screen_epaper_send_data(epaper, 0x0C); // 0x0C-->(15+1)*8=128
+    screen_epaper_send_command(epaper, 0x44); // set Ram-X address start/end position
+    screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_data(epaper, 0x0C); // 0x0C-->(15+1)*8=128
 
-        screen_epaper_send_command(epaper, 0x45); // set Ram-Y address start/end position
-        screen_epaper_send_data(epaper, 0xF9);    // 0xF9-->(249+1)=250
-        screen_epaper_send_data(epaper, 0x00);
-        screen_epaper_send_data(epaper, 0x00);
-        screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_command(epaper, 0x45); // set Ram-Y address start/end position
+    screen_epaper_send_data(epaper, 0xF9);    // 0xF9-->(249+1)=250
+    screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_data(epaper, 0x00);
 
-        screen_epaper_send_command(epaper, 0x3C); // BorderWavefrom
-        screen_epaper_send_data(epaper, 0x03);
+    screen_epaper_send_command(epaper, 0x3C); // BorderWavefrom
+    screen_epaper_send_data(epaper, 0x03);
 
-        screen_epaper_send_command(epaper, 0x2C); // VCOM Voltage
-        screen_epaper_send_data(epaper, 0x55);    //
+    screen_epaper_send_command(epaper, 0x2C); // VCOM Voltage
+    screen_epaper_send_data(epaper, 0x55);    //
 
-        screen_epaper_send_command(epaper, 0x03);
-        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[70]);
+    screen_epaper_send_command(epaper, 0x03);
+    screen_epaper_send_data(epaper, screen_epaper_lut_full_update[70]);
 
-        screen_epaper_send_command(epaper, 0x04); //
-        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[71]);
-        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[72]);
-        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[73]);
+    screen_epaper_send_command(epaper, 0x04); //
+    screen_epaper_send_data(epaper, screen_epaper_lut_full_update[71]);
+    screen_epaper_send_data(epaper, screen_epaper_lut_full_update[72]);
+    screen_epaper_send_data(epaper, screen_epaper_lut_full_update[73]);
 
-        screen_epaper_send_command(epaper, 0x3A); // Dummy Line
-        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[74]);
-        screen_epaper_send_command(epaper, 0x3B); // Gate time
-        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[75]);
+    screen_epaper_send_command(epaper, 0x3A); // Dummy Line
+    screen_epaper_send_data(epaper, screen_epaper_lut_full_update[74]);
+    screen_epaper_send_command(epaper, 0x3B); // Gate time
+    screen_epaper_send_data(epaper, screen_epaper_lut_full_update[75]);
 
-        screen_epaper_send_command(epaper, 0x32);
-        for (count = 0; count < 70; count++) {
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[count]);
-        }
+    screen_epaper_send_command(epaper, 0x32);
+    for (count = 0; count < 70; count++) {
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[count]);
+    }
 
-        screen_epaper_send_command(epaper, 0x4E); // set RAM x address count to 0;
-        screen_epaper_send_data(epaper, 0x00);
-        screen_epaper_send_command(epaper, 0x4F); // set RAM y address count to 0X127;
-        screen_epaper_send_data(epaper, 0xF9);
-        screen_epaper_send_data(epaper, 0x00);
-        screen_epaper_set_busy_phase(epaper);
+    screen_epaper_send_command(epaper, 0x4E); // set RAM x address count to 0;
+    screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_send_command(epaper, 0x4F); // set RAM y address count to 0X127;
+    screen_epaper_send_data(epaper, 0xF9);
+    screen_epaper_send_data(epaper, 0x00);
+    screen_epaper_set_busy_phase(epaper);
     /*} else if (Mode == screen_epaper_PART) {
         screen_epaper_send_command(epaper, 0x2C); // VCOM Voltage
         screen_epaper_send_data(epaper, 0x26);
@@ -306,7 +303,7 @@ static void screen_epaper_sleep(screen_epaper_t *epaper) {
     //  vDelay(100);
 }
 
-static int screen_epaper_destruct(screen_epaper_t *epaper) {
+static int screen_epaper_phase_destructing(screen_epaper_t *epaper) {
     (void)epaper;
     return 0;
 }
@@ -316,109 +313,101 @@ static int screen_epaper_set_initializing_phase(screen_epaper_t *epaper) {
     epaper->initializing_phase++;
 
     switch (epaper->initializing_phase) {
-        case 1:
-            screen_epaper_set_resetting_phase(epaper);
-            break;
-        case 2:
-            screen_epaper_set_busy_phase(epaper);
-            break;
-        case 3:
-            screen_epaper_send_command(epaper, 0x12); // soft reset
-            screen_epaper_set_busy_phase(epaper);
-            break;
-        case 4:
-            screen_epaper_send_command(epaper, 0x74); // set analog block control
-            screen_epaper_send_data(epaper, 0x54);
-            screen_epaper_send_command(epaper, 0x7E); // set digital block control
-            screen_epaper_send_data(epaper, 0x3B);
+    case 1: screen_epaper_set_resetting_phase(epaper); break;
+    case 2: screen_epaper_set_busy_phase(epaper); break;
+    case 3:
+        screen_epaper_send_command(epaper, 0x12); // soft reset
+        screen_epaper_set_busy_phase(epaper);
+        break;
+    case 4:
+        screen_epaper_send_command(epaper, 0x74); // set analog block control
+        screen_epaper_send_data(epaper, 0x54);
+        screen_epaper_send_command(epaper, 0x7E); // set digital block control
+        screen_epaper_send_data(epaper, 0x3B);
 
-            screen_epaper_send_command(epaper, 0x01); // Driver output control
-            screen_epaper_send_data(epaper, 0xF9);
-            screen_epaper_send_data(epaper, 0x00);
-            screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_command(epaper, 0x01); // Driver output control
+        screen_epaper_send_data(epaper, 0xF9);
+        screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_data(epaper, 0x00);
 
-            screen_epaper_send_command(epaper, 0x11); // data entry mode
-            screen_epaper_send_data(epaper, 0x01);
+        screen_epaper_send_command(epaper, 0x11); // data entry mode
+        screen_epaper_send_data(epaper, 0x01);
 
-            screen_epaper_send_command(epaper, 0x44); // set Ram-X address start/end position
-            screen_epaper_send_data(epaper, 0x00);
-            screen_epaper_send_data(epaper, 0x0C); // 0x0C-->(15+1)*8=128
+        screen_epaper_send_command(epaper, 0x44); // set Ram-X address start/end position
+        screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_data(epaper, 0x0C); // 0x0C-->(15+1)*8=128
 
-            screen_epaper_send_command(epaper, 0x45); // set Ram-Y address start/end position
-            screen_epaper_send_data(epaper, 0xF9);    // 0xF9-->(249+1)=250
-            screen_epaper_send_data(epaper, 0x00);
-            screen_epaper_send_data(epaper, 0x00);
-            screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_command(epaper, 0x45); // set Ram-Y address start/end position
+        screen_epaper_send_data(epaper, 0xF9);    // 0xF9-->(249+1)=250
+        screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_data(epaper, 0x00);
 
-            screen_epaper_send_command(epaper, 0x3C); // BorderWavefrom
-            screen_epaper_send_data(epaper, 0x03);
+        screen_epaper_send_command(epaper, 0x3C); // BorderWavefrom
+        screen_epaper_send_data(epaper, 0x03);
 
-            screen_epaper_send_command(epaper, 0x2C); // VCOM Voltage
-            screen_epaper_send_data(epaper, 0x55);    //
+        screen_epaper_send_command(epaper, 0x2C); // VCOM Voltage
+        screen_epaper_send_data(epaper, 0x55);    //
 
-            screen_epaper_send_command(epaper, 0x03);
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[70]);
+        screen_epaper_send_command(epaper, 0x03);
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[70]);
 
-            screen_epaper_send_command(epaper, 0x04); //
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[71]);
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[72]);
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[73]);
+        screen_epaper_send_command(epaper, 0x04); //
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[71]);
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[72]);
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[73]);
 
-            screen_epaper_send_command(epaper, 0x3A); // Dummy Line
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[74]);
-            screen_epaper_send_command(epaper, 0x3B); // Gate time
-            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[75]);
+        screen_epaper_send_command(epaper, 0x3A); // Dummy Line
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[74]);
+        screen_epaper_send_command(epaper, 0x3B); // Gate time
+        screen_epaper_send_data(epaper, screen_epaper_lut_full_update[75]);
 
-            screen_epaper_send_command(epaper, 0x32);
-            for (size_t count = 0; count < 70; count++) {
-                screen_epaper_send_data(epaper, screen_epaper_lut_full_update[count]);
-            }
+        screen_epaper_send_command(epaper, 0x32);
+        for (size_t count = 0; count < 70; count++) {
+            screen_epaper_send_data(epaper, screen_epaper_lut_full_update[count]);
+        }
 
-            screen_epaper_send_command(epaper, 0x4E); // set RAM x address count to 0;
-            screen_epaper_send_data(epaper, 0x00);
-            screen_epaper_send_command(epaper, 0x4F); // set RAM y address count to 0X127;
-            screen_epaper_send_data(epaper, 0xF9);
-            screen_epaper_send_data(epaper, 0x00);
-            screen_epaper_set_busy_phase(epaper);
-            break;
-        case 5:
-            epaper->initializing_phase = 0;
-            screen_epaper_clear(epaper);
+        screen_epaper_send_command(epaper, 0x4E); // set RAM x address count to 0;
+        screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_send_command(epaper, 0x4F); // set RAM y address count to 0X127;
+        screen_epaper_send_data(epaper, 0xF9);
+        screen_epaper_send_data(epaper, 0x00);
+        screen_epaper_set_busy_phase(epaper);
+        break;
+    case 5: epaper->initializing_phase = 0; screen_epaper_clear(epaper);
     }
     return 0;
 }
 
-
-static int screen_epaper_start(screen_epaper_t *epaper) {
+static int screen_epaper_phase_starting(screen_epaper_t *epaper) {
     device_gpio_configure_input("Busy", epaper->config->busy_port, epaper->config->busy_pin);
     device_gpio_configure_output_with_value("Reset", epaper->config->reset_port, epaper->config->busy_pin, 1);
     device_gpio_configure_output_with_value("DC", epaper->config->dc_port, epaper->config->dc_pin, 0);
     device_gpio_configure_output_with_value("CS", epaper->config->cs_port, epaper->config->cs_pin, 0);
 
     screen_epaper_set_initializing_phase(epaper);
-    //screen_epaper_init_mode(epaper, screen_epaper_FULL);
+    // screen_epaper_init_mode(epaper, screen_epaper_FULL);
     return 0;
 }
 
-static int screen_epaper_stop(screen_epaper_t *epaper) {
+static int screen_epaper_phase_stoping(screen_epaper_t *epaper) {
     device_gpio_clear(epaper->config->dc_port, epaper->config->dc_pin);
     device_gpio_clear(epaper->config->cs_port, epaper->config->cs_pin);
     device_gpio_clear(epaper->config->reset_port, epaper->config->reset_pin);
     return 0;
 }
 
-static int screen_epaper_pause(screen_epaper_t *epaper) {
+static int screen_epaper_phase_pausing(screen_epaper_t *epaper) {
     screen_epaper_sleep(epaper);
     return 0;
 }
 
-static int screen_epaper_resume(screen_epaper_t *epaper) {
+static int screen_epaper_phase_resuming(screen_epaper_t *epaper) {
     (void)epaper;
     return CO_ERROR_NO;
 }
 
-static ODR_t OD_write_screen_epaper_values_property(OD_stream_t *stream, const void *buf, OD_size_t count,
-                                                    OD_size_t *countWritten) {
+static ODR_t OD_write_screen_epaper_values_property(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
     screen_epaper_t *epaper = stream->object;
     /* may be unused */ (void)epaper;
     ODR_t result = OD_writeOriginal(stream, buf, count, countWritten);
@@ -428,36 +417,34 @@ static ODR_t OD_write_screen_epaper_values_property(OD_stream_t *stream, const v
 static int screen_epaper_phase(screen_epaper_t *epaper) {
     switch (epaper->device->phase) {
     // poll busy pin until and switch to RUNNING when it's clear
-    case DEVICE_BUSY:
-        return screen_epaper_set_busy_phase(epaper);
+    case DEVICE_BUSY: return screen_epaper_set_busy_phase(epaper);
     // go through resetting phases which involve 3 separate delays
-    case DEVICE_RESETTING:
-        return screen_epaper_set_resetting_phase(epaper);
+    case DEVICE_RESETTING: return screen_epaper_set_resetting_phase(epaper);
     // clear device initially
     case DEVICE_RUNNING:
         if (epaper->initializing_phase == 0) {
-
         }
-//        if (epaper->initializing_phase == 1) {
-//            screen_epaper_clear(epaper);
-//        }
+        //        if (epaper->initializing_phase == 1) {
+        //            screen_epaper_clear(epaper);
+        //        }
         break;
-    default:
-        break;
+    default: break;
     }
     if (epaper->initializing_phase != 0) {
         screen_epaper_set_initializing_phase(epaper);
-    } 
+    }
     return 0;
 }
 
-device_callbacks_t screen_epaper_callbacks = {.validate = screen_epaper_validate,
-                                              .construct = (int (*)(void *, device_t *))screen_epaper_construct,
-                                              .destruct = (int (*)(void *))screen_epaper_destruct,
-                                              .start = (int (*)(void *))screen_epaper_start,
-                                              .stop = (int (*)(void *))screen_epaper_stop,
-                                              .link = (int (*)(void *))screen_epaper_link,
-                                              .pause = (int (*)(void *))screen_epaper_pause,
-                                              .resume = (int (*)(void *))screen_epaper_resume,
-                                              .phase = (int (*)(void *, device_phase_t phase))screen_epaper_phase,
-                                              .write_values = OD_write_screen_epaper_values_property};
+device_methods_t screen_epaper_methods = {
+    .validate = screen_epaper_validate,
+    .phase_constructing = (app_signal_t(*)(void *, device_t *))screen_epaper_phase_constructing,
+    .phase_destructing = (app_signal_t(*)(void *))screen_epaper_phase_destructing,
+    .phase_starting = (app_signal_t(*)(void *))screen_epaper_phase_starting,
+    .phase_stoping = (app_signal_t(*)(void *))screen_epaper_phase_stoping,
+    .phase_linking = (app_signal_t(*)(void *))screen_epaper_phase_linking,
+    .phase_pausing = (app_signal_t(*)(void *))screen_epaper_phase_pausing,
+    .phase_resuming = (app_signal_t(*)(void *))screen_epaper_phase_resuming,
+    .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))screen_epaper_phase,
+    .write_values = OD_write_screen_epaper_values_property,
+};

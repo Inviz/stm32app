@@ -55,7 +55,7 @@ typedef struct {
     
 } module_adc_t;
 
-extern device_callbacks_t module_adc_callbacks;
+extern device_methods_t module_adc_methods;
 
 uint8_t module_adc_get_adc_channel(module_adc_t *adc);
 uint8_t module_adc_get_adc_unit(module_adc_t *adc);

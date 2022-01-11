@@ -20,12 +20,12 @@ static int transport_can_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int transport_can_construct(transport_can_t *can, device_t *device) {
+static int transport_can_phase_constructing(transport_can_t *can, device_t *device) {
     can->config = (transport_can_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return can->config->disabled;
 }
 
-static int transport_can_start(transport_can_t *can) {
+static int transport_can_phase_starting(transport_can_t *can) {
     device_gpio_configure_input("TX", can->config->tx_port, can->config->tx_pin);
     device_gpio_configure_output_with_value("RX", can->config->rx_port, can->config->rx_pin, 0);
 
@@ -46,22 +46,22 @@ static int transport_can_start(transport_can_t *can) {
     return 0;
 }
 
-static int transport_can_stop(transport_can_t *can) {
+static int transport_can_phase_stoping(transport_can_t *can) {
     (void)can;
     return 0;
 }
 
-static int transport_can_pause(transport_can_t *can) {
+static int transport_can_phase_pausing(transport_can_t *can) {
     (void)can;
     return 0;
 }
 
-static int transport_can_resume(transport_can_t *can) {
+static int transport_can_phase_resuming(transport_can_t *can) {
     (void)can;
     return 0;
 }
 
-static int transport_can_link(transport_can_t *can) {
+static int transport_can_phase_linking(transport_can_t *can) {
     (void)can;
     return 0;
 }
@@ -79,14 +79,14 @@ static int transport_can_accept(transport_can_t *can, device_t *origin, void *ar
     return 0;
 }
 
-device_callbacks_t transport_can_callbacks = {
+device_methods_t transport_can_methods = {
     .validate = transport_can_validate,
-    .construct = (int (*)(void *, device_t *))transport_can_construct,
-    .link = (int (*)(void *))transport_can_link,
-    .start = (int (*)(void *))transport_can_start,
-    .stop = (int (*)(void *))transport_can_stop,
-    .pause = (int (*)(void *))transport_can_pause,
-    .resume = (int (*)(void *))transport_can_resume,
-    .accept = (int (*)(void *, device_t *device, void *channel))transport_can_accept,
-    .phase = (int (*)(void *, device_phase_t phase))transport_can_phase,
+    .phase_constructing = (app_signal_t (*)(void *, device_t *))transport_can_phase_constructing,
+    .phase_linking = (app_signal_t (*)(void *))transport_can_phase_linking,
+    .phase_starting = (app_signal_t (*)(void *))transport_can_phase_starting,
+    .phase_stoping = (app_signal_t (*)(void *))transport_can_phase_stoping,
+    .phase_pausing = (app_signal_t (*)(void *))transport_can_phase_pausing,
+    .phase_resuming = (app_signal_t (*)(void *))transport_can_phase_resuming,
+    .callback_link = (int (*)(void *, device_t *device, void *channel))transport_can_accept,
+    .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))transport_can_phase,
     .write_values = OD_write_transport_can_property};

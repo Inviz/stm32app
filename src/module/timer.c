@@ -21,33 +21,33 @@ static int module_timer_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int module_timer_construct(module_timer_t *blank, device_t *device) {
+static int module_timer_phase_constructing(module_timer_t *blank, device_t *device) {
     blank->config = (module_timer_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return blank->config->disabled;
 }
 
-static int module_timer_start(module_timer_t *blank) {
+static int module_timer_phase_starting(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_stop(module_timer_t *blank) {
+static int module_timer_phase_stoping(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_pause(module_timer_t *blank) {
+static int module_timer_phase_pausing(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_resume(module_timer_t *blank) {
+static int module_timer_phase_resuming(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
 
-static int module_timer_link(module_timer_t *blank) {
+static int module_timer_phase_linking(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
@@ -106,13 +106,13 @@ static int module_timer_phase(module_timer_t *blank, device_phase_t phase) {
 //	timer_enable_irq(TIM2, TIM_DIER_CC1IE);
 //}
 
-device_callbacks_t module_timer_callbacks = {.validate = module_timer_validate,
-                                             .construct = (int (*)(void *, device_t *))module_timer_construct,
-                                             .link = (int (*)(void *))module_timer_link,
-                                             .start = (int (*)(void *))module_timer_start,
-                                             .stop = (int (*)(void *))module_timer_stop,
-                                             .pause = (int (*)(void *))module_timer_pause,
-                                             .resume = (int (*)(void *))module_timer_resume,
+device_methods_t module_timer_methods = {.validate = module_timer_validate,
+                                             .phase_constructing = (app_signal_t (*)(void *, device_t *))module_timer_phase_constructing,
+                                             .phase_linking = (app_signal_t (*)(void *))module_timer_phase_linking,
+                                             .phase_starting = (app_signal_t (*)(void *))module_timer_phase_starting,
+                                             .phase_stoping = (app_signal_t (*)(void *))module_timer_phase_stoping,
+                                             .phase_pausing = (app_signal_t (*)(void *))module_timer_phase_pausing,
+                                             .phase_resuming = (app_signal_t (*)(void *))module_timer_phase_resuming,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))module_timer_accept,
-                                             .phase = (int (*)(void *, device_phase_t phase))module_timer_phase,
+                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))module_timer_phase,
                                              .write_values = OD_write_module_timer_property};

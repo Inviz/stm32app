@@ -51,3 +51,7 @@ void app_task_advance(app_task_t *task) {
   }
   return signal;
 }
+
+void app_task_complete(app_task_t *task) {
+  device_tick_catchup(task->device);
+}

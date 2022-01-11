@@ -20,31 +20,31 @@ static int device_blank_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int device_blank_construct(device_blank_t *blank, device_t *device) {
+static int device_blank_phase_constructing(device_blank_t *blank, device_t *device) {
     blank->config = (device_blank_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return blank->config->disabled;
 }
 
-static int device_blank_start(device_blank_t *blank) {
+static int device_blank_phase_starting(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int device_blank_stop(device_blank_t *blank) {
+static int device_blank_phase_stoping(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int device_blank_pause(device_blank_t *blank) {
+static int device_blank_phase_pausing(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int device_blank_resume(device_blank_t *blank) {
+static int device_blank_phase_resuming(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
-static int device_blank_link(device_blank_t *blank) {
+static int device_blank_phase_linking(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
@@ -55,13 +55,13 @@ static int device_blank_phase(device_blank_t *blank, device_phase_t phase) {
     return 0;
 }
 
-device_callbacks_t device_blank_callbacks = {.validate = device_blank_validate,
-                                             .construct = (int (*)(void *, device_t *))device_blank_construct,
-                                             .link = (int (*)(void *))device_blank_link,
-                                             .start = (int (*)(void *))device_blank_start,
-                                             .stop = (int (*)(void *))device_blank_stop,
-                                             .pause = (int (*)(void *))device_blank_pause,
-                                             .resume = (int (*)(void *))device_blank_resume,
+device_methods_t device_blank_methods = {.validate = device_blank_validate,
+                                             .phase_constructing = (app_signal_t (*)(void *, device_t *))device_blank_phase_constructing,
+                                             .phase_linking = (app_signal_t (*)(void *))device_blank_phase_linking,
+                                             .phase_starting = (app_signal_t (*)(void *))device_blank_phase_starting,
+                                             .phase_stoping = (app_signal_t (*)(void *))device_blank_phase_stoping,
+                                             .phase_pausing = (app_signal_t (*)(void *))device_blank_phase_pausing,
+                                             .phase_resuming = (app_signal_t (*)(void *))device_blank_phase_resuming,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))device_blank_accept,
-                                             .phase = (int (*)(void *, device_phase_t phase))device_blank_phase,
+                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))device_blank_phase,
                                              .write_values = OD_write_device_blank_property};
