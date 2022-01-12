@@ -1,12 +1,12 @@
 #include "spi.h"
 
 /* SPI must be within range */
-static int transport_spi_validate(OD_entry_t *config_entry) {
+static app_signal_t spi_validate(OD_entry_t *config_entry) {
     transport_spi_config_t *config = (transport_spi_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
     return 0;
 }
 
-static int transport_spi_phase_constructing(transport_spi_t *spi, device_t *device) {
+static app_signal_t spi_phase_constructing(transport_spi_t *spi, device_t *device) {
     spi->config = (transport_spi_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     switch (spi->device->seq) {
     case 0:
@@ -58,12 +58,12 @@ static int transport_spi_phase_constructing(transport_spi_t *spi, device_t *devi
     return 0;
 }
 
-static int transport_spi_phase_destructing(transport_spi_t *spi) {
+static app_signal_t spi_phase_destructing(transport_spi_t *spi) {
     (void)spi;
     return 0;
 }
 
-static int transport_spi_phase_starting(transport_spi_t *spi) {
+static app_signal_t spi_phase_starting(transport_spi_t *spi) {
     (void)spi;
     rcc_periph_clock_enable(spi->clock);
 
@@ -123,35 +123,35 @@ static int transport_spi_phase_starting(transport_spi_t *spi) {
     return 0;
 }
 
-static int transport_spi_phase_stoping(transport_spi_t *spi) {
+static app_signal_t spi_phase_stoping(transport_spi_t *spi) {
     spi_reset(spi->clock);
     spi_disable(spi->clock);
     return 0;
 }
 
-static int transport_spi_allocate_rx_buffer(transport_spi_t *spi) {
+static app_signal_t spi_allocate_rx_buffer(transport_spi_t *spi) {
     spi->rx_buffer = malloc(spi->config->rx_buffer_size);
     spi->rx_buffer_cursor = 0;
     return spi->rx_buffer == NULL;
 }
 
-static int transport_spi_schedule_rx_timeout(transport_spi_t *spi) {
+static app_signal_t spi_schedule_rx_timeout(transport_spi_t *spi) {
     return module_timer_timeout(spi->timer, spi->device, spi->config->dma_rx_idle_timeout, DEVICE_REQUESTING);
 }
 
-static int transport_spi_read_is_idle(transport_spi_t *spi) {
+static app_signal_t spi_read_is_idle(transport_spi_t *spi) {
     return device_dma_get_buffer_position(spi->config->dma_rx_unit, spi->config->dma_rx_stream, spi->config->rx_buffer_size) ==
            spi->rx_buffer_cursor;
 }
-static app_signal_t transport_spi_on_write(transport_spi_t *spi, app_event_t *event) {
+static app_signal_t spi_on_write(transport_spi_t *spi, app_event_t *event) {
     device_dma_tx_phase_starting((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_tx_unit, spi->config->dma_tx_stream,
                                  spi->config->dma_tx_channel, event->data, event->size);
     return APP_SIGNAL_OK;
 }
 
-static app_signal_t transport_spi_on_read(transport_spi_t *spi, app_event_t *event) {
+static app_signal_t spi_on_read(transport_spi_t *spi, app_event_t *event) {
     if (spi->rx_buffer == NULL) {
-        int error = transport_spi_allocate_rx_buffer(spi);
+        int error = spi_allocate_rx_buffer(spi);
         if (error != 0) {
             return error;
         }
@@ -159,34 +159,34 @@ static app_signal_t transport_spi_on_read(transport_spi_t *spi, app_event_t *eve
     device_dma_rx_phase_starting((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_rx_unit, spi->config->dma_rx_stream,
                                  spi->config->dma_rx_channel, spi->rx_buffer, spi->config->rx_buffer_size);
     // schedule timeout to detect end of rx transmission
-    transport_spi_schedule_rx_timeout(spi);
+    spi_schedule_rx_timeout(spi);
     return APP_SIGNAL_OK;
 }
 
 // todo: Read DR register
-static app_signal_t transport_spi_write_complete(transport_spi_t *spi) {
-    device_event_erase(spi->device, &spi->writing);
+static app_signal_t spi_write_complete(transport_spi_t *spi) {
+    device_event_finalize(spi->device, &spi->writing);
     device_tick_catchup(spi->device, spi->device->ticks->input);
 }
 
 /* Send the resulting read contents back via a queue */
-static app_signal_t transport_spi_read_complete(transport_spi_t *spi) {
+static app_signal_t spi_read_complete(transport_spi_t *spi) {
     app_event_t *response = app_event_from_vpool(
         &(app_event_t){.type = APP_EVENT_RESPONSE, .producer = spi->device, .consumer = spi->reading.producer}, &spi->rx_pool);
-    device_event_erase(spi->device, &spi->reading);
+    device_event_finalize(spi->device, &spi->reading);
     app_publish(spi->device->app, &response);
     device_tick_catchup(spi->device, spi->device->ticks->input);
 }
 
-static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_signal_t signal, void *source) {
+static app_signal_t spi_signal(transport_spi_t *spi, device_t *device, app_signal_t signal, void *source) {
     switch (signal) {
-    case APP_SIGNAL_DMA_IDLE: transport_spi_write_complete(spi); break;
+    case APP_SIGNAL_DMA_IDLE: spi_write_complete(spi); break;
     case APP_SIGNAL_TIMEOUT:
         if ((uint32_t)source == DEVICE_REQUESTING) {
-            if (transport_spi_read_is_idle(spi)) {
-                transport_spi_read_complete(spi);
+            if (spi_read_is_idle(spi)) {
+                spi_read_complete(spi);
             } else {
-                transport_spi_schedule_rx_timeout(spi);
+                spi_schedule_rx_timeout(spi);
             }
         }
         break;
@@ -195,9 +195,9 @@ static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_sign
         if (dma_match_source(source, spi->config->dma_rx_unit, spi->config->dma_rx_stream)) {
             device_dma_ingest(spi->config->dma_rx_unit, spi->config->dma_rx_stream, spi->rx_buffer, spi->config->rx_buffer_size,
                               &spi->rx_buffer_cursor, &spi->rx_pool);
-            transport_spi_schedule_rx_timeout(spi);
+            spi_schedule_rx_timeout(spi);
         } else {
-            transport_spi_write_complete(spi);
+            spi_write_complete(spi);
         }
         break;
     }
@@ -205,18 +205,18 @@ static int transport_spi_signal(transport_spi_t *spi, device_t *device, app_sign
     return 0;
 }
 
-static int transport_spi_tick_input(transport_spi_t *spi, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t spi_tick_input(transport_spi_t *spi, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
     switch (event->type) {
-    case APP_EVENT_READ: return device_event_handle_and_process(spi->device, event, &spi->reading, transport_spi_on_read);
-    case APP_EVENT_WRITE: return device_event_handle_and_process(spi->device, event, &spi->writing, transport_spi_on_write);
+    case APP_EVENT_READ: return device_event_handle_and_process(spi->device, event, &spi->reading, spi_on_read);
+    case APP_EVENT_WRITE: return device_event_handle_and_process(spi->device, event, &spi->writing, spi_on_write);
     default: return 0;
     }
 }
 
-device_methods_t transport_spi_methods = {.validate = transport_spi_validate,
-                                          .phase_constructing = (app_signal_t (*)(void *, device_t *))transport_spi_phase_constructing,
-                                          .phase_destructing = (app_signal_t (*)(void *))transport_spi_phase_destructing,
-                                          .phase_starting = (app_signal_t (*)(void *))transport_spi_phase_starting,
-                                          .tick_input = (device_tick_callback_t)transport_spi_tick_input,
-                                          .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))transport_spi_signal,
-                                          .phase_stoping = (app_signal_t (*)(void *))transport_spi_phase_stoping};
+device_methods_t transport_spi_methods = {.validate = spi_validate,
+                                          .phase_constructing = (app_signal_t (*)(void *, device_t *))spi_phase_constructing,
+                                          .phase_destructing = (app_method_t) spi_phase_destructing,
+                                          .phase_starting = (app_method_t) spi_phase_starting,
+                                          .tick_input = (device_tick_callback_t)spi_tick_input,
+                                          .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))spi_signal,
+                                          .phase_stoping = (app_method_t) spi_phase_stoping};

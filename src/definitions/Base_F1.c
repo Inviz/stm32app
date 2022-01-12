@@ -344,7 +344,7 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .pageSize = 0x0008,
         .size = 0x0100
     },
-    .x6320_storageWinbond = {
+    .x6320_storageW25 = {
         .highestSub_indexSupported = 0x04,
         .disabled = 0,
         .SPI_Index = 0x0000,
@@ -411,10 +411,10 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .CPU_Temperature = 3,
         .startupTime = 0x0000000000000003
     },
-    .x8010_systemValuesCANopen = {
+    .x8010_systemValuesCanopen = {
         .highestSub_indexSupported = 0x02,
-        .nodeID = 0x04,
-        .bitrate = 0x03E8
+        .nodeID = 0x0004,
+        .bitrate = 0x000003E8
     },
     .x8800_inputValuesSensor_1 = {
         .highestSub_indexSupported = 0x05,
@@ -437,8 +437,6 @@ OD_ATTR_RAM OD_RAM_t OD_RAM = {
         .COB_IDClientToServerRx = 0x00000600,
         .COB_IDServerToClientTx = 0x00000580
     },
-    .x2000_statusErrorBits_sub0 = 0x01,
-    .x2000_statusErrorBits = {0x00000000},
     .x3000_appDevice = 0x00000000,
     .x5800_deviceValuesCircuit_1 = {
         .highestSub_indexSupported = 0x04,
@@ -507,7 +505,6 @@ typedef struct {
     OD_obj_record_t o_1A01_TPDOMappingParameter[9];
     OD_obj_record_t o_1A02_TPDOMappingParameter[9];
     OD_obj_record_t o_1A03_TPDOMappingParameter[9];
-    OD_obj_array_t o_2000_statusErrorBits;
     OD_obj_var_t o_3000_appDevice;
     OD_obj_record_t o_3800_deviceCircuit_1[8];
     OD_obj_record_t o_3801_deviceCircuit_2[8];
@@ -526,14 +523,14 @@ typedef struct {
     OD_obj_record_t o_6260_transportI2C_1[11];
     OD_obj_record_t o_6280_transportModbus_1[9];
     OD_obj_record_t o_6300_storageEeprom_1[6];
-    OD_obj_record_t o_6320_storageWinbond[5];
+    OD_obj_record_t o_6320_storageW25[5];
     OD_obj_record_t o_6340_storageFlash[5];
     OD_obj_record_t o_6380_memorySRAM_1[6];
     OD_obj_record_t o_6800_inputSensor_1[6];
     OD_obj_record_t o_6900_controlTouchscreen_1[14];
     OD_obj_record_t o_7000_screenEpaper_1[14];
     OD_obj_record_t o_8000_moduleValuesMCU[3];
-    OD_obj_record_t o_8010_systemValuesCANopen[3];
+    OD_obj_record_t o_8010_systemValuesCanopen[3];
     OD_obj_record_t o_8800_inputValuesSensor_1[6];
     OD_obj_record_t o_9000_screenValuesEpaper_1[3];
 } ODObjs_t;
@@ -1402,14 +1399,6 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .attribute = ODA_SDO_RW | ODA_MB,
             .dataLength = 4
         }
-    },
-    .o_2000_statusErrorBits = {
-        .dataOrig0 = &OD_RAM.x2000_statusErrorBits_sub0,
-        .dataOrig = &OD_RAM.x2000_statusErrorBits[0],
-        .attribute0 = ODA_SDO_R,
-        .attribute = ODA_SDO_RW | ODA_MB,
-        .dataElementLength = 4,
-        .dataElementSizeof = sizeof(uint32_t)
     },
     .o_3000_appDevice = {
         .dataOrig = &OD_RAM.x3000_appDevice,
@@ -2296,33 +2285,33 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 2
         }
     },
-    .o_6320_storageWinbond = {
+    .o_6320_storageW25 = {
         {
-            .dataOrig = &OD_PERSIST_COMM.x6320_storageWinbond.highestSub_indexSupported,
+            .dataOrig = &OD_PERSIST_COMM.x6320_storageW25.highestSub_indexSupported,
             .subIndex = 0,
             .attribute = ODA_SDO_R,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6320_storageWinbond.disabled,
+            .dataOrig = &OD_PERSIST_COMM.x6320_storageW25.disabled,
             .subIndex = 1,
             .attribute = ODA_MB,
             .dataLength = 2
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6320_storageWinbond.SPI_Index,
+            .dataOrig = &OD_PERSIST_COMM.x6320_storageW25.SPI_Index,
             .subIndex = 2,
             .attribute = ODA_MB,
             .dataLength = 2
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6320_storageWinbond.pageSize,
+            .dataOrig = &OD_PERSIST_COMM.x6320_storageW25.pageSize,
             .subIndex = 3,
             .attribute = ODA_MB,
             .dataLength = 2
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6320_storageWinbond.size,
+            .dataOrig = &OD_PERSIST_COMM.x6320_storageW25.size,
             .subIndex = 4,
             .attribute = ODA_MB,
             .dataLength = 2
@@ -2628,24 +2617,24 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 8
         }
     },
-    .o_8010_systemValuesCANopen = {
+    .o_8010_systemValuesCanopen = {
         {
-            .dataOrig = &OD_PERSIST_COMM.x8010_systemValuesCANopen.highestSub_indexSupported,
+            .dataOrig = &OD_PERSIST_COMM.x8010_systemValuesCanopen.highestSub_indexSupported,
             .subIndex = 0,
             .attribute = ODA_SDO_R,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x8010_systemValuesCANopen.nodeID,
+            .dataOrig = &OD_PERSIST_COMM.x8010_systemValuesCanopen.nodeID,
             .subIndex = 1,
-            .attribute = ODA_SDO_RW | ODA_TRSRDO,
-            .dataLength = 1
-        },
-        {
-            .dataOrig = &OD_PERSIST_COMM.x8010_systemValuesCANopen.bitrate,
-            .subIndex = 2,
             .attribute = ODA_SDO_RW | ODA_TRSRDO | ODA_MB,
             .dataLength = 2
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x8010_systemValuesCanopen.bitrate,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW | ODA_TRSRDO | ODA_MB,
+            .dataLength = 4
         }
     },
     .o_8800_inputValuesSensor_1 = {
@@ -2746,7 +2735,6 @@ static OD_ATTR_OD OD_entry_t ODList[] = {
     {0x1A01, 0x09, ODT_REC, &ODObjs.o_1A01_TPDOMappingParameter, NULL},
     {0x1A02, 0x09, ODT_REC, &ODObjs.o_1A02_TPDOMappingParameter, NULL},
     {0x1A03, 0x09, ODT_REC, &ODObjs.o_1A03_TPDOMappingParameter, NULL},
-    {0x2000, 0x02, ODT_ARR, &ODObjs.o_2000_statusErrorBits, NULL},
     {0x3000, 0x01, ODT_VAR, &ODObjs.o_3000_appDevice, NULL},
     {0x3800, 0x08, ODT_REC, &ODObjs.o_3800_deviceCircuit_1, NULL},
     {0x3801, 0x08, ODT_REC, &ODObjs.o_3801_deviceCircuit_2, NULL},
@@ -2765,14 +2753,14 @@ static OD_ATTR_OD OD_entry_t ODList[] = {
     {0x6260, 0x0B, ODT_REC, &ODObjs.o_6260_transportI2C_1, NULL},
     {0x6280, 0x09, ODT_REC, &ODObjs.o_6280_transportModbus_1, NULL},
     {0x6300, 0x06, ODT_REC, &ODObjs.o_6300_storageEeprom_1, NULL},
-    {0x6320, 0x05, ODT_REC, &ODObjs.o_6320_storageWinbond, NULL},
+    {0x6320, 0x05, ODT_REC, &ODObjs.o_6320_storageW25, NULL},
     {0x6340, 0x05, ODT_REC, &ODObjs.o_6340_storageFlash, NULL},
     {0x6380, 0x06, ODT_REC, &ODObjs.o_6380_memorySRAM_1, NULL},
     {0x6800, 0x06, ODT_REC, &ODObjs.o_6800_inputSensor_1, NULL},
     {0x6900, 0x0E, ODT_REC, &ODObjs.o_6900_controlTouchscreen_1, NULL},
     {0x7000, 0x0E, ODT_REC, &ODObjs.o_7000_screenEpaper_1, NULL},
     {0x8000, 0x03, ODT_REC, &ODObjs.o_8000_moduleValuesMCU, NULL},
-    {0x8010, 0x03, ODT_REC, &ODObjs.o_8010_systemValuesCANopen, NULL},
+    {0x8010, 0x03, ODT_REC, &ODObjs.o_8010_systemValuesCanopen, NULL},
     {0x8800, 0x06, ODT_REC, &ODObjs.o_8800_inputValuesSensor_1, NULL},
     {0x9000, 0x03, ODT_REC, &ODObjs.o_9000_screenValuesEpaper_1, NULL},
     {0x0000, 0x00, 0, NULL, NULL}

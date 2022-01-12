@@ -12,7 +12,7 @@ static ODR_t OD_write_module_timer_property(OD_stream_t *stream, const void *buf
     return result;
 }
 
-static int module_timer_validate(OD_entry_t *config_entry) {
+static app_signal_t timer_validate(OD_entry_t *config_entry) {
     module_timer_config_t *config = (module_timer_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
     (void)config;
     if (false) {
@@ -21,45 +21,45 @@ static int module_timer_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int module_timer_phase_constructing(module_timer_t *blank, device_t *device) {
+static app_signal_t timer_phase_constructing(module_timer_t *blank, device_t *device) {
     blank->config = (module_timer_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return blank->config->disabled;
 }
 
-static int module_timer_phase_starting(module_timer_t *blank) {
+static app_signal_t timer_phase_starting(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_phase_stoping(module_timer_t *blank) {
+static app_signal_t timer_phase_stoping(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_phase_pausing(module_timer_t *blank) {
+static app_signal_t timer_phase_pausing(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_phase_resuming(module_timer_t *blank) {
+static app_signal_t timer_phase_resuming(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
 
-static int module_timer_phase_linking(module_timer_t *blank) {
+static app_signal_t timer_phase_linking(module_timer_t *blank) {
     (void)blank;
     return 0;
 }
 
-static int module_timer_phase(module_timer_t *blank, device_phase_t phase) {
+static app_signal_t timer_phase(module_timer_t *blank, device_phase_t phase) {
     (void)blank;
     (void)phase;
     return 0;
 }
 
 
-//static int device_mcu_timeout(device_mcu_t *mcu) {
+//static app_signal_t mcu_timeout(device_mcu_t *mcu) {
 //
 //	/* Enable TIM2 clock. */
 //	rcc_periph_clock_enable(RCC_TIM2);
@@ -106,13 +106,13 @@ static int module_timer_phase(module_timer_t *blank, device_phase_t phase) {
 //	timer_enable_irq(TIM2, TIM_DIER_CC1IE);
 //}
 
-device_methods_t module_timer_methods = {.validate = module_timer_validate,
-                                             .phase_constructing = (app_signal_t (*)(void *, device_t *))module_timer_phase_constructing,
-                                             .phase_linking = (app_signal_t (*)(void *))module_timer_phase_linking,
-                                             .phase_starting = (app_signal_t (*)(void *))module_timer_phase_starting,
-                                             .phase_stoping = (app_signal_t (*)(void *))module_timer_phase_stoping,
-                                             .phase_pausing = (app_signal_t (*)(void *))module_timer_phase_pausing,
-                                             .phase_resuming = (app_signal_t (*)(void *))module_timer_phase_resuming,
+device_methods_t module_timer_methods = {.validate = timer_validate,
+                                             .phase_constructing = (app_signal_t (*)(void *, device_t *))timer_phase_constructing,
+                                             .phase_linking = (app_method_t) timer_phase_linking,
+                                             .phase_starting = (app_method_t) timer_phase_starting,
+                                             .phase_stoping = (app_method_t) timer_phase_stoping,
+                                             .phase_pausing = (app_method_t) timer_phase_pausing,
+                                             .phase_resuming = (app_method_t) timer_phase_resuming,
                                              //.accept = (int (*)(void *, device_t *device, void *channel))module_timer_accept,
-                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))module_timer_phase,
+                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))timer_phase,
                                              .write_values = OD_write_module_timer_property};

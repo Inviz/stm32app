@@ -2,6 +2,10 @@
 #define INC_CORE_TASK
 
 #include "app.h"
+#include "core/event.h"
+
+#define APP_TASK_HALT_INDEX 64
+#define APP_TASK_SUCCESS_INDEX -1
 
 struct app_task {
   char *name;
@@ -10,8 +14,8 @@ struct app_task {
   device_tick_t *tick;
   app_thread_t *thread;
 
-  app_event_t *issuing_event;
-  app_event_t *resulting_event;
+  app_event_t inciting_event;
+  app_event_t awaited_event;
 
   uint32_t counter;
   
@@ -34,5 +38,6 @@ enum app_task_signal {
 
 app_signal_t app_task_execute(app_task_t *task);
 app_task_signal_t app_task_advance(app_task_t *task);
+app_signal_t app_task_finalize(app_task_t *task);
 
 #endif

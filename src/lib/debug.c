@@ -1,8 +1,14 @@
 #ifdef DEBUG
+#define configASSERT(x) (!x ? log_printf("Assert failed!") ||  __asm("BKPT #0\n") : true)
+
+
 #include <libopencm3/cm3/scb.h>
 #include "FreeRTOS.h"
 #include <task.h>
 #include "core/types.h"
+
+
+
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
     (void)xTask;      /* unused*/
     (void)pcTaskName; /* may be unused*/

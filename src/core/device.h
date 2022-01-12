@@ -66,11 +66,13 @@ enum device_type {
     MODULE_ADC = 0x6120,
 
     // communication modules
-    TRANSPORT_CAN = 0x6100,
-    TRANSPORT_SPI = 0x6120,
-    TRANSPORT_USART = 0x6140,
-    TRANSPORT_I2C = 0x6160,
-    TRANSPORT_MODBUS = 0x6180,
+    TRANSPORT_CAN = 0x6200,
+    TRANSPORT_SPI = 0x6220,
+    TRANSPORT_USART = 0x6240,
+    TRANSPORT_I2C = 0x6260,
+    TRANSPORT_MODBUS = 0x6280,
+
+    STORAGE_WINBOND = 0x6320,
 
     // input devices
     INPUT_SENSOR = 0x6800,
@@ -94,29 +96,29 @@ struct device {
     OD_extension_t config_extension; /* OD IO handlers for config changes */
     OD_entry_t *values;              /* OD entry containing mutable values (optinal) */
     OD_extension_t values_extension; /* OD IO handlers for mutable changes */
-    device_methods_t *callbacks;     /* Per-class methods and callbacks */
+    device_methods_t *methods;     /* Per-class methods and methods */
     device_ticks_t *ticks;           /* Per-device thread subscription */
     app_t *app;                      /* Reference to root device */
     uint32_t event_subscriptions;    /* Mask for different event types that device recieves */
     bool_t *h;
 };
 
-struct device_callbacks {
-    int (*validate)(OD_entry_t *config);                       /* Check if config has all values */
-    int (*phase_constructing)(void *object, device_t *device); /* Initialize device at given pointer*/
-    int (*phase_linking)(void *object);                        /* Link related devices together*/
-    int (*phase_destructing)(void *object);                    /* Destruct device at given pointer*/
-    int (*phase_starting)(void *object);                       /* Prepare periphery and run initial logic */
-    int (*phase_stoping)(void *object);                        /* Reset periphery and deinitialize */
-    int (*phase_pausing)(void *object);                        /* Put device to sleep temporarily */
-    int (*phase_resuming)(void *object);                       /* Wake device up from sleep */
+struct device_methods {
+    app_signal_t (*validate)(OD_entry_t *config);                       /* Check if config has all values */
+    app_signal_t (*phase_constructing)(void *object, device_t *device); /* Initialize device at given pointer*/
+    app_signal_t (*phase_linking)(void *object);                        /* Link related devices together*/
+    app_signal_t (*phase_destructing)(void *object);                    /* Destruct device at given pointer*/
+    app_signal_t (*phase_starting)(void *object);                       /* Prepare periphery and run initial logic */
+    app_signal_t (*phase_stoping)(void *object);                        /* Reset periphery and deinitialize */
+    app_signal_t (*phase_pausing)(void *object);                        /* Put device to sleep temporarily */
+    app_signal_t (*phase_resuming)(void *object);                       /* Wake device up from sleep */
 
     app_signal_t (*callback_task)(void *object, app_task_t *task);                           /* Task has been complete */
     app_signal_t (*callback_event)(void *object, app_event_t *event);                        /* Somebody processed the event */
-    int (*callback_phase)(void *object, device_phase_t phase);                               /* Handle phase change */
-    int (*callback_signal)(void *object, device_t *origin, uint32_t signal, void *argument); /* Send signal to device */
-    int (*callback_value)(void *object, device_t *device, void *value, void *argument);      /* Accept value from linked device */
-    int (*callback_link)(void *object, device_t *origin, void *argument);                 /* Accept linking request*/
+    app_signal_t (*callback_phase)(void *object, device_phase_t phase);                               /* Handle phase change */
+    app_signal_t (*callback_signal)(void *object, device_t *origin, uint32_t signal, void *argument); /* Send signal to device */
+    app_signal_t (*callback_value)(void *object, device_t *device, void *value, void *argument);      /* Accept value from linked device */
+    app_signal_t (*callback_link)(void *object, device_t *origin, void *argument);                 /* Accept linking request*/
 
     app_signal_t (*tick_input)(void *object, app_event_t *e, device_tick_t *tick, app_thread_t *t);  /* Processing input events asap */
     app_signal_t (*tick_async)(void *object, app_event_t *e, device_tick_t *tick, app_thread_t *t);  /* Important work that isnt input */
@@ -166,7 +168,7 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
                                                      app_event_status_t ready_status, app_event_status_t busy_status,
                                                      app_event_handler_t handler);
 
-app_signal_t device_event_accept_and_phase_starting_task_generic(device_t *device, app_event_t *event, app_task_t *task,
+app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task,
                                                                  app_thread_t *thread, app_task_handler_t handler,
                                                                  app_event_status_t ready_status, app_event_status_t busy_status);
 
@@ -176,45 +178,45 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
 
 /* Consume event if not busy, otherwise keep it enqueued for later without allowing others to take it  */
 #define device_event_handle(device, event, destination)                                                                                    \
-    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
+    device_event_accept_and_process_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_DEFERRED, NULL)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
 #define device_event_handle_and_process(device, event, destination, handler)                                                               \
-    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_DEFERRED, (app_event_handler_t)handler)
+    device_event_accept_and_process_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_DEFERRED, (app_event_handler_t)handler)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
-#define device_event_handle_and_phase_starting_task(device, event, task, thread, handler)                                                  \
-    device_event_accept_and_phase_starting_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
+#define device_event_handle_and_start_task(device, event, task, thread, handler)                                                  \
+    device_event_accept_and_start_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
 #define device_event_handle_and_pass_to_task(device, event, task, thread, handler)                                                         \
     device_event_accept_and_pass_to_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
 
 /* Consume event if not busy, otherwise allow devices to process it if */
 #define device_event_accept(device, event, destination)                                                                                    \
-    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_ADDRESSED)
+    device_event_accept_and_process_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_ADDRESSED, NULL)
 /* Consume event with a given handler if not busy, otherwise allow devices to process it if */
 #define device_event_accept_and_process(device, event, destination, handler)                                                               \
-    device_event_accept_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_ADDRESSED, (app_event_handler_t)handler)
+    device_event_accept_and_process_generic(device, event, destination, APP_EVENT_HANDLED, APP_EVENT_ADDRESSED, (app_event_handler_t)handler)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
-#define device_event_accept_and_phase_starting_task(device, event, task, thread, handler)                                                  \
-    device_event_accept_and_phase_starting_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
+#define device_event_accept_and_start_task(device, event, task, thread, handler)                                                  \
+    device_event_accept_and_start_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
 #define device_event_accept_and_pass_to_task(device, event, task, thread, handler)                                                         \
     device_event_accept_and_pass_to_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
 
 /* Process event and let others receieve it too */
 #define device_event_receive(device, event, destination)                                                                                   \
-    device_event_accept_generic(device, event, destination, APP_EVENT_RECEIEVED, APP_EVENT_RECEIEVED)
+    device_event_accept_and_process_generic(device, event, destination, APP_EVENT_RECEIEVED, APP_EVENT_RECEIEVED, NULL)
 /* Process event with a given handler and let others receieve it too */
 #define device_event_receive_and_process(device, event, destination, handler)                                                              \
-    device_event_accept_generic(device, event, destination, APP_EVENT_RECEIEVED, APP_EVENT_RECEIEVED, (app_event_handler_t)handler)
+    device_event_accept_and_process_generic(device, event, destination, APP_EVENT_RECEIEVED, APP_EVENT_RECEIEVED, (app_event_handler_t)handler)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
-#define device_event_receive_and_phase_starting_task(device, event, task, thread, handler)                                                 \
-    device_event_accept_and_phase_starting_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
+#define device_event_receive_and_start_task(device, event, task, thread, handler)                                                 \
+    device_event_accept_and_start_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
 /* Consume event with a given handler  if not busy, otherwise keep it enqueued for later without allowing others to take it  */
 #define device_event_receive_and_pass_to_task(device, event, task, thread, handler)                                                        \
     device_event_accept_and_pass_to_task_generic(device, event, task, thread, handler, APP_EVENT_HANDLED, APP_EVENT_DEFERRED)
 
 app_signal_t device_event_report(device_t *device, app_event_t *event);
-app_signal_t device_event_erase(device_t *device, app_event_t *event);
+app_signal_t device_event_finalize(device_t *device, app_event_t *event);
 
 app_signal_t device_tick_catchup(device_t *device, device_tick_t *tick);
 

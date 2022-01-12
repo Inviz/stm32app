@@ -16,7 +16,7 @@ static ODR_t OD_write_input_sensor_property(OD_stream_t *stream, const void *buf
     return result;
 }
 
-static int input_sensor_validate(OD_entry_t *config_entry) {
+static app_signal_t sensor_validate(OD_entry_t *config_entry) {
     input_sensor_config_t *config = (input_sensor_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
     (void)config;
     if (false) {
@@ -25,34 +25,34 @@ static int input_sensor_validate(OD_entry_t *config_entry) {
     return 0;
 }
 
-static int input_sensor_phase_constructing(input_sensor_t *sensor, device_t *device) {
+static app_signal_t sensor_phase_constructing(input_sensor_t *sensor, device_t *device) {
     sensor->config = (input_sensor_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
     return sensor->config->disabled;
 }
 
-static int input_sensor_phase_starting(input_sensor_t *sensor) {
+static app_signal_t sensor_phase_starting(input_sensor_t *sensor) {
     (void)sensor;
     return 0;
 }
 
-static int input_sensor_phase_stoping(input_sensor_t *sensor) {
+static app_signal_t sensor_phase_stoping(input_sensor_t *sensor) {
     (void)sensor;
     return 0;
 }
 
-static int input_sensor_phase_pausing(input_sensor_t *sensor) {
+static app_signal_t sensor_phase_pausing(input_sensor_t *sensor) {
     (void)sensor;
     return 0;
 }
 
-static int input_sensor_phase_resuming(input_sensor_t *sensor) {
+static app_signal_t sensor_phase_resuming(input_sensor_t *sensor) {
     (void)sensor;
     return 0;
 }
 
 
 // pass over adc value to the linked device
-static int input_sensor_receive(input_sensor_t *sensor, device_t *device, void *value, void *channel) {
+static app_signal_t sensor_receive(input_sensor_t *sensor, device_t *device, void *value, void *channel) {
     (void) channel; /*unused*/
     if (sensor->adc->device == device) {
         device_send(sensor->device, sensor->target_device, value, sensor->target_argument);
@@ -60,31 +60,31 @@ static int input_sensor_receive(input_sensor_t *sensor, device_t *device, void *
     return 0;
 }
 
-static int input_sensor_phase_linking(input_sensor_t *sensor) {
+static app_signal_t sensor_phase_linking(input_sensor_t *sensor) {
     return device_phase_linking(sensor->device, (void **)&sensor->adc, sensor->config->adc_index, (void *) (uint32_t) sensor->config->adc_channel);
 }
 
-static int input_sensor_accept(input_sensor_t *sensor, device_t *target, void *argument) {
+static app_signal_t sensor_accept(input_sensor_t *sensor, device_t *target, void *argument) {
     sensor->target_device = target;
     sensor->target_argument = argument;
     return 0;
 }
 
-static int input_sensor_phase(input_sensor_t *sensor, device_phase_t phase) {
+static app_signal_t sensor_phase(input_sensor_t *sensor, device_phase_t phase) {
     (void)sensor;
     (void)phase;
     return 0;
 }
 
 device_methods_t input_sensor_methods = {
-    .validate = input_sensor_validate,
-    .phase_constructing = (app_signal_t (*)(void *, device_t *))input_sensor_phase_constructing,
-    .phase_linking = (app_signal_t (*)(void *))input_sensor_phase_linking,
-    .phase_starting = (app_signal_t (*)(void *))input_sensor_phase_starting,
-    .phase_stoping = (app_signal_t (*)(void *))input_sensor_phase_stoping,
-    .phase_pausing = (app_signal_t (*)(void *))input_sensor_phase_pausing,
-    .phase_resuming = (app_signal_t (*)(void *))input_sensor_phase_resuming,
-    .phase_linking = (app_signal_t (*)(void *, device_t *device, void *channel))input_sensor_accept,
-    .callback_value = (app_signal_t (*)(void *, device_t *device, void *value, void *channel))input_sensor_receive,
-    .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))input_sensor_phase,
+    .validate = sensor_validate,
+    .phase_constructing = (app_signal_t (*)(void *, device_t *))sensor_phase_constructing,
+    .phase_linking = (app_method_t) sensor_phase_linking,
+    .phase_starting = (app_method_t) sensor_phase_starting,
+    .phase_stoping = (app_method_t) sensor_phase_stoping,
+    .phase_pausing = (app_method_t) sensor_phase_pausing,
+    .phase_resuming = (app_method_t) sensor_phase_resuming,
+    .callback_link = (app_signal_t (*)(void *, device_t *device, void *channel))sensor_accept,
+    .callback_value = (app_signal_t (*)(void *, device_t *device, void *value, void *channel))sensor_receive,
+    .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))sensor_phase,
     .write_values = OD_write_input_sensor_property};

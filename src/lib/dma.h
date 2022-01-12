@@ -23,9 +23,11 @@ uint32_t nvic_dma_get_channel_base(uint8_t index);
 
 
 
-void device_dma_tx_phase_starting(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
-void device_dma_rx_phase_starting(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
+void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
+void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
 
+void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel);
+void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel);
 
 
 

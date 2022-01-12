@@ -2,12 +2,12 @@
 #include "lib/dma.h"
 
 /* USART must be within range */
-static int transport_usart_validate(OD_entry_t *config_entry) {
+static app_signal_t usart_validate(OD_entry_t *config_entry) {
     transport_usart_config_t *config = (transport_usart_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
     return 0;
 }
 
-static int transport_usart_phase_constructing(transport_usart_t *usart, device_t *device) {
+static app_signal_t usart_phase_constructing(transport_usart_t *usart, device_t *device) {
     usart->config = (transport_usart_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
 
     usart->dma_rx_address = dma_get_address(usart->config->dma_rx_unit);
@@ -71,47 +71,47 @@ static uint16_t transport_usart_get_buffer_size_written(transport_usart_t *usart
     return transport_usart_get_buffer_size(usart) - transport_usart_get_buffer_size_left(usart);
 }
 
-static int transport_usart_accept(transport_usart_t *usart, device_t *target, void *argument) {
+static app_signal_t usart_accept(transport_usart_t *usart, device_t *target, void *argument) {
     usart->target_device = target;
     usart->target_argument = argument;
     return 0;
 }
 
-static int transport_usart_phase_destructing(transport_usart_t *usart) {
+static app_signal_t usart_phase_destructing(transport_usart_t *usart) {
     free(usart->dma_rx_buffer);
     return 0;
 }
 
-static void transport_usart_tx_dma_phase_stoping(transport_usart_t *usart) {
-    device_dma_tx_phase_stoping(usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel);
+static void transport_usart_tx_dma_stop(transport_usart_t *usart) {
+    device_dma_tx_stop(usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel);
     usart_disable_tx_dma(usart->address);
     //usart_disable_tx_complete_interrupt(usart->address);
 }
 
 /* Configure memory -> usart transfer*/
-static void transport_usart_tx_dma_phase_starting(transport_usart_t *usart, uint8_t *data, uint16_t size) {
-    transport_usart_tx_dma_phase_stoping(usart);
-    device_dma_tx_phase_starting((uint32_t) & (USART_DR(usart->address)), usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel, data, size);
+static void transport_usart_tx_dma_start(transport_usart_t *usart, uint8_t *data, uint16_t size) {
+    transport_usart_tx_dma_stop(usart);
+    device_dma_tx_start((uint32_t) & (USART_DR(usart->address)), usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel, data, size);
     usart_enable_tx_dma(usart->address);
 }
 
-static void transport_usart_rx_dma_phase_stoping(transport_usart_t *usart) {
-    device_dma_rx_phase_stoping(usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel);
+static void transport_usart_rx_dma_stop(transport_usart_t *usart) {
+    device_dma_rx_stop(usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel);
     usart_disable_rx_dma(usart->address);
     //usart_disable_tx_complete_interrupt(usart->address);
 }
 
 /* Configure memory <- usart transfer*/
-static void transport_usart_rx_dma_phase_starting(transport_usart_t *usart, uint8_t *data, uint16_t size) {
-    transport_usart_rx_dma_phase_stoping(usart);
-    device_dma_rx_phase_starting((uint32_t) & (USART_DR(usart->address)), usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel, data, size);
+static void transport_usart_rx_dma_start(transport_usart_t *usart, uint8_t *data, uint16_t size) {
+    transport_usart_rx_dma_stop(usart);
+    device_dma_rx_start((uint32_t) & (USART_DR(usart->address)), usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel, data, size);
     usart_enable_rx_dma(usart->address);
 }
 
-static int transport_usart_phase_starting(transport_usart_t *usart) {
+static app_signal_t usart_phase_starting(transport_usart_t *usart) {
     usart_set_baudrate(usart->address, usart->config->baudrate);
     usart_set_databits(usart->address, usart->config->databits);
-    usart_set_phase_stopingbits(usart->address, USART_STOPBITS_1);
+    usart_set_stopbits(usart->address, USART_STOPBITS_1);
     usart_set_mode(usart->address, USART_MODE_TX_RX);
     usart_set_parity(usart->address, USART_PARITY_NONE);
     usart_set_flow_control(usart->address, USART_FLOWCONTROL_NONE);
@@ -121,25 +121,25 @@ static int transport_usart_phase_starting(transport_usart_t *usart) {
 
     usart_enable(usart->address);
 
-    //transport_usart_rx_dma_phase_starting(usart);
+    //transport_usart_rx_dma_start(usart);
 
     return 0;
 }
 
-static int transport_usart_phase_stoping(transport_usart_t *usart) {
+static app_signal_t usart_phase_stoping(transport_usart_t *usart) {
     (void)usart;
     return 0;
 }
-static int transport_usart_signal(transport_usart_t *usart, device_t *device, int interrupt, char *source) {
+static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, int interrupt, char *source) {
     (void)device;
     (void)source;
     switch (interrupt) {
     case DMA_TCIF: // DMA_TCIF, transfer complete
-        usart->target_device->callbacks->signal(usart->target_device->object, usart->device, APP_SIGNAL_TX_COMPLETE, usart->target_argument);
-        transport_usart_tx_dma_phase_stoping(usart);
+        device_signal(usart->target_device, usart->device, APP_SIGNAL_TX_COMPLETE, usart->target_argument);
+        transport_usart_tx_dma_stop(usart);
         break;
     case USART_CR1_IDLEIE: // USART IDLE, probably complete transfer
-        usart->target_device->callbacks->signal(usart->target_device->object, usart->device, APP_SIGNAL_RX_COMPLETE, usart->target_argument);
+        device_signal(usart->target_device, usart->device, APP_SIGNAL_RX_COMPLETE, usart->target_argument);
         break;
     }
 
@@ -147,10 +147,10 @@ static int transport_usart_signal(transport_usart_t *usart, device_t *device, in
 }
 
 device_methods_t transport_usart_methods = {
-    .validate = transport_usart_validate,
-    .phase_constructing = (app_signal_t (*)(void *, device_t *))transport_usart_phase_constructing,
-    .phase_destructing = (app_signal_t (*)(void *))transport_usart_phase_destructing,
-    .phase_starting = (app_signal_t (*)(void *))transport_usart_phase_starting,
-    .phase_stoping = (app_signal_t (*)(void *))transport_usart_phase_stoping
-    .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))transport_usart_signal,
-    .callback_link = (int (*)(void *, device_t *device, void *channel)) transport_usart_accept,};
+    .validate = usart_validate,
+    .phase_constructing = (app_signal_t (*)(void *, device_t *))usart_phase_constructing,
+    .phase_destructing = (app_method_t) usart_phase_destructing,
+    .phase_starting = (app_method_t) usart_phase_starting,
+    .phase_stoping = (app_method_t) usart_phase_stoping,
+    .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))usart_signal,
+    .callback_link = (int (*)(void *, device_t *device, void *channel)) usart_accept,};

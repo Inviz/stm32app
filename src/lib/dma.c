@@ -104,24 +104,23 @@ uint8_t dma_get_interrupt_for_channel_or_stream(uint32_t dma, uint8_t index) {
 #endif
 }
 
-volatile uint32_t *devices_dma[DMA_BUFFER_SIZE];
+volatile device_t *devices_dma[DMA_BUFFER_SIZE];
 
 void device_register_dma(uint8_t unit, uint8_t index, device_t *device) {
-    devices_dma[DMA_INDEX(unit, index)] = &device;
+    devices_dma[DMA_INDEX(unit, index)] = device;
 };
 
 void device_unregister_dma(uint8_t unit, uint8_t index) { devices_dma[DMA_INDEX(unit, index)] = NULL; };
 
 void devices_dma_notify(uint8_t unit, uint8_t index) {
-    device_t *device = devices_dma[DMA_INDEX(unit, index)];
-    void *source = (void *)(uint32_t)((unit << 0) + (index << 16));
+    volatile device_t *device = devices_dma[DMA_INDEX(unit, index)];
     if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
         error_printf("DMA Error in channel %i", index);
-        if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
+        if (device->methods->callback_signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
             dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
         }
     } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
-        if (device->callbacks->signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
+        if (device->methods->callback_signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
             dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
         }
     }
@@ -144,25 +143,25 @@ void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t bu
     uint16_t pos = device_dma_get_buffer_position(unit, index, buffer_size);
     if (pos != *cursor) {                       /* Check change in received data */
         if (pos > *cursor) {   
-            vpool_insert(pool, UINT16_MAX, buffer[*cursor], pos - *cursor);
+            vpool_insert(pool, UINT16_MAX, &buffer[*cursor], pos - *cursor);
         } else {
-            vpool_insert(pool, UINT16_MAX, buffer[*cursor], buffer_size - *cursor);
+            vpool_insert(pool, UINT16_MAX, &buffer[*cursor], buffer_size - *cursor);
             if (pos > 0) {
-                vpool_insert(pool, UINT16_MAX, buffer[0], pos);
+                vpool_insert(pool, UINT16_MAX, &buffer[0], pos);
             }
         }
         *cursor = pos;                          /* Save current position as old for next transfers */
     }
 }
 
-void device_dma_rx_phase_stoping(uint8_t unit, uint8_t stream, uint8_t channel) {
+void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
     uint32_t dma_address = dma_get_address(unit);
     dma_disable_channel_or_stream(dma_address, stream);
     dma_reset_channel_or_stream(dma_address, stream);
     nvic_disable_irq(nvic_dma_get_channel_base(unit) + stream);
 }
 
-void device_dma_rx_phase_starting(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
 	uint32_t dma_address = dma_get_address(unit);
 
 	dma_channel_reset(dma_address, stream);
@@ -182,7 +181,7 @@ void device_dma_rx_phase_starting(uint32_t periphery_address, uint8_t unit, uint
 	dma_enable_channel(DMA1, stream);
 }
 
-void device_dma_tx_phase_stoping(uint8_t unit, uint8_t stream, uint8_t channel) {
+void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
     uint32_t dma_address = dma_get_address(unit);
     dma_disable_channel_or_stream(dma_address, stream);
     dma_reset_channel_or_stream(dma_address, stream);
@@ -190,7 +189,7 @@ void device_dma_tx_phase_stoping(uint8_t unit, uint8_t stream, uint8_t channel) 
 }
 
 
-void device_dma_tx_phase_starting(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
     uint32_t dma_address = dma_get_address(unit);
 
     dma_channel_select(dma_address, stream, channel);

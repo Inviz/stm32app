@@ -58,10 +58,10 @@ typedef struct {
 extern device_methods_t transport_spi_methods;
 
 /* Set timer to signal device in specified amount of time */
-static int transport_spi_schedule_rx_timeout(transport_spi_t *spi);
+static app_signal_t spi_schedule_rx_timeout(transport_spi_t *spi);
 
 /* Check if DMAs circular buffer position is still the same */
-static int transport_spi_read_is_idle(transport_spi_t *spi);
+static app_signal_t spi_read_is_idle(transport_spi_t *spi);
 
 /* Initiate Tx transmission */
 int transport_spi_write(transport_spi_t *spi, device_t *writer, void *argument, uint8_t *tx_buffer, uint16_t tx_size);

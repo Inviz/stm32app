@@ -21,17 +21,17 @@ char *string_from_phase(device_phase_t phase) {
 }
 
 int device_send(device_t *device, device_t *origin, void *value, void *argument) {
-    if (device->callbacks->receive == NULL) {
+    if (device->methods->callback_value == NULL) {
         return 1;
     }
-    return device->callbacks->receive(device->object, origin, value, argument);
+    return device->methods->callback_value(device->object, origin, value, argument);
 }
 
 int device_signal(device_t *device, device_t *origin, uint32_t value, void *argument) {
-    if (device->callbacks->signal == NULL) {
+    if (device->methods->callback_signal == NULL) {
         return 1;
     }
-    return device->callbacks->signal(device->object, origin, value, argument);
+    return device->methods->callback_signal(device->object, origin, value, argument);
 }
 
 int device_phase_linking(device_t *device, void **destination, uint16_t index, void *argument) {
@@ -41,8 +41,8 @@ int device_phase_linking(device_t *device, void **destination, uint16_t index, v
     device_t *target = app_device_find(device->app, index);
     if (target != NULL) {
         *destination = target->object;
-        if (target->callbacks->accept != NULL) {
-            target->callbacks->accept(target->object, device, argument);
+        if (target->methods->callback_link != NULL) {
+            target->methods->callback_link(target->object, device, argument);
         }
 
         return 0;
@@ -122,18 +122,18 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
     }
 }
 
-app_signal_t device_event_accept_and_phase_starting_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
+app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
                                                   app_task_handler_t handler, app_event_status_t ready_status,
                                                   app_event_status_t busy_status) {
-    app_signal_t signal = device_event_accept_and_process_generic(device, event, task->issuing_event, ready_status, busy_status, NULL);
+    app_signal_t signal = device_event_accept_and_process_generic(device, event, &task->inciting_event, ready_status, busy_status, NULL);
     if (signal == APP_SIGNAL_OK) {
         task->device = device;
         task->handler = handler;
-        task->issuing_event = event;
+        memcpy(&task->inciting_event, event, sizeof(app_event_t));
+        memset(&task->awaited_event, 0, sizeof(app_event_t));
         task->step_index = task->phase_index = 0;
         task->thread = thread;
         task->tick = NULL;
-        task->resulting_event = NULL;
         task->counter = 0;
         app_thread_device_schedule(thread, device, thread->current_time);
     }
@@ -147,9 +147,8 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
         event->status = busy_status;
         return APP_SIGNAL_BUSY;
     }
-    app_signal_t signal = device_event_accept_and_process_generic(device, event, task->resulting_event, ready_status, busy_status, NULL);
+    app_signal_t signal = device_event_accept_and_process_generic(device, event, &task->awaited_event, ready_status, busy_status, NULL);
     if (signal == APP_SIGNAL_OK) {
-        task->resulting_event = NULL;
         app_thread_device_schedule(thread, device, thread->current_time);
     }
     return signal;
@@ -169,33 +168,33 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
 
     switch (phase) {
     case DEVICE_CONSTRUCTING:
-        if (device->callbacks->construct != NULL) {
-            if (device->callbacks->construct(device->object, device) != 0) {
+        if (device->methods->phase_constructing != NULL) {
+            if (device->methods->phase_constructing(device->object, device) != 0) {
                 return device_set_phase(device, DEVICE_DISABLED);
             }
         }
         break;
     case DEVICE_DESTRUCTING:
-        if (device->callbacks->destruct != NULL) {
-            device->callbacks->destruct(device->object);
+        if (device->methods->phase_destructing != NULL) {
+            device->methods->phase_destructing(device->object);
         }
         break;
     case DEVICE_LINKING:
-        if (device->callbacks->link != NULL) {
-            device->callbacks->link(device->object);
+        if (device->methods->phase_linking != NULL) {
+            device->methods->phase_linking(device->object);
         }
         break;
     case DEVICE_STARTING:
-        if (device->callbacks->start != NULL) {
-            device->callbacks->start(device->object);
+        if (device->methods->phase_starting != NULL) {
+            device->methods->phase_starting(device->object);
             if (device->phase == DEVICE_STARTING) {
                 device_set_phase(device, DEVICE_RUNNING);
             }
         }
         break;
     case DEVICE_STOPPING:
-        if (device->callbacks->stop != NULL) {
-            device->callbacks->stop(device->object);
+        if (device->methods->phase_stoping != NULL) {
+            device->methods->phase_stoping(device->object);
             if (device->phase == DEVICE_STOPPING) {
                 device_set_phase(device, DEVICE_STOPPED);
             }
@@ -205,8 +204,8 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
         break;
     }
 
-    if (device->callbacks->phase != NULL) {
-        device->callbacks->phase(device->object, phase);
+    if (device->methods->callback_phase != NULL) {
+        device->methods->callback_phase(device->object, phase);
     }
 }
 
@@ -215,16 +214,18 @@ bool_t device_event_is_subscribed(device_t *device, app_event_t *event) { return
 void device_event_subscribe(device_t *device, app_event_type_t type) { device->event_subscriptions |= type; }
 
 app_signal_t device_event_report(device_t *device, app_event_t *event) {
-    if (event->producer && event->producer->callbacks->report) {
-        return event->producer->callbacks->report(event->producer->object, event);
+    if (event->producer && event->producer->methods->callback_event) {
+        return event->producer->methods->callback_event(event->producer->object, event);
     } else {
         return APP_SIGNAL_OK;
     }
 }
 
-app_signal_t device_event_erase(device_t *device, app_event_t *event) {
-    device_event_report(device, event);
-    memset(event, 0, sizeof(app_event_t));
+app_signal_t device_event_finalize(device_t *device, app_event_t *event) {
+    if (event != NULL && event->type != APP_EVENT_IDLE) {
+        device_event_report(device, event);
+        memset(event, 0, sizeof(app_event_t));
+    }
     return APP_SIGNAL_OK;
 }
 

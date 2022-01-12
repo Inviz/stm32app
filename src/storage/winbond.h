@@ -6,8 +6,10 @@ extern "C" {
 #endif
 
 #include "core/device.h"
+#include "lib/bytes.h"
 
-#define W25_SR1_BUSY 0x01;
+#define W25_SR1_BUSY 0x01
+
 enum w25_commands {
     W25_CMD_MANUF_DEVICE = 0x90,
     W25_CMD_JEDEC_ID = 0x9F,
@@ -43,7 +45,6 @@ typedef struct {
     storage_w25_config_t *config;
     device_t *spi;
     app_task_t task;
-    app_event_t task_event;
 } storage_w25_t;
 
 extern device_methods_t storage_w25_methods;

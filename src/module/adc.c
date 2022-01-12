@@ -2,12 +2,12 @@
 #include "lib/dma.h"
 
 /* ADC must be within range */
-static int module_adc_validate(OD_entry_t *config_entry) {
+static app_signal_t adc_validate(OD_entry_t *config_entry) {
     module_adc_config_t *config = (module_adc_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
     return config->disabled != 0;
 }
 
-static int module_adc_phase_constructing(module_adc_t *adc, device_t *device) {
+static app_signal_t adc_phase_constructing(module_adc_t *adc, device_t *device) {
     adc->config = (module_adc_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
 
     adc->dma_address = dma_get_address(adc->config->dma_unit);
@@ -41,23 +41,22 @@ static int module_adc_phase_constructing(module_adc_t *adc, device_t *device) {
         break;
 #endif
         return 1;
-    default:
-        return 1;
+    default: return 1;
     }
 
     return 0;
 }
 
-static int module_adc_phase_destructing(module_adc_t *adc) {
+static app_signal_t adc_phase_destructing(module_adc_t *adc) {
     (void)adc;
     return 0;
 }
 
-static int module_adc_phase_starting(module_adc_t *adc) {
+static app_signal_t adc_phase_starting(module_adc_t *adc) {
     if (adc->channel_count == 0) {
         return 1;
     }
-    module_adc_channels_alloc(adc, adc->channel_count);
+    adc_channels_alloc(adc, adc->channel_count);
 
     // create array of used channels
     size_t channel_index = 0;
@@ -97,7 +96,7 @@ static int module_adc_phase_starting(module_adc_t *adc) {
     return 0;
 }
 
-static int module_adc_calibrate(module_adc_t *adc) {
+static app_signal_t adc_calibrate(module_adc_t *adc) {
 #ifdef ADC_CALIBRATION_ENABLED
     adc_reset_calibration(adc->address);
     adc_calibrate(adc->address);
@@ -105,7 +104,7 @@ static int module_adc_calibrate(module_adc_t *adc) {
 
     adc_set_regular_sequence(adc->address, adc->channel_count, adc->channels);
 
-    module_adc_dma_setup(adc);
+    adc_dma_setup(adc);
     adc_enable_dma(adc->address);
 
     device_set_temporary_phase(adc->device, DEVICE_CALIBRATING, ADC_CALIBRATION_DELAY);
@@ -113,43 +112,39 @@ static int module_adc_calibrate(module_adc_t *adc) {
     return 0;
 }
 
-static int module_adc_run(module_adc_t *adc) {
-    adc_phase_starting_conversion_regular(adc->address);
+static app_signal_t adc_run(module_adc_t *adc) {
+    adc_start_conversion_regular(adc->address);
     device_set_phase(adc->device, DEVICE_RUNNING);
     return 0;
 }
 
-static int module_adc_accept(module_adc_t *adc, device_t *device, void *channel) {
+static app_signal_t adc_accept(module_adc_t *adc, device_t *device, void *channel) {
     adc->channel_count++;
     adc->subscribers[(size_t)channel] = device;
     return 0;
 }
 
-static int module_adc_phase_stoping(module_adc_t *adc) {
+static app_signal_t adc_phase_stoping(module_adc_t *adc) {
     adc_disable_dma(adc->address);
     adc_power_off(adc->address);
-    module_adc_channels_free(adc);
+    adc_channels_free(adc);
     return 0;
 }
 
-static int module_adc_phase(module_adc_t *adc) {
+static app_signal_t adc_phase(module_adc_t *adc) {
     switch (adc->device->phase) {
-    case DEVICE_PREPARING:
-        return module_adc_calibrate(adc);
+    case DEVICE_PREPARING: return adc_calibrate(adc);
 
-    case DEVICE_CALIBRATING:
-        return module_adc_run(adc);
-        break;
-    default:
-        break;
+    case DEVICE_CALIBRATING: return adc_run(adc); break;
+    default: break;
     }
     return 0;
 }
 
-static int module_adc_receive(module_adc_t *adc, device_t *device, void *value, void *channel) {
+static app_signal_t adc_receive(module_adc_t *adc, device_t *device, void *value, void *channel) {
     (void)device;
     (void)value;
-    if (module_adc_integrate_samples(adc) == 0) {
+    if (adc_integrate_samples(adc) == 0) {
         log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->values[1]);
         for (size_t i = 0; i < adc->channel_count; i++) {
             size_t channelIndex = adc->channels[i];
@@ -160,21 +155,21 @@ static int module_adc_receive(module_adc_t *adc, device_t *device, void *value, 
 }
 
 /*
-static int module_adc_async(module_adc_t *adc), uint32_t time_passed, uint32_t *next_tick) {
+static app_signal_t adc_async(module_adc_t *adc), uint32_t time_passed, uint32_t *next_tick) {
 
 }*/
 
-device_methods_t module_adc_methods = {.validate = module_adc_validate,
-                                           .phase_constructing = (app_signal_t (*)(void *, device_t *))module_adc_phase_constructing,
-                                           .phase_destructing = (app_signal_t (*)(void *))module_adc_phase_destructing,
-                                           .phase_linking = (app_signal_t (*)(void *, device_t *device, void *channel))module_adc_accept,
-                                           .callback_value = (app_signal_t (*)(void *, device_t *device, void *value, void *channel))module_adc_receive,
-                                           //.async = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_async,
-                                           .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))module_adc_phase,
-                                           .phase_starting = (app_signal_t (*)(void *))module_adc_phase_starting,
-                                           .phase_stoping = (app_signal_t (*)(void *))module_adc_phase_stoping};
+device_methods_t module_adc_methods = {.validate = adc_validate,
+                                       .phase_constructing = (app_signal_t(*)(void *, device_t *))adc_phase_constructing,
+                                       .phase_destructing = (app_method_t) adc_phase_destructing,
+                                       .phase_linking = (app_signal_t(*)(void *, device_t *device, void *channel))adc_accept,
+                                       .callback_value = (app_signal_t(*)(void *, device_t *device, void *value, void *channel))adc_receive,
+                                       //.async = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_async,
+                                       .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))adc_phase,
+                                       .phase_starting = (app_method_t) adc_phase_starting,
+                                       .phase_stoping = (app_method_t) adc_phase_stoping};
 
-void module_adc_dma_setup(module_adc_t *adc) {
+void adc_dma_setup(module_adc_t *adc) {
     if (adc->dma_address == DMA1) {
         rcc_periph_clock_enable(RCC_DMA1);
         nvic_enable_irq(dma_get_interrupt_for_channel_or_stream(adc->config->dma_unit, adc->config->dma_stream));
@@ -198,7 +193,7 @@ void module_adc_dma_setup(module_adc_t *adc) {
     dma_enable_channel_or_stream(adc->dma_address, adc->config->dma_stream);
 }
 
-size_t module_adc_integrate_samples(module_adc_t *adc) {
+size_t adc_integrate_samples(module_adc_t *adc) {
     if (adc->measurement_counter == 0) {
         memset(adc->accumulators, 0, adc->channel_count * sizeof(uint32_t));
         memset(adc->values, 0, adc->channel_count * sizeof(uint32_t));
@@ -221,7 +216,7 @@ size_t module_adc_integrate_samples(module_adc_t *adc) {
     return samples_left_total - samples_left_now;
 }
 
-void module_adc_channels_alloc(module_adc_t *adc, size_t channel_count) {
+void adc_channels_alloc(module_adc_t *adc, size_t channel_count) {
     adc->sample_buffer_size = adc->config->sample_count_per_channel * channel_count;
     adc->measurements_per_second = (1000000 / (adc->config->interval));
     adc->channels = malloc(channel_count * sizeof(size_t));
@@ -230,7 +225,7 @@ void module_adc_channels_alloc(module_adc_t *adc, size_t channel_count) {
     adc->sample_buffer = malloc(adc->sample_buffer_size * sizeof(uint16_t));
 }
 
-void module_adc_channels_free(module_adc_t *adc) {
+void adc_channels_free(module_adc_t *adc) {
     free(adc->sample_buffer);
     free(adc->values);
     free(adc->channels);

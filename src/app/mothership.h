@@ -12,6 +12,7 @@ extern "C" {
 //#include "devices/modbus.h"
 #include "input/sensor.h"
 #include "module/adc.h"
+#include "storage/winbond.h"
 //#include "screen/epaper.h"
 //#include "transport/can.h"
 //#include "transport/i2c.h"

@@ -2,7 +2,7 @@
 #include "system/canopen.h"
 
 // Count or initialize all devices in OD of given type
-size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_methods_t *callbacks, size_t struct_size,
+size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_methods_t *methods, size_t struct_size,
                                   device_t *destination, size_t offset) {
     size_t count = 0;
     for (size_t seq = 0; seq < 128; seq++) {
@@ -17,7 +17,7 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
             break;
         OD_entry_t *values = OD_find(od, type + DEVICES_VALUES_OFFSET + seq);
 
-        if (callbacks->validate(config) != 0 && destination == NULL) {
+        if (methods->validate(config) != 0 && destination == NULL) {
             if (app != NULL && app->canopen != NULL) {
                 app_error_report(app, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(config));
             }
@@ -35,14 +35,14 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         device->index = type + seq;
         device->struct_size = struct_size;
         device->config = config;
-        device->callbacks = callbacks;
+        device->methods = methods;
         device->values = values;
 
-        device->config_extension.write = callbacks->write_config == NULL ? OD_writeOriginal : callbacks->write_config;
-        device->config_extension.read = callbacks->read_config == NULL ? OD_readOriginal : callbacks->read_config;
+        device->config_extension.write = methods->write_config == NULL ? OD_writeOriginal : methods->write_config;
+        device->config_extension.read = methods->read_config == NULL ? OD_readOriginal : methods->read_config;
 
-        device->values_extension.write = callbacks->write_values == NULL ? OD_writeOriginal : callbacks->write_values;
-        device->values_extension.read = callbacks->read_values == NULL ? OD_readOriginal : callbacks->read_values;
+        device->values_extension.write = methods->write_values == NULL ? OD_writeOriginal : methods->write_values;
+        device->values_extension.read = methods->read_values == NULL ? OD_readOriginal : methods->read_values;
 
         OD_extension_init(config, &device->config_extension);
         OD_extension_init(values, &device->values_extension);

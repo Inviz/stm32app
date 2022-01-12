@@ -15,7 +15,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base_F4.xdd" fileCreator="" fileCreationDate="2022-01-03" fileCreationTime="19:32:53.0000000+08:00" fileModifiedBy="" fileModificationDate="2022-01-05" fileModificationTime="20:43:36.9922202+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base_F4.xdd" fileCreator="" fileCreationDate="2022-01-03" fileCreationTime="19:32:53.0000000+08:00" fileModifiedBy="" fileModificationDate="2022-01-12" fileModificationTime="18:11:30.0096921+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <q1:DeviceIdentity>
         <q1:vendorName></q1:vendorName>
         <q1:vendorID></q1:vendorID>
@@ -55,38 +55,27 @@
               <STRING />
             </q1:varDeclaration>
           </q1:struct>
-          <q1:struct name="Module CAN 1" uniqueID="UID_REC_6100">
-            <q1:varDeclaration name="Highest sub-index supported" uniqueID="UID_RECSUB_610000">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="Disabled" uniqueID="UID_RECSUB_610001">
-              <UDINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="TX Port" uniqueID="UID_RECSUB_610002">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="TX Pin" uniqueID="UID_RECSUB_610003">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="RX Port" uniqueID="UID_RECSUB_610005">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="RX Pin" uniqueID="UID_RECSUB_610006">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="RX Pin" uniqueID="UID_RECSUB_610007">
-              <USINT />
-            </q1:varDeclaration>
-          </q1:struct>
-          <q1:struct name="I2C EEPROM " uniqueID="UID_REC_6200">
+          <q1:struct name="Module CAN 1" uniqueID="UID_REC_6200">
             <q1:varDeclaration name="Highest sub-index supported" uniqueID="UID_RECSUB_620000">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Transport Index" uniqueID="UID_RECSUB_620001">
-              <UINT />
+            <q1:varDeclaration name="Disabled" uniqueID="UID_RECSUB_620001">
+              <UDINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Transport Address" uniqueID="UID_RECSUB_620002">
-              <UINT />
+            <q1:varDeclaration name="TX Port" uniqueID="UID_RECSUB_620002">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="TX Pin" uniqueID="UID_RECSUB_620003">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="RX Port" uniqueID="UID_RECSUB_620005">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="RX Pin" uniqueID="UID_RECSUB_620006">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="RX Pin" uniqueID="UID_RECSUB_620007">
+              <USINT />
             </q1:varDeclaration>
           </q1:struct>
         </q1:dataTypeList>
@@ -110,63 +99,44 @@
             <STRING />
             <q1:defaultValue value="STMF32407" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_OBJ_6100">
-            <label lang="en">Module CAN 1</label>
-            <q1:dataTypeIDRef uniqueIDRef="UID_REC_6100" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610000">
-            <label lang="en">Highest sub-index supported</label>
-            <USINT />
-            <q1:defaultValue value="0x07" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610001" access="readWrite">
-            <label lang="en">Disabled</label>
-            <UDINT />
-            <q1:defaultValue value="0" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610002" access="readWrite">
-            <label lang="en">TX Port</label>
-            <USINT />
-            <q1:defaultValue value="1" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610003" access="readWrite">
-            <label lang="en">TX Pin</label>
-            <USINT />
-            <q1:defaultValue value="11" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610005" access="readWrite">
-            <label lang="en">RX Port</label>
-            <USINT />
-            <q1:defaultValue value="1" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610006" access="readWrite">
-            <label lang="en">RX Pin</label>
-            <USINT />
-            <q1:defaultValue value="12" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_610007" access="readWrite">
-            <label lang="en">RX Pin</label>
-            <USINT />
-            <q1:defaultValue value="12" />
-          </q1:parameter>
           <q1:parameter uniqueID="UID_OBJ_6200">
-            <label lang="en">I2C EEPROM </label>
+            <label lang="en">Module CAN 1</label>
             <q1:dataTypeIDRef uniqueIDRef="UID_REC_6200" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_620000">
             <label lang="en">Highest sub-index supported</label>
             <USINT />
-            <q1:defaultValue value="0x02" />
+            <q1:defaultValue value="0x07" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_620001" access="readWrite">
-            <description lang="en">I2C 1</description>
-            <UINT />
-            <q1:defaultValue value="0x7600" />
+            <label lang="en">Disabled</label>
+            <UDINT />
+            <q1:defaultValue value="0" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_620002" access="readWrite">
-            <description lang="en">Master, doesnt need address</description>
-            <UINT />
-            <q1:defaultValue value="0" />
+            <label lang="en">TX Port</label>
+            <USINT />
+            <q1:defaultValue value="1" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_620003" access="readWrite">
+            <label lang="en">TX Pin</label>
+            <USINT />
+            <q1:defaultValue value="11" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_620005" access="readWrite">
+            <label lang="en">RX Port</label>
+            <USINT />
+            <q1:defaultValue value="1" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_620006" access="readWrite">
+            <label lang="en">RX Pin</label>
+            <USINT />
+            <q1:defaultValue value="12" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_620007" access="readWrite">
+            <label lang="en">RX Pin</label>
+            <USINT />
+            <q1:defaultValue value="12" />
           </q1:parameter>
         </q1:parameterList>
       </q1:ApplicationProcess>
@@ -185,7 +155,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base_F4.xdd" fileCreator="" fileCreationDate="2022-01-03" fileCreationTime="19:32:53.0000000+08:00" fileModificationDate="2022-01-05" fileModificationTime="20:43:36.9922202+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base_F4.xdd" fileCreator="" fileCreationDate="2022-01-03" fileCreationTime="19:32:53.0000000+08:00" fileModificationDate="2022-01-12" fileModificationTime="18:11:30.0096921+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <ApplicationLayers>
         <q2:CANopenObjectList>
           <CANopenObject index="6000" name="Module MCU" objectType="9" uniqueIDRef="UID_OBJ_6000" subNumber="3">
@@ -193,19 +163,14 @@
             <CANopenSubObject subIndex="02" name="Family" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_600002" />
             <CANopenSubObject subIndex="03" name="Board" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_600003" />
           </CANopenObject>
-          <CANopenObject index="6100" name="Module CAN 1" objectType="9" uniqueIDRef="UID_OBJ_6100" subNumber="7">
-            <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610000" />
-            <CANopenSubObject subIndex="01" name="Disabled" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610001" />
-            <CANopenSubObject subIndex="02" name="TX Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610002" />
-            <CANopenSubObject subIndex="03" name="TX Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610003" />
-            <CANopenSubObject subIndex="05" name="RX Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610005" />
-            <CANopenSubObject subIndex="06" name="RX Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610006" />
-            <CANopenSubObject subIndex="07" name="RX Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610007" />
-          </CANopenObject>
-          <CANopenObject index="6200" name="I2C EEPROM " objectType="9" uniqueIDRef="UID_OBJ_6200" subNumber="3">
+          <CANopenObject index="6200" name="Module CAN 1" objectType="9" uniqueIDRef="UID_OBJ_6200" subNumber="7">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620000" />
-            <CANopenSubObject subIndex="01" name="Transport Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620001" />
-            <CANopenSubObject subIndex="02" name="Transport Address" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620002" />
+            <CANopenSubObject subIndex="01" name="Disabled" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620001" />
+            <CANopenSubObject subIndex="02" name="TX Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620002" />
+            <CANopenSubObject subIndex="03" name="TX Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620003" />
+            <CANopenSubObject subIndex="05" name="RX Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620005" />
+            <CANopenSubObject subIndex="06" name="RX Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620006" />
+            <CANopenSubObject subIndex="07" name="RX Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_620007" />
           </CANopenObject>
         </q2:CANopenObjectList>
         <dummyUsage>

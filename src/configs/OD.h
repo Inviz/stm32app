@@ -69,7 +69,6 @@
 #define OD_CNT_ARR_1010 4
 #define OD_CNT_ARR_1011 4
 #define OD_CNT_ARR_1016 8
-#define OD_CNT_ARR_2000 1
 
 
 /*******************************************************************************
@@ -404,7 +403,7 @@ typedef struct {
         uint16_t SPI_Index;
         uint16_t pageSize;
         uint16_t size;
-    } x6320_storageWinbond;
+    } x6320_storageW25;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
@@ -467,9 +466,9 @@ typedef struct {
     } x8000_moduleValuesMCU;
     struct {
         uint8_t highestSub_indexSupported;
-        uint8_t nodeID;
-        uint16_t bitrate;
-    } x8010_systemValuesCANopen;
+        uint16_t nodeID;
+        uint32_t bitrate;
+    } x8010_systemValuesCanopen;
     struct {
         uint8_t highestSub_indexSupported;
         uint16_t disabled;
@@ -491,8 +490,6 @@ typedef struct {
         uint32_t COB_IDClientToServerRx;
         uint32_t COB_IDServerToClientTx;
     } x1200_SDOServerParameter;
-    uint8_t x2000_statusErrorBits_sub0;
-    uint32_t x2000_statusErrorBits[OD_CNT_ARR_2000];
     uint32_t x3000_appDevice;
     struct {
         uint8_t highestSub_indexSupported;
@@ -574,35 +571,34 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H1A01 &OD->list[30]
 #define OD_ENTRY_H1A02 &OD->list[31]
 #define OD_ENTRY_H1A03 &OD->list[32]
-#define OD_ENTRY_H2000 &OD->list[33]
-#define OD_ENTRY_H3000 &OD->list[34]
-#define OD_ENTRY_H3800 &OD->list[35]
-#define OD_ENTRY_H3801 &OD->list[36]
-#define OD_ENTRY_H3802 &OD->list[37]
-#define OD_ENTRY_H5800 &OD->list[38]
-#define OD_ENTRY_H5801 &OD->list[39]
-#define OD_ENTRY_H5802 &OD->list[40]
-#define OD_ENTRY_H6000 &OD->list[41]
-#define OD_ENTRY_H6010 &OD->list[42]
-#define OD_ENTRY_H6020 &OD->list[43]
-#define OD_ENTRY_H6100 &OD->list[44]
-#define OD_ENTRY_H6120 &OD->list[45]
-#define OD_ENTRY_H6200 &OD->list[46]
-#define OD_ENTRY_H6220 &OD->list[47]
-#define OD_ENTRY_H6240 &OD->list[48]
-#define OD_ENTRY_H6260 &OD->list[49]
-#define OD_ENTRY_H6280 &OD->list[50]
-#define OD_ENTRY_H6300 &OD->list[51]
-#define OD_ENTRY_H6320 &OD->list[52]
-#define OD_ENTRY_H6340 &OD->list[53]
-#define OD_ENTRY_H6380 &OD->list[54]
-#define OD_ENTRY_H6800 &OD->list[55]
-#define OD_ENTRY_H6900 &OD->list[56]
-#define OD_ENTRY_H7000 &OD->list[57]
-#define OD_ENTRY_H8000 &OD->list[58]
-#define OD_ENTRY_H8010 &OD->list[59]
-#define OD_ENTRY_H8800 &OD->list[60]
-#define OD_ENTRY_H9000 &OD->list[61]
+#define OD_ENTRY_H3000 &OD->list[33]
+#define OD_ENTRY_H3800 &OD->list[34]
+#define OD_ENTRY_H3801 &OD->list[35]
+#define OD_ENTRY_H3802 &OD->list[36]
+#define OD_ENTRY_H5800 &OD->list[37]
+#define OD_ENTRY_H5801 &OD->list[38]
+#define OD_ENTRY_H5802 &OD->list[39]
+#define OD_ENTRY_H6000 &OD->list[40]
+#define OD_ENTRY_H6010 &OD->list[41]
+#define OD_ENTRY_H6020 &OD->list[42]
+#define OD_ENTRY_H6100 &OD->list[43]
+#define OD_ENTRY_H6120 &OD->list[44]
+#define OD_ENTRY_H6200 &OD->list[45]
+#define OD_ENTRY_H6220 &OD->list[46]
+#define OD_ENTRY_H6240 &OD->list[47]
+#define OD_ENTRY_H6260 &OD->list[48]
+#define OD_ENTRY_H6280 &OD->list[49]
+#define OD_ENTRY_H6300 &OD->list[50]
+#define OD_ENTRY_H6320 &OD->list[51]
+#define OD_ENTRY_H6340 &OD->list[52]
+#define OD_ENTRY_H6380 &OD->list[53]
+#define OD_ENTRY_H6800 &OD->list[54]
+#define OD_ENTRY_H6900 &OD->list[55]
+#define OD_ENTRY_H7000 &OD->list[56]
+#define OD_ENTRY_H8000 &OD->list[57]
+#define OD_ENTRY_H8010 &OD->list[58]
+#define OD_ENTRY_H8800 &OD->list[59]
+#define OD_ENTRY_H9000 &OD->list[60]
 
 
 /*******************************************************************************
@@ -641,35 +637,34 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H1A01_TPDOMappingParameter &OD->list[30]
 #define OD_ENTRY_H1A02_TPDOMappingParameter &OD->list[31]
 #define OD_ENTRY_H1A03_TPDOMappingParameter &OD->list[32]
-#define OD_ENTRY_H2000_statusErrorBits &OD->list[33]
-#define OD_ENTRY_H3000_appDevice &OD->list[34]
-#define OD_ENTRY_H3800_deviceCircuit_1 &OD->list[35]
-#define OD_ENTRY_H3801_deviceCircuit_2 &OD->list[36]
-#define OD_ENTRY_H3802_deviceCircuit_3 &OD->list[37]
-#define OD_ENTRY_H5800_deviceValuesCircuit_1 &OD->list[38]
-#define OD_ENTRY_H5801_deviceValuesCircuit_2 &OD->list[39]
-#define OD_ENTRY_H5802_deviceValuesCircuit_3 &OD->list[40]
-#define OD_ENTRY_H6000_systemMCU &OD->list[41]
-#define OD_ENTRY_H6010_systemCANopen &OD->list[42]
-#define OD_ENTRY_H6020_systemRTOS &OD->list[43]
-#define OD_ENTRY_H6100_moduleTimer_1 &OD->list[44]
-#define OD_ENTRY_H6120_moduleADC_1 &OD->list[45]
-#define OD_ENTRY_H6200_transportCAN_1 &OD->list[46]
-#define OD_ENTRY_H6220_transportSPI_1 &OD->list[47]
-#define OD_ENTRY_H6240_transportUSART_1 &OD->list[48]
-#define OD_ENTRY_H6260_transportI2C_1 &OD->list[49]
-#define OD_ENTRY_H6280_transportModbus_1 &OD->list[50]
-#define OD_ENTRY_H6300_storageEeprom_1 &OD->list[51]
-#define OD_ENTRY_H6320_storageWinbond &OD->list[52]
-#define OD_ENTRY_H6340_storageFlash &OD->list[53]
-#define OD_ENTRY_H6380_memorySRAM_1 &OD->list[54]
-#define OD_ENTRY_H6800_inputSensor_1 &OD->list[55]
-#define OD_ENTRY_H6900_controlTouchscreen_1 &OD->list[56]
-#define OD_ENTRY_H7000_screenEpaper_1 &OD->list[57]
-#define OD_ENTRY_H8000_moduleValuesMCU &OD->list[58]
-#define OD_ENTRY_H8010_systemValuesCANopen &OD->list[59]
-#define OD_ENTRY_H8800_inputValuesSensor_1 &OD->list[60]
-#define OD_ENTRY_H9000_screenValuesEpaper_1 &OD->list[61]
+#define OD_ENTRY_H3000_appDevice &OD->list[33]
+#define OD_ENTRY_H3800_deviceCircuit_1 &OD->list[34]
+#define OD_ENTRY_H3801_deviceCircuit_2 &OD->list[35]
+#define OD_ENTRY_H3802_deviceCircuit_3 &OD->list[36]
+#define OD_ENTRY_H5800_deviceValuesCircuit_1 &OD->list[37]
+#define OD_ENTRY_H5801_deviceValuesCircuit_2 &OD->list[38]
+#define OD_ENTRY_H5802_deviceValuesCircuit_3 &OD->list[39]
+#define OD_ENTRY_H6000_systemMCU &OD->list[40]
+#define OD_ENTRY_H6010_systemCANopen &OD->list[41]
+#define OD_ENTRY_H6020_systemRTOS &OD->list[42]
+#define OD_ENTRY_H6100_moduleTimer_1 &OD->list[43]
+#define OD_ENTRY_H6120_moduleADC_1 &OD->list[44]
+#define OD_ENTRY_H6200_transportCAN_1 &OD->list[45]
+#define OD_ENTRY_H6220_transportSPI_1 &OD->list[46]
+#define OD_ENTRY_H6240_transportUSART_1 &OD->list[47]
+#define OD_ENTRY_H6260_transportI2C_1 &OD->list[48]
+#define OD_ENTRY_H6280_transportModbus_1 &OD->list[49]
+#define OD_ENTRY_H6300_storageEeprom_1 &OD->list[50]
+#define OD_ENTRY_H6320_storageW25 &OD->list[51]
+#define OD_ENTRY_H6340_storageFlash &OD->list[52]
+#define OD_ENTRY_H6380_memorySRAM_1 &OD->list[53]
+#define OD_ENTRY_H6800_inputSensor_1 &OD->list[54]
+#define OD_ENTRY_H6900_controlTouchscreen_1 &OD->list[55]
+#define OD_ENTRY_H7000_screenEpaper_1 &OD->list[56]
+#define OD_ENTRY_H8000_moduleValuesMCU &OD->list[57]
+#define OD_ENTRY_H8010_systemValuesCanopen &OD->list[58]
+#define OD_ENTRY_H8800_inputValuesSensor_1 &OD->list[59]
+#define OD_ENTRY_H9000_screenValuesEpaper_1 &OD->list[60]
 
 
 /*******************************************************************************

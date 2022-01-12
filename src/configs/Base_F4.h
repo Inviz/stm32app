@@ -16,7 +16,7 @@
 
         Created:      1/3/2022 7:32:53 PM
         Created By:   
-        Modified:     1/5/2022 8:43:36 PM
+        Modified:     1/12/2022 6:11:30 PM
         Modified By:  
 
     Device Info:
@@ -68,12 +68,7 @@ typedef struct {
         uint8_t RX_Port;
         uint8_t RX_Pin;
         uint8_t RX_Pin;
-    } x6100_moduleCAN_1;
-    struct {
-        uint8_t highestSub_indexSupported;
-        uint16_t transportIndex;
-        uint16_t transportAddress;
-    } x6200_I2C_EEPROM;
+    } x6200_transportCAN_1;
 } Base_F4_RAM_t;
 
 #ifndef Base_F4_ATTR_RAM
@@ -91,16 +86,14 @@ extern Base_F4_ATTR_OD OD_t *Base_F4;
     Object dictionary entries - shortcuts
 *******************************************************************************/
 #define Base_F4_ENTRY_H6000 &Base_F4->list[0]
-#define Base_F4_ENTRY_H6100 &Base_F4->list[1]
-#define Base_F4_ENTRY_H6200 &Base_F4->list[2]
+#define Base_F4_ENTRY_H6200 &Base_F4->list[1]
 
 
 /*******************************************************************************
     Object dictionary entries - shortcuts with names
 *******************************************************************************/
 #define Base_F4_ENTRY_H6000_moduleMCU &Base_F4->list[0]
-#define Base_F4_ENTRY_H6100_moduleCAN_1 &Base_F4->list[1]
-#define Base_F4_ENTRY_H6200_I2C_EEPROM &Base_F4->list[2]
+#define Base_F4_ENTRY_H6200_transportCAN_1 &Base_F4->list[1]
 
 
 /*******************************************************************************
