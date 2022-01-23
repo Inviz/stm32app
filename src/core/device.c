@@ -1,25 +1,6 @@
 #include "device.h"
 #include "system/canopen.h"
 
-char *string_from_phase(device_phase_t phase) {
-    static char *phases[] = {
-        "ENABLED",    "CONSTRUCTING", "LINKING",
-
-        "STARTING",   "CALIBRATING",  "PREPARING", "RUNNING",
-
-        "REQUESTING", "RESPONDING",
-
-        "BUSY",       "RESETTING",
-
-        "PAUSING",    "PAUSED",       "RESUMING",
-
-        "STOPPING",   "STOPPED",
-
-        "DISABLED",   "DESTRUCTING",
-    };
-    return phases[phase];
-}
-
 int device_send(device_t *device, device_t *origin, void *value, void *argument) {
     if (device->methods->callback_value == NULL) {
         return 1;
@@ -34,7 +15,7 @@ int device_signal(device_t *device, device_t *origin, uint32_t value, void *argu
     return device->methods->callback_signal(device->object, origin, value, argument);
 }
 
-int device_phase_linking(device_t *device, void **destination, uint16_t index, void *argument) {
+int device_link(device_t *device, void **destination, uint16_t index, void *argument) {
     if (index == 0) {
         return 0;
     }
@@ -48,7 +29,7 @@ int device_phase_linking(device_t *device, void **destination, uint16_t index, v
         return 0;
     } else {
         *destination = NULL;
-        log_printf("    ! Device 0x%x could not find device 0x%x\n", device->index, index);
+        log_printf("    ! Device 0x%x (%s) could not find device 0x%x\n", device->index, get_device_type_name(device->type), index);
         device_set_phase(device, DEVICE_DISABLED);
         device_error_report(device, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL);
         return 1;
@@ -83,32 +64,13 @@ int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_
     }
 }
 
-void device_gpio_configure_input(char *name, uint8_t port, uint16_t pin) {
-    /* may be unused*/ (void)name;
-    log_printf("    > %s GPIO Analog input: %i %i\n", name, port, pin);
-    gpio_enable_port(port);
-    gpio_configure_input(port, pin);
-}
-
-void device_gpio_configure_output(char *name, uint8_t port, uint16_t pin) {
-    /* may be unused*/ (void)name;
-    log_printf("    > %s GPIO Push Pull: %i %i\n", name, port, pin);
-    gpio_enable_port(port);
-    gpio_configure_output(port, pin);
-}
-
-void device_gpio_configure_output_with_value(char *name, uint8_t port, uint16_t pin, uint8_t value) {
-    device_gpio_configure_output(name, port, pin);
-    gpio_set_state(port, pin, value);
-}
-
 void device_set_phase(device_t *device, device_phase_t phase) { device_set_temporary_phase(device, phase, 0); }
 
 app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
                                                      app_event_status_t ready_status, app_event_status_t busy_status,
                                                      app_event_handler_t handler) {
     // Check if destination can store the incoming event, otherwise device will be considered busy
-    if (destination != NULL && destination->type != APP_EVENT_IDLE) {
+    if (destination != NULL || destination->type != APP_EVENT_IDLE) {
         event->consumer = device;
         event->status = ready_status;
         memcpy(destination, event, sizeof(app_event_t));
@@ -135,6 +97,7 @@ app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_ev
         task->thread = thread;
         task->tick = NULL;
         task->counter = 0;
+        log_printf("~ %s: New task via #%s\n", app_thread_get_name(thread), get_app_event_type_name(event->type));
         app_thread_device_schedule(thread, device, thread->current_time);
     }
     return signal;
@@ -157,8 +120,8 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
 /* Attempt to store event in a memory destination if it's not occupied yet */
 void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t delay) {
     if (device->phase != phase || delay != 0) {
-        log_printf(delay != 0 ? "  - Device phase: 0x%x %s <= %s (over %umS)\n" : "  - Device phase: 0x%x %s <= %s\n", device->index,
-                   string_from_phase(phase), string_from_phase(device->phase), delay / 1000);
+        log_printf(delay != 0 ? "  - Device phase: 0x%x %s %s <= %s (over %lumS)\n" : "  - Device phase: 0x%x %s %s <= %s\n", device->index, get_device_type_name(device->type),
+                   get_device_phase_name(phase), get_device_phase_name(device->phase), delay / 1000);
     }
     device->phase = phase;
     device->phase_delay = delay;
@@ -214,6 +177,7 @@ bool_t device_event_is_subscribed(device_t *device, app_event_t *event) { return
 void device_event_subscribe(device_t *device, app_event_type_t type) { device->event_subscriptions |= type; }
 
 app_signal_t device_event_report(device_t *device, app_event_t *event) {
+    (void) device;
     if (event->producer && event->producer->methods->callback_event) {
         return event->producer->methods->callback_event(event->producer->object, event);
     } else {
@@ -230,6 +194,7 @@ app_signal_t device_event_finalize(device_t *device, app_event_t *event) {
 }
 
 app_signal_t device_tick_catchup(device_t *device, device_tick_t *tick) {
+    (void) device;
     app_thread_t *thread = tick->catchup;
     if (thread) {
         tick->catchup = NULL;

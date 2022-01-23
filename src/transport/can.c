@@ -12,7 +12,7 @@ static ODR_t OD_write_transport_can_property(OD_stream_t *stream, const void *bu
 }
 
 static app_signal_t can_validate(OD_entry_t *config_entry) {
-    transport_can_config_t *config = (transport_can_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    transport_can_config_t *config = (transport_can_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     (void)config;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
@@ -21,13 +21,15 @@ static app_signal_t can_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t can_phase_constructing(transport_can_t *can, device_t *device) {
-    can->config = (transport_can_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    can->config = (transport_can_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
     return can->config->disabled;
 }
 
 static app_signal_t can_phase_starting(transport_can_t *can) {
-    device_gpio_configure_input("TX", can->config->tx_port, can->config->tx_pin);
-    device_gpio_configure_output_with_value("RX", can->config->rx_port, can->config->rx_pin, 0);
+    log_printf("    > CAN%i TX ", can->device->seq + 1);
+    gpio_configure_output(can->config->tx_port, can->config->tx_pin, 0);
+    log_printf("    > CAN%i RX ", can->device->seq + 1);
+    gpio_configure_input(can->config->rx_port, can->config->rx_pin);
 
     #ifdef STM32F1
       if (can->config->tx_port == 2 && can->config->tx_pin == 8) {

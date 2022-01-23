@@ -14,7 +14,7 @@ static ODR_t OD_write_transport_i2c_property(OD_stream_t *stream, const void *bu
 }
 
 static app_signal_t i2c_validate(OD_entry_t *config_entry) {
-    transport_i2c_config_t *config = (transport_i2c_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    transport_i2c_config_t *config = (transport_i2c_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     (void)config;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
@@ -29,7 +29,7 @@ static void i2c_tx_dma_start(transport_i2c_t *i2c, uint8_t *data, uint16_t size)
 }
 
 static app_signal_t i2c_phase_constructing(transport_i2c_t *i2c, device_t *device) {
-    i2c->config = (transport_i2c_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    i2c->config = (transport_i2c_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
     return i2c->config->disabled;
 }
 

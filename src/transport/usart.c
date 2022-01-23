@@ -3,12 +3,12 @@
 
 /* USART must be within range */
 static app_signal_t usart_validate(OD_entry_t *config_entry) {
-    transport_usart_config_t *config = (transport_usart_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    transport_usart_config_t *config = (transport_usart_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     return 0;
 }
 
 static app_signal_t usart_phase_constructing(transport_usart_t *usart, device_t *device) {
-    usart->config = (transport_usart_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    usart->config = (transport_usart_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
 
     usart->dma_rx_address = dma_get_address(usart->config->dma_rx_unit);
     usart->dma_tx_address = dma_get_address(usart->config->dma_tx_unit);

@@ -17,7 +17,7 @@ static ODR_t OD_write_input_sensor_property(OD_stream_t *stream, const void *buf
 }
 
 static app_signal_t sensor_validate(OD_entry_t *config_entry) {
-    input_sensor_config_t *config = (input_sensor_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    input_sensor_config_t *config = (input_sensor_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     (void)config;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
@@ -26,7 +26,7 @@ static app_signal_t sensor_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t sensor_phase_constructing(input_sensor_t *sensor, device_t *device) {
-    sensor->config = (input_sensor_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    sensor->config = (input_sensor_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
     return sensor->config->disabled;
 }
 
@@ -61,7 +61,7 @@ static app_signal_t sensor_receive(input_sensor_t *sensor, device_t *device, voi
 }
 
 static app_signal_t sensor_phase_linking(input_sensor_t *sensor) {
-    return device_phase_linking(sensor->device, (void **)&sensor->adc, sensor->config->adc_index, (void *) (uint32_t) sensor->config->adc_channel);
+    return device_link(sensor->device, (void **)&sensor->adc, sensor->config->adc_index, (void *) (uint32_t) sensor->config->adc_channel);
 }
 
 static app_signal_t sensor_accept(input_sensor_t *sensor, device_t *target, void *argument) {

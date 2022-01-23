@@ -239,15 +239,29 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .SDO_ServerTimeout = 0x03E8,
         .SDO_ClientTimeout = 0x01F4
     },
-    .x6020_systemRTOS = {
-        .highestSub_indexSupported = 0x01,
-        .disabled = 0x00000000
-    },
     .x6100_moduleTimer_1 = {
-        .highestSub_indexSupported = 0x03,
+        .highestSub_indexSupported = 0x05,
         .disabled = 0,
-        .prescaler = 0x01,
-        .source = 0x01
+        .prescaler = 0x00,
+        .initialSubscriptionsCount = 0x0A,
+        .period = 0x0000FFFF,
+        .frequency = 0x000F4240
+    },
+    .x6101_moduleTimer_2 = {
+        .highestSub_indexSupported = 0x05,
+        .disabled = 0,
+        .prescaler = 0x00,
+        .initialSubscriptionsCount = 0x0A,
+        .period = 0x0000FFFF,
+        .frequency = 0x000F4240
+    },
+    .x6102_moduleTimer_3 = {
+        .highestSub_indexSupported = 0x05,
+        .disabled = 0,
+        .prescaler = 0x00,
+        .initialSubscriptionsCount = 0x0A,
+        .period = 0x0000FFFF,
+        .frequency = 0x000F4240
     },
     .x6120_moduleADC_1 = {
         .highestSub_indexSupported = 0x06,
@@ -273,10 +287,10 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .phSeg2 = 0x00
     },
     .x6220_transportSPI_1 = {
-        .highestSub_indexSupported = 0x17,
+        .highestSub_indexSupported = 0x18,
         .disabled = 0,
-        .isSlave = false,
-        .softwareSS_Control = false,
+        .isSlave = 0x00,
+        .softwareSS_Control = 0x00,
         .mode = 0x00,
         .DMA_RxUnit = 0x01,
         .DMA_RxStream = 0x01,
@@ -289,14 +303,15 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .DMA_TxUnit = 0x01,
         .DMA_TxStream = 0x01,
         .DMA_TxChannel = 0x01,
+        .AF_Index = 0x01,
         .SS_Port = 0x01,
         .SS_Pin = 0x04,
-        .SCK_Port = 0x01,
-        .SCK_Pin = 0x06,
+        .SCK_Port = 0x02,
+        .SCK_Pin = 0x03,
         .MISO_Port = 0x02,
         .MISO_Pin = 0x04,
-        .MOSI_Port = 0x01,
-        .MOSI_Pin = 0x07
+        .MOSI_Port = 0x02,
+        .MOSI_Pin = 0x05
     },
     .x6240_transportUSART_1 = {
         .highestSub_indexSupported = 0x0A,
@@ -346,7 +361,7 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
     .x6320_storageW25 = {
         .highestSub_indexSupported = 0x04,
         .disabled = 0,
-        .SPI_Index = 0x0000,
+        .SPI_Index = 0x6220,
         .pageSize = 0x0008,
         .size = 0x0100
     },
@@ -436,7 +451,12 @@ OD_ATTR_RAM OD_RAM_t OD_RAM = {
         .COB_IDClientToServerRx = 0x00000600,
         .COB_IDServerToClientTx = 0x00000580
     },
-    .x3000_appDevice = 0x00000000,
+    .x3000_coreApp = {
+        .highestSub_indexSupported = 0x03,
+        .timerIndex = 0x00006102,
+        .MCU_Index = 0x00006000,
+        .CANopenIndex = 0x00006010
+    },
     .x5800_deviceValuesCircuit_1 = {
         .highestSub_indexSupported = 0x04,
         .dutyCycle = 0,
@@ -504,7 +524,7 @@ typedef struct {
     OD_obj_record_t o_1A01_TPDOMappingParameter[9];
     OD_obj_record_t o_1A02_TPDOMappingParameter[9];
     OD_obj_record_t o_1A03_TPDOMappingParameter[9];
-    OD_obj_var_t o_3000_appDevice;
+    OD_obj_record_t o_3000_coreApp[4];
     OD_obj_record_t o_3800_deviceCircuit_1[8];
     OD_obj_record_t o_3801_deviceCircuit_2[8];
     OD_obj_record_t o_3802_deviceCircuit_3[8];
@@ -513,11 +533,12 @@ typedef struct {
     OD_obj_record_t o_5802_deviceValuesCircuit_3[5];
     OD_obj_record_t o_6000_systemMCU[5];
     OD_obj_record_t o_6010_systemCANopen[11];
-    OD_obj_record_t o_6020_systemRTOS[2];
-    OD_obj_record_t o_6100_moduleTimer_1[4];
+    OD_obj_record_t o_6100_moduleTimer_1[6];
+    OD_obj_record_t o_6101_moduleTimer_2[6];
+    OD_obj_record_t o_6102_moduleTimer_3[6];
     OD_obj_record_t o_6120_moduleADC_1[7];
     OD_obj_record_t o_6200_transportCAN_1[12];
-    OD_obj_record_t o_6220_transportSPI_1[24];
+    OD_obj_record_t o_6220_transportSPI_1[25];
     OD_obj_record_t o_6240_transportUSART_1[11];
     OD_obj_record_t o_6260_transportI2C_1[11];
     OD_obj_record_t o_6280_transportModbus_1[9];
@@ -1399,10 +1420,31 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 4
         }
     },
-    .o_3000_appDevice = {
-        .dataOrig = &OD_RAM.x3000_appDevice,
-        .attribute = ODA_SDO_RW | ODA_MB,
-        .dataLength = 4
+    .o_3000_coreApp = {
+        {
+            .dataOrig = &OD_RAM.x3000_coreApp.highestSub_indexSupported,
+            .subIndex = 0,
+            .attribute = ODA_SDO_R,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x3000_coreApp.timerIndex,
+            .subIndex = 1,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        },
+        {
+            .dataOrig = &OD_RAM.x3000_coreApp.MCU_Index,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        },
+        {
+            .dataOrig = &OD_RAM.x3000_coreApp.CANopenIndex,
+            .subIndex = 3,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        }
     },
     .o_3800_deviceCircuit_1 = {
         {
@@ -1750,20 +1792,6 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 2
         }
     },
-    .o_6020_systemRTOS = {
-        {
-            .dataOrig = &OD_PERSIST_COMM.x6020_systemRTOS.highestSub_indexSupported,
-            .subIndex = 0,
-            .attribute = ODA_SDO_R,
-            .dataLength = 1
-        },
-        {
-            .dataOrig = &OD_PERSIST_COMM.x6020_systemRTOS.disabled,
-            .subIndex = 1,
-            .attribute = ODA_SDO_RW | ODA_MB,
-            .dataLength = 4
-        }
-    },
     .o_6100_moduleTimer_1 = {
         {
             .dataOrig = &OD_PERSIST_COMM.x6100_moduleTimer_1.highestSub_indexSupported,
@@ -1784,10 +1812,98 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6100_moduleTimer_1.source,
+            .dataOrig = &OD_PERSIST_COMM.x6100_moduleTimer_1.initialSubscriptionsCount,
             .subIndex = 3,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6100_moduleTimer_1.period,
+            .subIndex = 4,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6100_moduleTimer_1.frequency,
+            .subIndex = 5,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        }
+    },
+    .o_6101_moduleTimer_2 = {
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6101_moduleTimer_2.highestSub_indexSupported,
+            .subIndex = 0,
+            .attribute = ODA_SDO_R,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6101_moduleTimer_2.disabled,
+            .subIndex = 1,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 2
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6101_moduleTimer_2.prescaler,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6101_moduleTimer_2.initialSubscriptionsCount,
+            .subIndex = 3,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6101_moduleTimer_2.period,
+            .subIndex = 4,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6101_moduleTimer_2.frequency,
+            .subIndex = 5,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        }
+    },
+    .o_6102_moduleTimer_3 = {
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6102_moduleTimer_3.highestSub_indexSupported,
+            .subIndex = 0,
+            .attribute = ODA_SDO_R,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6102_moduleTimer_3.disabled,
+            .subIndex = 1,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 2
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6102_moduleTimer_3.prescaler,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6102_moduleTimer_3.initialSubscriptionsCount,
+            .subIndex = 3,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6102_moduleTimer_3.period,
+            .subIndex = 4,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6102_moduleTimer_3.frequency,
+            .subIndex = 5,
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 4
         }
     },
     .o_6120_moduleADC_1 = {
@@ -2006,50 +2122,56 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SS_Port,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.AF_Index,
             .subIndex = 16,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SS_Pin,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SS_Port,
             .subIndex = 17,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SCK_Port,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SS_Pin,
             .subIndex = 18,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SCK_Pin,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SCK_Port,
             .subIndex = 19,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MISO_Port,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.SCK_Pin,
             .subIndex = 20,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MISO_Pin,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MISO_Port,
             .subIndex = 21,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MOSI_Port,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MISO_Pin,
             .subIndex = 22,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MOSI_Pin,
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MOSI_Port,
             .subIndex = 23,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.MOSI_Pin,
+            .subIndex = 24,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         }
@@ -2734,7 +2856,7 @@ static OD_ATTR_OD OD_entry_t ODList[] = {
     {0x1A01, 0x09, ODT_REC, &ODObjs.o_1A01_TPDOMappingParameter, NULL},
     {0x1A02, 0x09, ODT_REC, &ODObjs.o_1A02_TPDOMappingParameter, NULL},
     {0x1A03, 0x09, ODT_REC, &ODObjs.o_1A03_TPDOMappingParameter, NULL},
-    {0x3000, 0x01, ODT_VAR, &ODObjs.o_3000_appDevice, NULL},
+    {0x3000, 0x04, ODT_REC, &ODObjs.o_3000_coreApp, NULL},
     {0x3800, 0x08, ODT_REC, &ODObjs.o_3800_deviceCircuit_1, NULL},
     {0x3801, 0x08, ODT_REC, &ODObjs.o_3801_deviceCircuit_2, NULL},
     {0x3802, 0x08, ODT_REC, &ODObjs.o_3802_deviceCircuit_3, NULL},
@@ -2743,11 +2865,12 @@ static OD_ATTR_OD OD_entry_t ODList[] = {
     {0x5802, 0x05, ODT_REC, &ODObjs.o_5802_deviceValuesCircuit_3, NULL},
     {0x6000, 0x05, ODT_REC, &ODObjs.o_6000_systemMCU, NULL},
     {0x6010, 0x0B, ODT_REC, &ODObjs.o_6010_systemCANopen, NULL},
-    {0x6020, 0x02, ODT_REC, &ODObjs.o_6020_systemRTOS, NULL},
-    {0x6100, 0x04, ODT_REC, &ODObjs.o_6100_moduleTimer_1, NULL},
+    {0x6100, 0x06, ODT_REC, &ODObjs.o_6100_moduleTimer_1, NULL},
+    {0x6101, 0x06, ODT_REC, &ODObjs.o_6101_moduleTimer_2, NULL},
+    {0x6102, 0x06, ODT_REC, &ODObjs.o_6102_moduleTimer_3, NULL},
     {0x6120, 0x07, ODT_REC, &ODObjs.o_6120_moduleADC_1, NULL},
     {0x6200, 0x0C, ODT_REC, &ODObjs.o_6200_transportCAN_1, NULL},
-    {0x6220, 0x18, ODT_REC, &ODObjs.o_6220_transportSPI_1, NULL},
+    {0x6220, 0x19, ODT_REC, &ODObjs.o_6220_transportSPI_1, NULL},
     {0x6240, 0x0B, ODT_REC, &ODObjs.o_6240_transportUSART_1, NULL},
     {0x6260, 0x0B, ODT_REC, &ODObjs.o_6260_transportI2C_1, NULL},
     {0x6280, 0x09, ODT_REC, &ODObjs.o_6280_transportModbus_1, NULL},

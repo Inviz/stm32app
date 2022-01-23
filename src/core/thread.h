@@ -26,12 +26,12 @@ struct app_thread {
 };
 
 struct app_threads {
-    app_thread_t *input;   /* Thread with queue of events that need immediate response*/
-    app_thread_t *catchup; /* Allow devices that were busy to catch up with input events  */
-    app_thread_t *async;   /* Logic that is scheduled by devices themselves */
-    app_thread_t *output;  /* A queue of events that concerns outputting  outside */
-    app_thread_t *poll;    /* Logic that runs periodically that is not very important */
-    app_thread_t *idle;    /* A background thread of sorts for work that can be done in free time */
+    app_thread_t *input;           /* Thread with queue of events that need immediate response*/
+    app_thread_t *catchup;         /* Allow devices that were busy to catch up with input events  */
+    app_thread_t *high_priority;   /* Logic that is scheduled by devices themselves */
+    app_thread_t *medium_priority; /* A queue of events that concerns medium_priorityting  outside */
+    app_thread_t *low_priority;    /* Logic that runs periodically that is not very important */
+    app_thread_t *bg_priority;     /* A background thread of sorts for work that can be done in free time */
 };
 
 struct device_tick {
@@ -40,15 +40,15 @@ struct device_tick {
     device_t *next_device; /* Next device having the same tick */
     device_t *prev_device; /* Previous device handling the same tick*/
     app_thread_t *catchup; /* Did tick miss any messages? */
-    int (*callback)(void *object, app_event_t *event, device_tick_t *tick, app_thread_t *thread);
+    device_tick_callback_t callback;
 };
 
 struct device_ticks {
-    device_tick_t *input;  /* Logic that processes input and immediate work */
-    device_tick_t *async;  /* Asynchronous work that needs to be done later */
-    device_tick_t *output; /* Asynchronous work that needs to be done later */
-    device_tick_t *poll;   /* Logic that runs periodically even when there is no input*/
-    device_tick_t *idle;   /* Lowest priority work that is done when there isn't anything more important */
+    device_tick_t *input;           /* Logic that processes input and immediate work */
+    device_tick_t *high_priority;   /* Asynchronous work that needs to be done later */
+    device_tick_t *medium_priority; /* Asynchronous work that needs to be done later */
+    device_tick_t *low_priority;    /* Logic that runs periodically even when there is no input*/
+    device_tick_t *bg_priority;     /* Lowest priority work that is done when there isn't anything more important */
 };
 
 int device_tick_allocate(device_tick_t **destination, device_tick_callback_t callback);
@@ -59,6 +59,7 @@ int device_ticks_free(device_t *device);
 
 int app_thread_allocate(app_thread_t **thread, void *app_or_object, void (*callback)(void *ptr), const char *const name,
                         uint16_t stack_depth, size_t queue_size, size_t priority, void *argument);
+void device_tick_initialize(device_tick_t *tick);
 
 int app_thread_free(app_thread_t **thread);
 
@@ -102,6 +103,9 @@ void app_thread_device_schedule(app_thread_t *thread, device_t *device, uint32_t
 #define app_publish(app, event) app_thread_publish_generic(app->threads->input, event, 0);
 
 #define app_thread_device_schedule(thread, device, time) app_thread_tick_schedule(thread, device_tick_for_thread(device, thread), time);
+
+char *app_thread_get_name(app_thread_t *thread);
+char *app_get_current_thread_name(app_t *app);
 
 #ifdef __cplusplus
 }

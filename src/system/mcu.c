@@ -12,7 +12,7 @@ static ODR_t OD_write_system_mcu_property(OD_stream_t *stream, const void *buf, 
 }
 
 static app_signal_t mcu_validate(OD_entry_t *config_entry) {
-    system_mcu_config_t *config = (system_mcu_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    system_mcu_config_t *config = (system_mcu_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     (void)config;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
@@ -21,17 +21,17 @@ static app_signal_t mcu_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t mcu_phase_constructing(system_mcu_t *mcu, device_t *device) {
-    mcu->config = (system_mcu_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    mcu->config = (system_mcu_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
     return mcu->config->disabled;
 }
 
 static app_signal_t mcu_phase_starting(system_mcu_t *mcu) {
-    (void) mcu;
 #if defined(STM32F1)
-    rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_HSE8_72MHZ]);
+    mcu->clock = &rcc_hsi_configs[RCC_CLOCK_HSE8_72MHZ];
 #elif defined(STM32F4)
-    rcc_clock_setup_pll(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ]);
+    mcu->clock = &rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_168MHZ];
 #endif
+    rcc_clock_setup_pll(mcu->clock);
     return 0;
 }
 
@@ -52,7 +52,7 @@ static app_signal_t mcu_phase_resuming(system_mcu_t *mcu) {
 
 static app_signal_t mcu_phase_linking(system_mcu_t *mcu) {
     (void)mcu;
-    return device_phase_linking(mcu->device, (void **)&mcu->storage, mcu->config->storage_index, NULL);
+    return device_link(mcu->device, (void **)&mcu->storage, mcu->config->storage_index, NULL);
 }
 
 static app_signal_t mcu_phase(system_mcu_t *mcu, device_phase_t phase) {

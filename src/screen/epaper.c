@@ -9,19 +9,19 @@ OD_ACCESSORS(screen, epaper, values, render_count, SUBIDX_EPAPER_RENDER_COUNT, i
 
 /* Epaper needs DC, CS, BUSY, RESET pins set, as well as screen size */
 static app_signal_t epaper_validate(OD_entry_t *config_entry) {
-    screen_epaper_config_t *config = (screen_epaper_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    screen_epaper_config_t *config = (screen_epaper_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     return config->dc_pin == 0 || config->dc_port == 0 || config->cs_port == 0 || config->cs_pin == 0 || config->busy_pin == 0 ||
            config->busy_port == 0 || config->reset_port == 0 || config->reset_pin == 0 || config->width == 0 || config->height == 0;
 }
 
 static app_signal_t epaper_phase_constructing(screen_epaper_t *epaper, device_t *device) {
-    epaper->config = (screen_epaper_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
-    epaper->values = (screen_epaper_values_t *)OD_getPtr(device->values, 0x01, 0, NULL);
+    epaper->config = (screen_epaper_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
+    epaper->values = (screen_epaper_values_t *)OD_getPtr(device->values, 0x00, 0, NULL);
     return 1; // epaper->config->disabled;
 }
 
 static app_signal_t epaper_phase_linking(screen_epaper_t *epaper) {
-    return device_phase_linking(epaper->device, (void **)&epaper->spi, epaper->config->spi_index, NULL);
+    return device_link(epaper->device, (void **)&epaper->spi, epaper->config->spi_index, NULL);
 }
 
 const unsigned char screen_epaper_lut_full_update[] = {
@@ -381,9 +381,9 @@ static app_signal_t epaper_set_initializing_phase(screen_epaper_t *epaper) {
 
 static app_signal_t epaper_phase_starting(screen_epaper_t *epaper) {
     device_gpio_configure_input("Busy", epaper->config->busy_port, epaper->config->busy_pin);
-    device_gpio_configure_output_with_value("Reset", epaper->config->reset_port, epaper->config->busy_pin, 1);
-    device_gpio_configure_output_with_value("DC", epaper->config->dc_port, epaper->config->dc_pin, 0);
-    device_gpio_configure_output_with_value("CS", epaper->config->cs_port, epaper->config->cs_pin, 0);
+    device_gpio_configure_output_with_value("Reset", epaper->config->reset_port, epaper->config->busy_pin, 0, 1);
+    device_gpio_configure_output_with_value("DC", epaper->config->dc_port, epaper->config->dc_pin, 0, 0);
+    device_gpio_configure_output_with_value("CS", epaper->config->cs_port, epaper->config->cs_pin, 0, 0);
 
     screen_epaper_set_initializing_phase(epaper);
     // screen_epaper_init_mode(epaper, screen_epaper_FULL);

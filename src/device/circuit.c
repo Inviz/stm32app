@@ -26,19 +26,19 @@ static ODR_t OD_write_device_circuit_property(OD_stream_t *stream, const void *b
 
 /* Circuit needs its relay GPIO configured */
 static app_signal_t circuit_validate(OD_entry_t *config_entry) {
-    device_circuit_config_t *config = (device_circuit_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    device_circuit_config_t *config = (device_circuit_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     return config->port == 0 || config->pin == 0;
 }
 
 static app_signal_t circuit_phase_constructing(device_circuit_t *circuit, device_t *device) {
-    circuit->config = (device_circuit_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
-    circuit->values = (device_circuit_values_t *)OD_getPtr(device->values, 0x01, 0, NULL);
+    circuit->config = (device_circuit_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
+    circuit->values = (device_circuit_values_t *)OD_getPtr(device->values, 0x0, 0, NULL);
     return 0;
 }
 
 static app_signal_t circuit_phase_linking(device_circuit_t *circuit) {
-    return device_phase_linking(circuit->device, (void **)&circuit->current_sensor, circuit->config->sensor_index, NULL) +
-           device_phase_linking(circuit->device, (void **)&circuit->psu, circuit->config->psu_index, NULL);
+    return device_link(circuit->device, (void **)&circuit->current_sensor, circuit->config->sensor_index, NULL) +
+           device_link(circuit->device, (void **)&circuit->psu, circuit->config->psu_index, NULL);
 }
 
 // receive value from current sensor
@@ -51,7 +51,8 @@ static app_signal_t circuit_receive(device_circuit_t *circuit, device_t *device,
 }
 
 static app_signal_t circuit_phase_starting(device_circuit_t *circuit) {
-    device_gpio_configure_output_with_value("Relay", circuit->config->port, circuit->config->pin, device_circuit_get_state(circuit));
+    device_gpio_configure("Relay", circuit->config->port, circuit->config->pin, 0);
+    //device_gpio_set_state(device_circuit_get_state(circuit));
 
     return 0;
 }

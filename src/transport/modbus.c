@@ -15,7 +15,7 @@ static ODR_t OD_write_transport_modbus_property(OD_stream_t *stream, const void 
 }
 
 static app_signal_t modbus_validate(OD_entry_t *config_entry) {
-    transport_modbus_config_t *config = (transport_modbus_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    transport_modbus_config_t *config = (transport_modbus_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     (void)config;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
@@ -24,7 +24,7 @@ static app_signal_t modbus_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t modbus_phase_constructing(transport_modbus_t *modbus, device_t *device) {
-    modbus->config = (transport_modbus_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    modbus->config = (transport_modbus_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
     modbus->rx_buffer = malloc(modbus->config->rx_buffer_size);
     return modbus->config->disabled;
 }
@@ -57,8 +57,8 @@ static app_signal_t modbus_phase_resuming(transport_modbus_t *modbus) {
 }
 
 static app_signal_t modbus_phase_linking(transport_modbus_t *modbus) {
-    return device_phase_linking(modbus->device, (void **)&modbus->usart, modbus->config->usart_index, NULL) +
-           device_phase_linking(modbus->device, (void **)&modbus->timer, modbus->config->timer_index, NULL);
+    return device_link(modbus->device, (void **)&modbus->usart, modbus->config->usart_index, NULL) +
+           device_link(modbus->device, (void **)&modbus->timer, modbus->config->timer_index, NULL);
 }
 
 static app_signal_t modbus_phase(transport_modbus_t *modbus, device_phase_t phase) {

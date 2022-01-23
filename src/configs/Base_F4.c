@@ -21,7 +21,7 @@
     OD data initialization of all groups
 *******************************************************************************/
 Base_F4_ATTR_RAM Base_F4_RAM_t Base_F4_RAM = {
-    .x6000_moduleMCU = {
+    .x6000_systemMCU = {
         .highestSub_indexSupported = 0x03,
         .family = {'S', 'T', 'M', '3', '2', 'F', '4', 0},
         .board = {'S', 'T', 'M', 'F', '3', '2', '4', '0', '7', 0}
@@ -43,26 +43,26 @@ Base_F4_ATTR_RAM Base_F4_RAM_t Base_F4_RAM = {
     All OD objects (constant definitions)
 *******************************************************************************/
 typedef struct {
-    OD_obj_record_t o_6000_moduleMCU[3];
+    OD_obj_record_t o_6000_systemMCU[3];
     OD_obj_record_t o_6200_transportCAN_1[7];
 } Base_F4Objs_t;
 
 static CO_PROGMEM Base_F4Objs_t Base_F4Objs = {
-    .o_6000_moduleMCU = {
+    .o_6000_systemMCU = {
         {
-            .dataOrig = &Base_F4_RAM.x6000_moduleMCU.highestSub_indexSupported,
+            .dataOrig = &Base_F4_RAM.x6000_systemMCU.highestSub_indexSupported,
             .subIndex = 0,
             .attribute = ODA_SDO_R,
             .dataLength = 1
         },
         {
-            .dataOrig = &Base_F4_RAM.x6000_moduleMCU.family[0],
+            .dataOrig = &Base_F4_RAM.x6000_systemMCU.family[0],
             .subIndex = 2,
             .attribute = ODA_SDO_RW | ODA_STR,
             .dataLength = 7
         },
         {
-            .dataOrig = &Base_F4_RAM.x6000_moduleMCU.board[0],
+            .dataOrig = &Base_F4_RAM.x6000_systemMCU.board[0],
             .subIndex = 3,
             .attribute = ODA_SDO_RW | ODA_STR,
             .dataLength = 9
@@ -119,7 +119,7 @@ static CO_PROGMEM Base_F4Objs_t Base_F4Objs = {
     Object dictionary
 *******************************************************************************/
 static Base_F4_ATTR_OD OD_entry_t Base_F4List[] = {
-    {0x6000, 0x03, ODT_REC, &Base_F4Objs.o_6000_moduleMCU, NULL},
+    {0x6000, 0x03, ODT_REC, &Base_F4Objs.o_6000_systemMCU, NULL},
     {0x6200, 0x07, ODT_REC, &Base_F4Objs.o_6200_transportCAN_1, NULL},
     {0x0000, 0x00, 0, NULL, NULL}
 };

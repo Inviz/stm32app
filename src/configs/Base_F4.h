@@ -59,7 +59,7 @@ typedef struct {
         uint8_t highestSub_indexSupported;
         char family[8];
         char board[10];
-    } x6000_moduleMCU;
+    } x6000_systemMCU;
     struct {
         uint8_t highestSub_indexSupported;
         uint32_t disabled;
@@ -92,7 +92,7 @@ extern Base_F4_ATTR_OD OD_t *Base_F4;
 /*******************************************************************************
     Object dictionary entries - shortcuts with names
 *******************************************************************************/
-#define Base_F4_ENTRY_H6000_moduleMCU &Base_F4->list[0]
+#define Base_F4_ENTRY_H6000_systemMCU &Base_F4->list[0]
 #define Base_F4_ENTRY_H6200_transportCAN_1 &Base_F4->list[1]
 
 

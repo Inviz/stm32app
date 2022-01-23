@@ -16,7 +16,7 @@
 
         Created:      9/25/2021 2:03:07 AM
         Created By:   
-        Modified:     1/6/2022 8:52:06 PM
+        Modified:     1/23/2022 5:33:29 PM
         Modified By:  
 
     Device Info:
@@ -47,7 +47,8 @@
 #define OD_CNT_RPDO 4
 #define OD_CNT_TPDO 4
 #define OD_CNT_DEVICE_CIRCUIT 4
-#define OD_CNT_MODULE_ADC 2
+#define OD_CNT_MODULE_TIMER 3
+#define OD_CNT_MODULE_ADC 1
 #define OD_CNT_TRANSPORT_CAN 1
 #define OD_CNT_TRANSPORT_SPI 1
 #define OD_CNT_TRANSPORT_USART 1
@@ -295,14 +296,28 @@ typedef struct {
     } x6010_systemCANopen;
     struct {
         uint8_t highestSub_indexSupported;
-        uint32_t disabled;
-    } x6020_systemRTOS;
+        int16_t disabled;
+        uint8_t prescaler;
+        uint8_t initialSubscriptionsCount;
+        uint32_t period;
+        uint32_t frequency;
+    } x6100_moduleTimer_1;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
         uint8_t prescaler;
-        uint8_t source;
-    } x6100_moduleTimer_1;
+        uint8_t initialSubscriptionsCount;
+        uint32_t period;
+        uint32_t frequency;
+    } x6101_moduleTimer_2;
+    struct {
+        uint8_t highestSub_indexSupported;
+        int16_t disabled;
+        uint8_t prescaler;
+        uint8_t initialSubscriptionsCount;
+        uint32_t period;
+        uint32_t frequency;
+    } x6102_moduleTimer_3;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
@@ -329,8 +344,8 @@ typedef struct {
     struct {
         uint8_t highestSub_indexSupported;
         int16_t disabled;
-        bool_t isSlave;
-        bool_t softwareSS_Control;
+        uint8_t isSlave;
+        uint8_t softwareSS_Control;
         uint8_t mode;
         uint8_t DMA_RxUnit;
         uint8_t DMA_RxStream;
@@ -343,6 +358,7 @@ typedef struct {
         uint8_t DMA_TxUnit;
         uint8_t DMA_TxStream;
         uint8_t DMA_TxChannel;
+        uint8_t AF_Index;
         uint8_t SS_Port;
         uint8_t SS_Pin;
         uint8_t SCK_Port;
@@ -490,7 +506,12 @@ typedef struct {
         uint32_t COB_IDClientToServerRx;
         uint32_t COB_IDServerToClientTx;
     } x1200_SDOServerParameter;
-    uint32_t x3000_appDevice;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint32_t timerIndex;
+        uint32_t MCU_Index;
+        uint32_t CANopenIndex;
+    } x3000_coreApp;
     struct {
         uint8_t highestSub_indexSupported;
         int16_t dutyCycle;
@@ -580,25 +601,26 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H5802 &OD->list[39]
 #define OD_ENTRY_H6000 &OD->list[40]
 #define OD_ENTRY_H6010 &OD->list[41]
-#define OD_ENTRY_H6020 &OD->list[42]
-#define OD_ENTRY_H6100 &OD->list[43]
-#define OD_ENTRY_H6120 &OD->list[44]
-#define OD_ENTRY_H6200 &OD->list[45]
-#define OD_ENTRY_H6220 &OD->list[46]
-#define OD_ENTRY_H6240 &OD->list[47]
-#define OD_ENTRY_H6260 &OD->list[48]
-#define OD_ENTRY_H6280 &OD->list[49]
-#define OD_ENTRY_H6300 &OD->list[50]
-#define OD_ENTRY_H6320 &OD->list[51]
-#define OD_ENTRY_H6340 &OD->list[52]
-#define OD_ENTRY_H6380 &OD->list[53]
-#define OD_ENTRY_H6800 &OD->list[54]
-#define OD_ENTRY_H6900 &OD->list[55]
-#define OD_ENTRY_H7000 &OD->list[56]
-#define OD_ENTRY_H8000 &OD->list[57]
-#define OD_ENTRY_H8010 &OD->list[58]
-#define OD_ENTRY_H8800 &OD->list[59]
-#define OD_ENTRY_H9000 &OD->list[60]
+#define OD_ENTRY_H6100 &OD->list[42]
+#define OD_ENTRY_H6101 &OD->list[43]
+#define OD_ENTRY_H6102 &OD->list[44]
+#define OD_ENTRY_H6120 &OD->list[45]
+#define OD_ENTRY_H6200 &OD->list[46]
+#define OD_ENTRY_H6220 &OD->list[47]
+#define OD_ENTRY_H6240 &OD->list[48]
+#define OD_ENTRY_H6260 &OD->list[49]
+#define OD_ENTRY_H6280 &OD->list[50]
+#define OD_ENTRY_H6300 &OD->list[51]
+#define OD_ENTRY_H6320 &OD->list[52]
+#define OD_ENTRY_H6340 &OD->list[53]
+#define OD_ENTRY_H6380 &OD->list[54]
+#define OD_ENTRY_H6800 &OD->list[55]
+#define OD_ENTRY_H6900 &OD->list[56]
+#define OD_ENTRY_H7000 &OD->list[57]
+#define OD_ENTRY_H8000 &OD->list[58]
+#define OD_ENTRY_H8010 &OD->list[59]
+#define OD_ENTRY_H8800 &OD->list[60]
+#define OD_ENTRY_H9000 &OD->list[61]
 
 
 /*******************************************************************************
@@ -637,7 +659,7 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H1A01_TPDOMappingParameter &OD->list[30]
 #define OD_ENTRY_H1A02_TPDOMappingParameter &OD->list[31]
 #define OD_ENTRY_H1A03_TPDOMappingParameter &OD->list[32]
-#define OD_ENTRY_H3000_appDevice &OD->list[33]
+#define OD_ENTRY_H3000_coreApp &OD->list[33]
 #define OD_ENTRY_H3800_deviceCircuit_1 &OD->list[34]
 #define OD_ENTRY_H3801_deviceCircuit_2 &OD->list[35]
 #define OD_ENTRY_H3802_deviceCircuit_3 &OD->list[36]
@@ -646,25 +668,26 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H5802_deviceValuesCircuit_3 &OD->list[39]
 #define OD_ENTRY_H6000_systemMCU &OD->list[40]
 #define OD_ENTRY_H6010_systemCANopen &OD->list[41]
-#define OD_ENTRY_H6020_systemRTOS &OD->list[42]
-#define OD_ENTRY_H6100_moduleTimer_1 &OD->list[43]
-#define OD_ENTRY_H6120_moduleADC_1 &OD->list[44]
-#define OD_ENTRY_H6200_transportCAN_1 &OD->list[45]
-#define OD_ENTRY_H6220_transportSPI_1 &OD->list[46]
-#define OD_ENTRY_H6240_transportUSART_1 &OD->list[47]
-#define OD_ENTRY_H6260_transportI2C_1 &OD->list[48]
-#define OD_ENTRY_H6280_transportModbus_1 &OD->list[49]
-#define OD_ENTRY_H6300_storageEeprom_1 &OD->list[50]
-#define OD_ENTRY_H6320_storageW25 &OD->list[51]
-#define OD_ENTRY_H6340_storageFlash &OD->list[52]
-#define OD_ENTRY_H6380_memorySRAM_1 &OD->list[53]
-#define OD_ENTRY_H6800_inputSensor_1 &OD->list[54]
-#define OD_ENTRY_H6900_controlTouchscreen_1 &OD->list[55]
-#define OD_ENTRY_H7000_screenEpaper_1 &OD->list[56]
-#define OD_ENTRY_H8000_moduleValuesMCU &OD->list[57]
-#define OD_ENTRY_H8010_systemValuesCanopen &OD->list[58]
-#define OD_ENTRY_H8800_inputValuesSensor_1 &OD->list[59]
-#define OD_ENTRY_H9000_screenValuesEpaper_1 &OD->list[60]
+#define OD_ENTRY_H6100_moduleTimer_1 &OD->list[42]
+#define OD_ENTRY_H6101_moduleTimer_2 &OD->list[43]
+#define OD_ENTRY_H6102_moduleTimer_3 &OD->list[44]
+#define OD_ENTRY_H6120_moduleADC_1 &OD->list[45]
+#define OD_ENTRY_H6200_transportCAN_1 &OD->list[46]
+#define OD_ENTRY_H6220_transportSPI_1 &OD->list[47]
+#define OD_ENTRY_H6240_transportUSART_1 &OD->list[48]
+#define OD_ENTRY_H6260_transportI2C_1 &OD->list[49]
+#define OD_ENTRY_H6280_transportModbus_1 &OD->list[50]
+#define OD_ENTRY_H6300_storageEeprom_1 &OD->list[51]
+#define OD_ENTRY_H6320_storageW25 &OD->list[52]
+#define OD_ENTRY_H6340_storageFlash &OD->list[53]
+#define OD_ENTRY_H6380_memorySRAM_1 &OD->list[54]
+#define OD_ENTRY_H6800_inputSensor_1 &OD->list[55]
+#define OD_ENTRY_H6900_controlTouchscreen_1 &OD->list[56]
+#define OD_ENTRY_H7000_screenEpaper_1 &OD->list[57]
+#define OD_ENTRY_H8000_moduleValuesMCU &OD->list[58]
+#define OD_ENTRY_H8010_systemValuesCanopen &OD->list[59]
+#define OD_ENTRY_H8800_inputValuesSensor_1 &OD->list[60]
+#define OD_ENTRY_H9000_screenValuesEpaper_1 &OD->list[61]
 
 
 /*******************************************************************************

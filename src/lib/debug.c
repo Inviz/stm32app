@@ -1,29 +1,26 @@
+
+#include "debug.h"
+
 #ifdef DEBUG
-#define configASSERT(x) (!x ? log_printf("Assert failed!") ||  __asm("BKPT #0\n") : true)
+__attribute__((naked)) void hardfault_handler(void)
+{
+  __asm volatile (
+    "movs r0,#4            \n"
+    "movs r1, lr           \n"
+    "tst r0, r1            \n"
+    "beq _MSP              \n"
+    "mrs r0, psp           \n"
+    "b _HALT               \n"
+  "_MSP:                   \n"
+    "mrs r0, msp           \n"
+  "_HALT:                  \n"
+    "ldr r1,[r0,#20]       \n"
+    "b hardfault_discovery \n"
+    "bkpt #0               \n"
+  );
+};
 
 
-#include <libopencm3/cm3/scb.h>
-#include "FreeRTOS.h"
-#include <task.h>
-#include "core/types.h"
-
-
-
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
-    (void)xTask;      /* unused*/
-    (void)pcTaskName; /* may be unused*/
-    log_printf("System - Stack overflow! %s", pcTaskName);
-    while (1) {
-    }
-}
-
-void vApplicationMallocFailedHook(void) {
-    log_printf("System - Malloc failed! %s");
-    while (1) {
-    }
-}
-
-__attribute__((used)) void hardfault_discovery(struct scb_exception_stack_frame *frame);
 __attribute__((used)) void hardfault_discovery(struct scb_exception_stack_frame *frame)
 {
     volatile uint32_t _CFSR;
@@ -71,25 +68,23 @@ __attribute__((used)) void hardfault_discovery(struct scb_exception_stack_frame 
 
     __asm("BKPT #0\n") ; // Break into the debugger
     while (1) { }
+};
+
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    (void)xTask;      /* unused*/
+    (void)pcTaskName; /* may be unused*/
+    log_printf("System - Stack overflow! %s", pcTaskName);
+    while (1) {
+    __asm("BKPT #0\n") ; // Break into the debugger
+    }
 }
 
-__attribute__((naked)) void hardfault_handler(void);
-__attribute__((naked)) void hardfault_handler(void)
-{
-  __asm volatile (
-    "movs r0,#4            \n"
-    "movs r1, lr           \n"
-    "tst r0, r1            \n"
-    "beq _MSP              \n"
-    "mrs r0, psp           \n"
-    "b _HALT               \n"
-  "_MSP:                   \n"
-    "mrs r0, msp           \n"
-  "_HALT:                  \n"
-    "ldr r1,[r0,#20]       \n"
-    "b hardfault_discovery \n"
-    "bkpt #0               \n"
-  );
+void vApplicationMallocFailedHook(void) {
+    log_printf("System - Malloc failed!");
+    while (1) {
+    __asm("BKPT #0\n") ; // Break into the debugger
+    }
 }
 
 #pragma weak hard_fault_handler = hardfault_handler

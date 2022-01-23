@@ -16,7 +16,7 @@ static ODR_t OD_write_system_canopen_property(OD_stream_t *stream, const void *b
 }
 
 static app_signal_t canopen_validate(OD_entry_t *config_entry) {
-    system_canopen_config_t *config = (system_canopen_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    system_canopen_config_t *config = (system_canopen_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     (void)config;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
@@ -25,7 +25,7 @@ static app_signal_t canopen_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t canopen_phase_constructing(system_canopen_t *canopen, device_t *device) {
-    canopen->config = (system_canopen_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    canopen->config = (system_canopen_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
 
     /* Allocate memory */
     uint32_t heapMemoryUsed = 0;
@@ -174,11 +174,11 @@ static app_signal_t canopen_phase_resuming(system_canopen_t *canopen) {
 }
 
 static app_signal_t canopen_phase_linking(system_canopen_t *canopen) {
-    device_phase_linking(canopen->device, (void **)&canopen->can, canopen->config->can_index, NULL);
+    device_link(canopen->device, (void **)&canopen->can, canopen->config->can_index, NULL);
     return 0;
 }
 
-static app_signal_t canopen_tick_async(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t canopen_tick_high_priority(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void)argument;
     tick->next_time = 0;
 
@@ -200,7 +200,7 @@ static app_signal_t canopen_tick_async(system_canopen_t *canopen, void *argument
 /* CANopen accepts its input from interrupts */
 static app_signal_t canopen_tick_input(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void)argument;
-    
+
     uint32_t us_since_last = (thread->current_time - tick->last_time) * 1000;
     uint32_t us_until_next = -1;
     CO_LOCK_OD(canopen->instance->CANmodule);
@@ -225,7 +225,7 @@ static app_signal_t canopen_tick_input(system_canopen_t *canopen, void *argument
     return 0;
 }
 
-static app_signal_t canopen_tick_idle(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t canopen_tick_bg_priority(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
     (void)argument;
     (void)tick;
     (void)thread;
@@ -263,8 +263,8 @@ device_methods_t system_canopen_methods = {
     .phase_resuming = (app_method_t)canopen_phase_resuming,
 
     .tick_input = (device_tick_callback_t)canopen_tick_input,
-    .tick_async = (device_tick_callback_t)canopen_tick_async,
-    .tick_idle = (device_tick_callback_t)canopen_tick_idle,
+    .tick_high_priority = (device_tick_callback_t)canopen_tick_high_priority,
+    .tick_bg_priority = (device_tick_callback_t)canopen_tick_bg_priority,
 
     .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))canopen_phase,
     .write_values = OD_write_system_canopen_property,
@@ -314,12 +314,12 @@ static void system_canopen_initialize_methods(system_canopen_t *canopen) {
 /* Processing tasks */
 #if (CO_CONFIG_SYNC) & CO_CONFIG_SYNC_ENABLE
     if (CO_GET_CNT(SYNC) == 1) {
-        CO_SYNC_initCallbackPre(canopen->instance->SYNC, (void *)&app->threads->async, (void (*)(void *))app_thread_canopen_notify);
+        CO_SYNC_initCallbackPre(canopen->instance->SYNC, (void *)&app->threads->high_priority, (void (*)(void *))app_thread_canopen_notify);
     }
 #endif
 #if (CO_CONFIG_PDO) & CO_CONFIG_RPDO_ENABLE
     for (int i = 0; i < CO_NO_RPDO; i++) {
-        CO_RPDO_initCallbackPre(c & anopen->instance->RPDO[i], (void *)&app->threads->async, app_thread_canopen_notify);
+        CO_RPDO_initCallbackPre(c & anopen->instance->RPDO[i], (void *)&app->threads->high_priority, app_thread_canopen_notify);
     }
 #endif
 }

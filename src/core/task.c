@@ -58,4 +58,5 @@ app_signal_t app_task_finalize(app_task_t *task) {
   }
   device_event_finalize(task->device, &task->inciting_event);
   device_event_finalize(task->device, &task->awaited_event);
+  return 0;
 }

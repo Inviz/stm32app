@@ -2,12 +2,12 @@
 
 /* SPI must be within range */
 static app_signal_t spi_validate(OD_entry_t *config_entry) {
-    transport_spi_config_t *config = (transport_spi_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    transport_spi_config_t *config = (transport_spi_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     return 0;
 }
 
 static app_signal_t spi_phase_constructing(transport_spi_t *spi, device_t *device) {
-    spi->config = (transport_spi_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    spi->config = (transport_spi_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
     switch (spi->device->seq) {
     case 0:
         spi->clock = RCC_SPI1;
@@ -67,10 +67,14 @@ static app_signal_t spi_phase_starting(transport_spi_t *spi) {
     (void)spi;
     rcc_periph_clock_enable(spi->clock);
 
-    device_gpio_configure_input("MISO", spi->config->miso_port, spi->config->miso_pin);
-    device_gpio_configure_output_with_value("SCK", spi->config->sck_port, spi->config->sck_pin, 0);
-    device_gpio_configure_output_with_value("SS", spi->config->ss_port, spi->config->ss_pin, 0);
-    device_gpio_configure_output_with_value("MOSI", spi->config->mosi_port, spi->config->mosi_pin, 0);
+    //log_printf("    > SPI%i SS\n", spi->device->seq + 1);
+    //gpio_configure_output_af_pullup(spi->config->ss_port, spi->config->ss_pin, GPIO_SLOW, 5);
+    log_printf("    > SPI%i SCK\n", spi->device->seq + 1);
+    gpio_configure_output_af_pullup (spi->config->sck_port, spi->config->sck_pin, GPIO_SLOW, 5);
+    log_printf("    > SPI%i MOSI\n", spi->device->seq + 1);
+    gpio_configure_output_af_pullup(spi->config->mosi_port, spi->config->mosi_pin, GPIO_SLOW, 5);
+    log_printf("    > SPI%i MISO\n", spi->device->seq + 1);
+    gpio_configure_input(spi->config->miso_port, spi->config->miso_pin);
 
     /* Reset SPI, SPI_CR1 register cleared, SPI is disabled */
     spi_reset(spi->address);
@@ -102,7 +106,7 @@ static app_signal_t spi_phase_starting(transport_spi_t *spi) {
         break;
     }
     if (!spi->config->is_slave) {
-        spi_init_master(spi->address, SPI_CR1_BAUDRATE_FPCLK_DIV_64, clock, polarity, SPI_CR1_DFF_8BIT, SPI_CR1_MSBFIRST);
+        spi_init_master(spi->address, SPI_CR1_BAUDRATE_FPCLK_DIV_256, clock, polarity, SPI_CR1_DFF_8BIT, SPI_CR1_MSBFIRST);
     } else {
         return 1;
     }
@@ -135,16 +139,19 @@ static app_signal_t spi_allocate_rx_buffer(transport_spi_t *spi) {
     return spi->rx_buffer == NULL;
 }
 
+/* Set timer to signal device in specified amount of time */
 static app_signal_t spi_schedule_rx_timeout(transport_spi_t *spi) {
+    return 0;
     return module_timer_timeout(spi->timer, spi->device, spi->config->dma_rx_idle_timeout, DEVICE_REQUESTING);
 }
 
+/* Check if DMAs circular buffer position is still the same */
 static app_signal_t spi_read_is_idle(transport_spi_t *spi) {
     return device_dma_get_buffer_position(spi->config->dma_rx_unit, spi->config->dma_rx_stream, spi->config->rx_buffer_size) ==
            spi->rx_buffer_cursor;
 }
 static app_signal_t spi_on_write(transport_spi_t *spi, app_event_t *event) {
-    device_dma_tx_phase_starting((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_tx_unit, spi->config->dma_tx_stream,
+    device_dma_tx_start((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_tx_unit, spi->config->dma_tx_stream,
                                  spi->config->dma_tx_channel, event->data, event->size);
     return APP_SIGNAL_OK;
 }
@@ -156,7 +163,7 @@ static app_signal_t spi_on_read(transport_spi_t *spi, app_event_t *event) {
             return error;
         }
     }
-    device_dma_rx_phase_starting((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_rx_unit, spi->config->dma_rx_stream,
+    device_dma_rx_start((uint32_t) & (SPI_DR(spi->address)), spi->config->dma_rx_unit, spi->config->dma_rx_stream,
                                  spi->config->dma_rx_channel, spi->rx_buffer, spi->config->rx_buffer_size);
     // schedule timeout to detect end of rx transmission
     spi_schedule_rx_timeout(spi);
@@ -192,13 +199,15 @@ static app_signal_t spi_signal(transport_spi_t *spi, device_t *device, app_signa
         break;
     case APP_SIGNAL_DMA_TRANSFERRING: // transfer (half) complete
         // If it's RX DMA, we still want to wait until IDLE signal
-        if (dma_match_source(source, spi->config->dma_rx_unit, spi->config->dma_rx_stream)) {
+        if (device_dma_match_source(source, spi->config->dma_rx_unit, spi->config->dma_rx_stream)) {
             device_dma_ingest(spi->config->dma_rx_unit, spi->config->dma_rx_stream, spi->rx_buffer, spi->config->rx_buffer_size,
                               &spi->rx_buffer_cursor, &spi->rx_pool);
             spi_schedule_rx_timeout(spi);
         } else {
             spi_write_complete(spi);
         }
+        break;
+    default:
         break;
     }
 

@@ -164,7 +164,7 @@ void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
 void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
 	uint32_t dma_address = dma_get_address(unit);
 
-	dma_channel_reset(dma_address, stream);
+	dma_reset_channel_or_stream(dma_address, stream);
 
 	dma_set_peripheral_address(dma_address, stream, periphery_address);
 	dma_set_memory_address(dma_address, stream, (uint32_t)data);
@@ -178,7 +178,7 @@ void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t strea
     rcc_periph_clock_enable(dma_get_clock_address(unit));
 	dma_enable_transfer_complete_interrupt(dma_address, stream);
 
-	dma_enable_channel(DMA1, stream);
+	dma_enable_channel_or_stream(DMA1, stream);
 }
 
 void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {

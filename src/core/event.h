@@ -15,14 +15,17 @@ enum app_event_type {
     APP_EVENT_THREAD_ALARM,      // Wake up by software timer alarm
 
     APP_EVENT_IDLE = 0, // initial/empty state of an event
-
     APP_EVENT_READ,  // abstract peripherial read events for cases with known receiver
     APP_EVENT_WRITE,
     APP_EVENT_ERASE,
     APP_EVENT_RESPONSE,
     APP_EVENT_LOCK,
     APP_EVENT_UNLOCK,
-    APP_EVENT_INTROSPECTION
+    APP_EVENT_INTROSPECTION,
+
+    APP_EVENT_ENABLE,
+    APP_EVENT_DISABLE,
+
 };
 
 /* Is event owned by some specific device */

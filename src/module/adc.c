@@ -3,12 +3,12 @@
 
 /* ADC must be within range */
 static app_signal_t adc_validate(OD_entry_t *config_entry) {
-    module_adc_config_t *config = (module_adc_config_t *)OD_getPtr(config_entry, 0x01, 0, NULL);
+    module_adc_config_t *config = (module_adc_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
     return config->disabled != 0;
 }
 
 static app_signal_t adc_phase_constructing(module_adc_t *adc, device_t *device) {
-    adc->config = (module_adc_config_t *)OD_getPtr(device->config, 0x01, 0, NULL);
+    adc->config = (module_adc_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
 
     adc->dma_address = dma_get_address(adc->config->dma_unit);
     if (adc->dma_address == 0) {
@@ -155,7 +155,7 @@ static app_signal_t adc_receive(module_adc_t *adc, device_t *device, void *value
 }
 
 /*
-static app_signal_t adc_async(module_adc_t *adc), uint32_t time_passed, uint32_t *next_tick) {
+static app_signal_t adc_high_priority(module_adc_t *adc), uint32_t time_passed, uint32_t *next_tick) {
 
 }*/
 
@@ -164,7 +164,7 @@ device_methods_t module_adc_methods = {.validate = adc_validate,
                                        .phase_destructing = (app_method_t) adc_phase_destructing,
                                        .phase_linking = (app_signal_t(*)(void *, device_t *device, void *channel))adc_accept,
                                        .callback_value = (app_signal_t(*)(void *, device_t *device, void *value, void *channel))adc_receive,
-                                       //.async = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_async,
+                                       //.high_priority = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_high_priority,
                                        .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))adc_phase,
                                        .phase_starting = (app_method_t) adc_phase_starting,
                                        .phase_stoping = (app_method_t) adc_phase_stoping};

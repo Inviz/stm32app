@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "glob": "^7.2.0",
     "inflection": "^1.13.1"
   }
 }

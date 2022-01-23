@@ -3,12 +3,14 @@
 
 // Count or initialize all devices in OD of given type
 size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_methods_t *methods, size_t struct_size,
-                                  device_t *destination, size_t offset) {
+                                 device_t *destination, size_t offset) {
     size_t count = 0;
     for (size_t seq = 0; seq < 128; seq++) {
         OD_entry_t *config = OD_find(od, type + seq);
-        if (config == NULL)
+        if (config == NULL && seq >= 10)
             break;
+        if (config == NULL)
+            continue;
 
         // Skip devices disabled by OD (first index)
         uint16_t disabled = 0;
@@ -68,7 +70,9 @@ device_t *app_device_find_by_type(app_t *app, uint16_t type) {
     return NULL;
 }
 
-device_t *app_device_find_by_number(app_t *app, uint8_t number) { return &app->device[number]; }
+device_t *app_device_find_by_number(app_t *app, uint8_t number) {
+    return &app->device[number];
+}
 
 uint8_t app_device_find_number(app_t *app, device_t *device) {
     for (size_t i = 0; i < app->device_count; i++) {
@@ -80,7 +84,7 @@ uint8_t app_device_find_number(app_t *app, device_t *device) {
 }
 
 void app_set_phase(app_t *app, device_phase_t phase) {
-    log_printf("Devices - phase %s\n", string_from_phase(phase));
+    log_printf("Devices - phase %s\n", get_device_phase_name(phase));
     for (size_t i = 0; i < app->device_count; i++) {
         if (app->device[i].phase != DEVICE_DISABLED) {
             device_set_phase(&app->device[i], phase);
