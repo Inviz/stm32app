@@ -2,13 +2,11 @@
 #include "lib/dma.h"
 
 /* USART must be within range */
-static app_signal_t usart_validate(OD_entry_t *properties_entry) {
-    transport_usart_properties_t *properties = (transport_usart_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
-    return 0;
+static app_signal_t usart_validate(transport_usart_properties_t *properties) {
+    return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t usart_phase_constructing(transport_usart_t *usart, device_t *device) {
-    usart->properties = (transport_usart_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
+static app_signal_t usart_phase_constructing(transport_usart_t *usart) {
 
     usart->dma_rx_address = dma_get_address(usart->properties->dma_rx_unit);
     usart->dma_tx_address = dma_get_address(usart->properties->dma_tx_unit);
@@ -147,8 +145,8 @@ static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, int
 }
 
 device_methods_t transport_usart_methods = {
-    .validate = usart_validate,
-    .phase_constructing = (app_signal_t (*)(void *, device_t *))usart_phase_constructing,
+    .validate = (app_method_t) usart_validate,
+    .phase_constructing = (app_method_t)usart_phase_constructing,
     .phase_destructing = (app_method_t) usart_phase_destructing,
     .phase_starting = (app_method_t) usart_phase_starting,
     .phase_stoping = (app_method_t) usart_phase_stoping,

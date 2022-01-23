@@ -18,7 +18,7 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         if (disabled != 0)
             break;
 
-        if (methods->validate(properties) != 0 && destination == NULL) {
+        if (methods->validate(OD_getPtr(properties, 0x00, 0, NULL)) != 0 && destination == NULL) {
             if (app != NULL && app->canopen != NULL) {
                 app_error_report(app, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(properties));
             }
@@ -35,7 +35,6 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         device->seq = seq;
         device->index = type + seq;
         device->struct_size = struct_size;
-        device->properties = properties;
         device->methods = methods;
 
         device->properties_extension.write = methods->property_write == NULL ? OD_writeOriginal : methods->property_write;

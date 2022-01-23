@@ -15,7 +15,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModifiedBy="" fileModificationDate="2022-01-23" fileModificationTime="20:40:15.4166874+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModifiedBy="" fileModificationDate="2022-01-23" fileModificationTime="21:21:05.5728424+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <q1:DeviceIdentity>
         <q1:vendorName>2</q1:vendorName>
         <q1:vendorID>3</q1:vendorID>
@@ -631,13 +631,16 @@
             <q1:varDeclaration name="Timer Index" uniqueID="UID_RECSUB_300001">
               <UDINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="MCU Index" uniqueID="UID_RECSUB_300002">
+            <q1:varDeclaration name="Storage Index" uniqueID="UID_RECSUB_300002">
               <UDINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="CANopen Index" uniqueID="UID_RECSUB_300003">
+            <q1:varDeclaration name="MCU Index" uniqueID="UID_RECSUB_300003">
               <UDINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_300004">
+            <q1:varDeclaration name="CANopen Index" uniqueID="UID_RECSUB_300004">
+              <UDINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_300005">
               <USINT />
             </q1:varDeclaration>
           </q1:struct>
@@ -992,28 +995,25 @@
             <q1:varDeclaration name="Highest sub-index supported" uniqueID="UID_RECSUB_628000">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Timer Index" uniqueID="UID_RECSUB_628001">
+            <q1:varDeclaration name="USART Index" uniqueID="UID_RECSUB_628001">
               <UINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="USART Index" uniqueID="UID_RECSUB_628002">
-              <UINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="RTS Port" uniqueID="UID_RECSUB_628003">
+            <q1:varDeclaration name="RTS Port" uniqueID="UID_RECSUB_628002">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="RTS Pin" uniqueID="UID_RECSUB_628004">
+            <q1:varDeclaration name="RTS Pin" uniqueID="UID_RECSUB_628003">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Slave Address" uniqueID="UID_RECSUB_628005">
+            <q1:varDeclaration name="Slave Address" uniqueID="UID_RECSUB_628004">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Rx Buffer Size" uniqueID="UID_RECSUB_628006">
+            <q1:varDeclaration name="Rx Buffer Size" uniqueID="UID_RECSUB_628005">
               <UINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Timeout" uniqueID="UID_RECSUB_628007">
+            <q1:varDeclaration name="Timeout" uniqueID="UID_RECSUB_628006">
               <UINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_628008">
+            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_628007">
               <USINT />
             </q1:varDeclaration>
           </q1:struct>
@@ -2917,7 +2917,7 @@
           <q1:parameter uniqueID="UID_SUB_300000">
             <label lang="en">Highest sub-index supported</label>
             <USINT />
-            <q1:defaultValue value="0x04" />
+            <q1:defaultValue value="0x05" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_300001" access="readWrite">
             <description lang="en">Index of a timer used for generic medium-precision scheduling (1us)</description>
@@ -2925,16 +2925,21 @@
             <q1:defaultValue value="0x6102" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_300002" access="readWrite">
+            <label lang="en">Storage Index</label>
+            <UDINT />
+            <q1:defaultValue value="0x7100" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_300003" access="readWrite">
             <description lang="en">Main MCU device index</description>
             <UDINT />
             <q1:defaultValue value="0x6000" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_300003" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_300004" access="readWrite">
             <description lang="en">Main CANopen device</description>
             <UDINT />
-            <q1:defaultValue value="0x6010" />
+            <q1:defaultValue value="0x6020" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_300004" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_300005" access="readWrite">
             <label lang="en">Phase</label>
             <USINT />
             <q1:defaultValue value="0" />
@@ -2984,7 +2989,7 @@
           <q1:parameter uniqueID="UID_SUB_400007" access="readWrite">
             <description lang="en">Hall sensor measures current and allows circuit to become a circuit breaker</description>
             <UINT />
-            <q1:defaultValue value="0x7600" />
+            <q1:defaultValue value="0x8000" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_400008" access="readWrite">
             <label lang="en">Phase</label>
@@ -3559,44 +3564,39 @@
           <q1:parameter uniqueID="UID_SUB_628000">
             <label lang="en">Highest sub-index supported</label>
             <USINT />
-            <q1:defaultValue value="0x08" />
+            <q1:defaultValue value="0x07" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_628001" access="readWrite">
             <description lang="en">Index of USART device</description>
             <UINT />
-            <q1:defaultValue value="0x7180" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628002" access="readWrite">
-            <description lang="en">Index of USART device</description>
-            <UINT />
             <q1:defaultValue value="0x7140" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628003" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_628002" access="readWrite">
             <description lang="en">GPIO port for ready-to-send</description>
             <USINT />
             <q1:defaultValue value="2" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628004" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_628003" access="readWrite">
             <description lang="en">GPIO pin for ready-to-send</description>
             <USINT />
             <q1:defaultValue value="2" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628005" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_628004" access="readWrite">
             <description lang="en">Leave 0 for master device</description>
             <USINT />
             <q1:defaultValue value="0" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628006" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_628005" access="readWrite">
             <description lang="en">Size of buffer to container usart message</description>
             <UINT />
             <q1:defaultValue value="20" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628007" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_628006" access="readWrite">
             <description lang="en">in us</description>
             <UINT />
             <q1:defaultValue value="2" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_628008" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_628007" access="readWrite">
             <description lang="en">in us</description>
             <USINT />
             <q1:defaultValue value="0" />
@@ -3757,7 +3757,7 @@
             <UINT />
             <q1:defaultValue value="256" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_700005" access="noAccess">
+          <q1:parameter uniqueID="UID_SUB_700005" access="readWrite">
             <label lang="en">Phase</label>
             <USINT />
             <q1:defaultValue value="0" />
@@ -3788,7 +3788,7 @@
             <UINT />
             <q1:defaultValue value="256" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_710004" access="noAccess">
+          <q1:parameter uniqueID="UID_SUB_710004" access="readWrite">
             <label lang="en">Phase</label>
             <USINT />
             <q1:defaultValue value="0" />
@@ -3819,7 +3819,7 @@
             <UINT />
             <q1:defaultValue value="256" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_720004" access="noAccess">
+          <q1:parameter uniqueID="UID_SUB_720004" access="readWrite">
             <label lang="en">Phase</label>
             <USINT />
             <q1:defaultValue value="0" />
@@ -3860,7 +3860,7 @@
             <UINT />
             <q1:defaultValue value="256" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_730006" access="noAccess">
+          <q1:parameter uniqueID="UID_SUB_730006" access="readWrite">
             <label lang="en">Phase</label>
             <USINT />
             <q1:defaultValue value="0" />
@@ -3894,7 +3894,7 @@
           <q1:parameter uniqueID="UID_SUB_800004" access="readWrite">
             <description lang="en">OD Index of ADC unit that will take measurements, must play well with the gpio setup</description>
             <UINT />
-            <q1:defaultValue value="0x7100" />
+            <q1:defaultValue value="0x6300" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_800005" access="readWrite">
             <description lang="en">ADC channel unique for unit to handle measurements</description>
@@ -4075,7 +4075,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModificationDate="2022-01-23" fileModificationTime="20:40:15.4166874+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModificationDate="2022-01-23" fileModificationTime="21:21:05.5728424+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <ApplicationLayers>
         <q2:CANopenObjectList>
           <CANopenObject index="1000" name="Device type" objectType="7" PDOmapping="no" uniqueIDRef="UID_OBJ_1000" />
@@ -4387,12 +4387,13 @@
             <CANopenSubObject subIndex="07" name="Application object 7" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_1A0407" />
             <CANopenSubObject subIndex="08" name="Application object 8" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_1A0408" />
           </CANopenObject>
-          <CANopenObject index="3000" name="Core App" objectType="9" uniqueIDRef="UID_OBJ_3000" subNumber="5">
+          <CANopenObject index="3000" name="Core App" objectType="9" uniqueIDRef="UID_OBJ_3000" subNumber="6">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300000" />
             <CANopenSubObject subIndex="01" name="Timer Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300001" />
-            <CANopenSubObject subIndex="02" name="MCU Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300002" />
-            <CANopenSubObject subIndex="03" name="CANopen Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300003" />
-            <CANopenSubObject subIndex="04" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300004" />
+            <CANopenSubObject subIndex="02" name="Storage Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300002" />
+            <CANopenSubObject subIndex="03" name="MCU Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300003" />
+            <CANopenSubObject subIndex="04" name="CANopen Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300004" />
+            <CANopenSubObject subIndex="05" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_300005" />
           </CANopenObject>
           <CANopenObject index="4000" name="Device Circuit 1" objectType="9" uniqueIDRef="UID_OBJ_4000" subNumber="12">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_400000" />
@@ -4523,16 +4524,15 @@
             <CANopenSubObject subIndex="09" name="Databits" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_626009" />
             <CANopenSubObject subIndex="0A" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_62600A" />
           </CANopenObject>
-          <CANopenObject index="6280" name="Transport Modbus 1" objectType="9" uniqueIDRef="UID_OBJ_6280" subNumber="9">
+          <CANopenObject index="6280" name="Transport Modbus 1" objectType="9" uniqueIDRef="UID_OBJ_6280" subNumber="8">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628000" />
-            <CANopenSubObject subIndex="01" name="Timer Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628001" />
-            <CANopenSubObject subIndex="02" name="USART Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628002" />
-            <CANopenSubObject subIndex="03" name="RTS Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628003" />
-            <CANopenSubObject subIndex="04" name="RTS Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628004" />
-            <CANopenSubObject subIndex="05" name="Slave Address" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628005" />
-            <CANopenSubObject subIndex="06" name="Rx Buffer Size" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628006" />
-            <CANopenSubObject subIndex="07" name="Timeout" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628007" />
-            <CANopenSubObject subIndex="08" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628008" />
+            <CANopenSubObject subIndex="01" name="USART Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628001" />
+            <CANopenSubObject subIndex="02" name="RTS Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628002" />
+            <CANopenSubObject subIndex="03" name="RTS Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628003" />
+            <CANopenSubObject subIndex="04" name="Slave Address" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628004" />
+            <CANopenSubObject subIndex="05" name="Rx Buffer Size" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628005" />
+            <CANopenSubObject subIndex="06" name="Timeout" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628006" />
+            <CANopenSubObject subIndex="07" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_628007" />
           </CANopenObject>
           <CANopenObject index="6300" name="Module ADC 1" objectType="9" uniqueIDRef="UID_OBJ_6300" subNumber="7">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_630000" />

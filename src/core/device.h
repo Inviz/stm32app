@@ -10,12 +10,11 @@ extern "C" {
 #include "core/thread.h"
 #include "lib/gpio.h"
 
-/* define convenient getters and setters */
 #define OD_ACCESSORS(OD_TYPE, NAME, SUBTYPE, PROPERTY, SUBINDEX, TYPE, SHORT_TYPE)                                                         \
-    ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                                      \
+    __attribute__((weak)) ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                                      \
         return OD_set_##SHORT_TYPE(NAME->device->SUBTYPE, SUBINDEX, value, false);                                                         \
     }                                                                                                                                      \
-    TYPE OD_TYPE##_##NAME##_get_##PROPERTY(OD_TYPE##_##NAME##_t *NAME) {                                                                   \
+    __attribute__((weak)) TYPE OD_TYPE##_##NAME##_get_##PROPERTY(OD_TYPE##_##NAME##_t *NAME) {                                                                   \
         TYPE value;                                                                                                                        \
         OD_get_##SHORT_TYPE(NAME->device->SUBTYPE, SUBINDEX, &value, false);                                                               \
         return value;                                                                                                                      \
@@ -95,8 +94,6 @@ struct device {
     size_t struct_size;              /* Memory requirements for device struct */
     OD_entry_t *properties;              /* OD entry containing propertiesuration for device*/
     OD_extension_t properties_extension; /* OD IO handlers for properties changes */
-    OD_entry_t *properties;              /* OD entry containing mutable properties (optinal) */
-    OD_extension_t properties_extension; /* OD IO handlers for mutable changes */
     device_methods_t *methods;       /* Per-class methods and methods */
     device_ticks_t *ticks;           /* Per-device thread subscription */
     app_t *app;                      /* Reference to root device */

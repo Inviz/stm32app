@@ -93,54 +93,7 @@ int transport_spi_read(transport_spi_t *spi, device_t *reader, void *argument);
 #define SUBIDX_SPI_MOSI_PIN 0x23
 #define SUBIDX_SPI_PHASE 0x24
 
-ODR_t transport_spi_set_is_slave(transport_spi_t *spi, uint8_t value); // 0x62XX01: spi properties is_slave
-uint8_t transport_spi_get_is_slave(transport_spi_t *spi); // 0x62XX01: spi properties is_slave
-ODR_t transport_spi_set_software_ss_control(transport_spi_t *spi, uint8_t value); // 0x62XX02: spi properties software_ss_control
-uint8_t transport_spi_get_software_ss_control(transport_spi_t *spi); // 0x62XX02: spi properties software_ss_control
-ODR_t transport_spi_set_mode(transport_spi_t *spi, uint8_t value); // 0x62XX03: spi properties mode
-uint8_t transport_spi_get_mode(transport_spi_t *spi); // 0x62XX03: spi properties mode
-ODR_t transport_spi_set_dma_rx_unit(transport_spi_t *spi, uint8_t value); // 0x62XX04: spi properties dma_rx_unit
-uint8_t transport_spi_get_dma_rx_unit(transport_spi_t *spi); // 0x62XX04: spi properties dma_rx_unit
-ODR_t transport_spi_set_dma_rx_stream(transport_spi_t *spi, uint8_t value); // 0x62XX05: spi properties dma_rx_stream
-uint8_t transport_spi_get_dma_rx_stream(transport_spi_t *spi); // 0x62XX05: spi properties dma_rx_stream
-ODR_t transport_spi_set_dma_rx_channel(transport_spi_t *spi, uint8_t value); // 0x62XX06: spi properties dma_rx_channel
-uint8_t transport_spi_get_dma_rx_channel(transport_spi_t *spi); // 0x62XX06: spi properties dma_rx_channel
-ODR_t transport_spi_set_dma_rx_idle_timeout(transport_spi_t *spi, int16_t value); // 0x62XX07: spi properties dma_rx_idle_timeout
-int16_t transport_spi_get_dma_rx_idle_timeout(transport_spi_t *spi); // 0x62XX07: spi properties dma_rx_idle_timeout
-ODR_t transport_spi_set_rx_buffer_size(transport_spi_t *spi, uint16_t value); // 0x62XX08: spi properties rx_buffer_size
-uint16_t transport_spi_get_rx_buffer_size(transport_spi_t *spi); // 0x62XX08: spi properties rx_buffer_size
-ODR_t transport_spi_set_rx_pool_max_size(transport_spi_t *spi, uint16_t value); // 0x62XX09: spi properties rx_pool_max_size
-uint16_t transport_spi_get_rx_pool_max_size(transport_spi_t *spi); // 0x62XX09: spi properties rx_pool_max_size
-ODR_t transport_spi_set_rx_pool_initial_size(transport_spi_t *spi, uint16_t value); // 0x62XX0a: spi properties rx_pool_initial_size
-uint16_t transport_spi_get_rx_pool_initial_size(transport_spi_t *spi); // 0x62XX0a: spi properties rx_pool_initial_size
-ODR_t transport_spi_set_rx_pool_block_size(transport_spi_t *spi, uint16_t value); // 0x62XX0b: spi properties rx_pool_block_size
-uint16_t transport_spi_get_rx_pool_block_size(transport_spi_t *spi); // 0x62XX0b: spi properties rx_pool_block_size
-ODR_t transport_spi_set_dma_tx_unit(transport_spi_t *spi, uint8_t value); // 0x62XX0c: spi properties dma_tx_unit
-uint8_t transport_spi_get_dma_tx_unit(transport_spi_t *spi); // 0x62XX0c: spi properties dma_tx_unit
-ODR_t transport_spi_set_dma_tx_stream(transport_spi_t *spi, uint8_t value); // 0x62XX0d: spi properties dma_tx_stream
-uint8_t transport_spi_get_dma_tx_stream(transport_spi_t *spi); // 0x62XX0d: spi properties dma_tx_stream
-ODR_t transport_spi_set_dma_tx_channel(transport_spi_t *spi, uint8_t value); // 0x62XX0e: spi properties dma_tx_channel
-uint8_t transport_spi_get_dma_tx_channel(transport_spi_t *spi); // 0x62XX0e: spi properties dma_tx_channel
-ODR_t transport_spi_set_af_index(transport_spi_t *spi, uint8_t value); // 0x62XX0f: spi properties af_index
-uint8_t transport_spi_get_af_index(transport_spi_t *spi); // 0x62XX0f: spi properties af_index
-ODR_t transport_spi_set_ss_port(transport_spi_t *spi, uint8_t value); // 0x62XX10: spi properties ss_port
-uint8_t transport_spi_get_ss_port(transport_spi_t *spi); // 0x62XX10: spi properties ss_port
-ODR_t transport_spi_set_ss_pin(transport_spi_t *spi, uint8_t value); // 0x62XX11: spi properties ss_pin
-uint8_t transport_spi_get_ss_pin(transport_spi_t *spi); // 0x62XX11: spi properties ss_pin
-ODR_t transport_spi_set_sck_port(transport_spi_t *spi, uint8_t value); // 0x62XX12: spi properties sck_port
-uint8_t transport_spi_get_sck_port(transport_spi_t *spi); // 0x62XX12: spi properties sck_port
-ODR_t transport_spi_set_sck_pin(transport_spi_t *spi, uint8_t value); // 0x62XX13: spi properties sck_pin
-uint8_t transport_spi_get_sck_pin(transport_spi_t *spi); // 0x62XX13: spi properties sck_pin
-ODR_t transport_spi_set_miso_port(transport_spi_t *spi, uint8_t value); // 0x62XX14: spi properties miso_port
-uint8_t transport_spi_get_miso_port(transport_spi_t *spi); // 0x62XX14: spi properties miso_port
-ODR_t transport_spi_set_miso_pin(transport_spi_t *spi, uint8_t value); // 0x62XX15: spi properties miso_pin
-uint8_t transport_spi_get_miso_pin(transport_spi_t *spi); // 0x62XX15: spi properties miso_pin
-ODR_t transport_spi_set_mosi_port(transport_spi_t *spi, uint8_t value); // 0x62XX16: spi properties mosi_port
-uint8_t transport_spi_get_mosi_port(transport_spi_t *spi); // 0x62XX16: spi properties mosi_port
-ODR_t transport_spi_set_mosi_pin(transport_spi_t *spi, uint8_t value); // 0x62XX17: spi properties mosi_pin
-uint8_t transport_spi_get_mosi_pin(transport_spi_t *spi); // 0x62XX17: spi properties mosi_pin
-ODR_t transport_spi_set_phase(transport_spi_t *spi, uint8_t value); // 0x62XX18: spi properties phase
-uint8_t transport_spi_get_phase(transport_spi_t *spi); // 0x62XX18: spi properties phase
+OD_ACCESSORS(transport, spi, properties, phase, SUBIDX_SPI_PHASE, uint8_t, u8) /* 0x62XX18: {"description":null,"label":null} */
 /* End of autogenerated OD accessors */
 
 #ifdef __cplusplus

@@ -2,13 +2,11 @@
 #include "lib/dma.h"
 
 /* ADC must be within range */
-static app_signal_t adc_validate(OD_entry_t *properties_entry) {
-    module_adc_properties_t *properties = (module_adc_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
-    return properties->disabled != 0;
+static app_signal_t adc_validate(module_adc_properties_t *properties) {
+    return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t adc_phase_constructing(module_adc_t *adc, device_t *device) {
-    adc->properties = (module_adc_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
+static app_signal_t adc_phase_constructing(module_adc_t *adc) {
 
     adc->dma_address = dma_get_address(adc->properties->dma_unit);
     if (adc->dma_address == 0) {
@@ -145,10 +143,10 @@ static app_signal_t adc_receive(module_adc_t *adc, device_t *device, void *value
     (void)device;
     (void)value;
     if (adc_integrate_samples(adc) == 0) {
-        log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->properties[1]);
+        log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->values[1]);
         for (size_t i = 0; i < adc->channel_count; i++) {
             size_t channelIndex = adc->channels[i];
-            device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->properties[i], (void *)channel);
+            device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->values[i], (void *)channel);
         }
     }
     return 0;
@@ -159,8 +157,8 @@ static app_signal_t adc_high_priority(module_adc_t *adc), uint32_t time_passed, 
 
 }*/
 
-device_methods_t module_adc_methods = {.validate = adc_validate,
-                                       .phase_constructing = (app_signal_t(*)(void *, device_t *))adc_phase_constructing,
+device_methods_t module_adc_methods = {.validate = (app_method_t) adc_validate,
+                                       .phase_constructing = (app_method_t)adc_phase_constructing,
                                        .phase_destructing = (app_method_t) adc_phase_destructing,
                                        .phase_linking = (app_signal_t(*)(void *, device_t *device, void *channel))adc_accept,
                                        .callback_value = (app_signal_t(*)(void *, device_t *device, void *value, void *channel))adc_receive,
@@ -210,7 +208,7 @@ size_t adc_integrate_samples(module_adc_t *adc) {
     if (adc->measurement_counter == adc->measurements_per_second) {
         adc->measurement_counter = 0;
         for (size_t c = 0; c < adc->channel_count; c++) {
-            adc->properties[c] = adc->accumulators[c] / (adc->measurements_per_second / adc->channel_count);
+            adc->values[c] = adc->accumulators[c] / (adc->measurements_per_second / adc->channel_count);
         }
     }
     return samples_left_total - samples_left_now;
@@ -220,14 +218,14 @@ void adc_channels_alloc(module_adc_t *adc, size_t channel_count) {
     adc->sample_buffer_size = adc->properties->sample_count_per_channel * channel_count;
     adc->measurements_per_second = (1000000 / (adc->properties->interval));
     adc->channels = malloc(channel_count * sizeof(size_t));
-    adc->properties = malloc(channel_count * sizeof(uint32_t));
+    adc->values = malloc(channel_count * sizeof(uint32_t));
     adc->accumulators = malloc(channel_count * sizeof(uint32_t));
     adc->sample_buffer = malloc(adc->sample_buffer_size * sizeof(uint16_t));
 }
 
 void adc_channels_free(module_adc_t *adc) {
     free(adc->sample_buffer);
-    free(adc->properties);
+    free(adc->values);
     free(adc->channels);
     free(adc->accumulators);
 }

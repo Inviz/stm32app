@@ -1,13 +1,11 @@
 #include "spi.h"
 
 /* SPI must be within range */
-static app_signal_t spi_validate(OD_entry_t *properties_entry) {
-    transport_spi_properties_t *properties = (transport_spi_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
-    return 0;
+static app_signal_t spi_validate(transport_spi_properties_t *properties) {
+    return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t spi_phase_constructing(transport_spi_t *spi, device_t *device) {
-    spi->properties = (transport_spi_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
+static app_signal_t spi_phase_constructing(transport_spi_t *spi) {
     switch (spi->device->seq) {
     case 0:
         spi->clock = RCC_SPI1;
@@ -68,13 +66,13 @@ static app_signal_t spi_phase_starting(transport_spi_t *spi) {
     rcc_periph_clock_enable(spi->clock);
 
     //log_printf("    > SPI%i SS\n", spi->device->seq + 1);
-    //gpio_propertiesure_output_af_pullup(spi->properties->ss_port, spi->properties->ss_pin, GPIO_SLOW, 5);
+    //gpio_configure_output_af_pullup(spi->properties->ss_port, spi->properties->ss_pin, GPIO_SLOW, 5);
     log_printf("    > SPI%i SCK\n", spi->device->seq + 1);
-    gpio_propertiesure_output_af_pullup (spi->properties->sck_port, spi->properties->sck_pin, GPIO_SLOW, 5);
+    gpio_configure_output_af_pullup (spi->properties->sck_port, spi->properties->sck_pin, GPIO_SLOW, 5);
     log_printf("    > SPI%i MOSI\n", spi->device->seq + 1);
-    gpio_propertiesure_output_af_pullup(spi->properties->mosi_port, spi->properties->mosi_pin, GPIO_SLOW, 5);
+    gpio_configure_output_af_pullup(spi->properties->mosi_port, spi->properties->mosi_pin, GPIO_SLOW, 5);
     log_printf("    > SPI%i MISO\n", spi->device->seq + 1);
-    gpio_propertiesure_input(spi->properties->miso_port, spi->properties->miso_pin);
+    gpio_configure_input(spi->properties->miso_port, spi->properties->miso_pin);
 
     /* Reset SPI, SPI_CR1 register cleared, SPI is disabled */
     spi_reset(spi->address);
@@ -222,8 +220,8 @@ static app_signal_t spi_tick_input(transport_spi_t *spi, app_event_t *event, dev
     }
 }
 
-device_methods_t transport_spi_methods = {.validate = spi_validate,
-                                          .phase_constructing = (app_signal_t (*)(void *, device_t *))spi_phase_constructing,
+device_methods_t transport_spi_methods = {.validate = (app_method_t) spi_validate,
+                                          .phase_constructing = (app_method_t)spi_phase_constructing,
                                           .phase_destructing = (app_method_t) spi_phase_destructing,
                                           .phase_starting = (app_method_t) spi_phase_starting,
                                           .tick_input = (device_tick_callback_t)spi_tick_input,

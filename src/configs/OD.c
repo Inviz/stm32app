@@ -2198,7 +2198,7 @@ static CO_PROGMEM ODObjs_t ODObjs = {
         {
             .dataOrig = &OD_PERSIST_COMM.x7000_storageEeprom_1.phase,
             .subIndex = 5,
-            .attribute = ,
+            .attribute = ODA_SDO_RW,
             .dataLength = 1
         }
     },
@@ -2230,7 +2230,7 @@ static CO_PROGMEM ODObjs_t ODObjs = {
         {
             .dataOrig = &OD_PERSIST_COMM.x7100_storageW25.phase,
             .subIndex = 4,
-            .attribute = ,
+            .attribute = ODA_SDO_RW,
             .dataLength = 1
         }
     },
@@ -2262,7 +2262,7 @@ static CO_PROGMEM ODObjs_t ODObjs = {
         {
             .dataOrig = &OD_PERSIST_COMM.x7200_storageFlash.phase,
             .subIndex = 4,
-            .attribute = ,
+            .attribute = ODA_SDO_RW,
             .dataLength = 1
         }
     },
@@ -2306,7 +2306,7 @@ static CO_PROGMEM ODObjs_t ODObjs = {
         {
             .dataOrig = &OD_PERSIST_COMM.x7300_memorySRAM_1.phase,
             .subIndex = 6,
-            .attribute = ,
+            .attribute = ODA_SDO_RW,
             .dataLength = 1
         }
     },

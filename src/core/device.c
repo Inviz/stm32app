@@ -40,6 +40,9 @@ int device_allocate(device_t *device) {
     device->object = malloc(device->struct_size);
     // by convention each object struct has pointer to device as its first member
     memcpy(device->object, &device, sizeof(device_t *));
+    // second member is `properties` poiting to memory struct in OD
+    memcpy(device->object + sizeof(device_t *), OD_getPtr(device->properties, 0x00, 0, NULL), sizeof(device_t *));
+
     if (device->object == NULL) {
         return CO_ERROR_OUT_OF_MEMORY;
     }
@@ -64,7 +67,9 @@ int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_
     }
 }
 
-void device_set_phase(device_t *device, device_phase_t phase) { device_set_temporary_phase(device, phase, 0); }
+void device_set_phase(device_t *device, device_phase_t phase) {
+    device_set_temporary_phase(device, phase, 0);
+}
 
 app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
                                                      app_event_status_t ready_status, app_event_status_t busy_status,
@@ -85,8 +90,8 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
 }
 
 app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
-                                                  app_task_handler_t handler, app_event_status_t ready_status,
-                                                  app_event_status_t busy_status) {
+                                                        app_task_handler_t handler, app_event_status_t ready_status,
+                                                        app_event_status_t busy_status) {
     app_signal_t signal = device_event_accept_and_process_generic(device, event, &task->inciting_event, ready_status, busy_status, NULL);
     if (signal == APP_SIGNAL_OK) {
         task->device = device;
@@ -104,8 +109,8 @@ app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_ev
 }
 
 app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
-                                                  app_task_handler_t handler, app_event_status_t ready_status,
-                                                  app_event_status_t busy_status) {
+                                                          app_task_handler_t handler, app_event_status_t ready_status,
+                                                          app_event_status_t busy_status) {
     if (task->handler != handler) {
         event->status = busy_status;
         return APP_SIGNAL_BUSY;
@@ -120,8 +125,8 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
 /* Attempt to store event in a memory destination if it's not occupied yet */
 void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t delay) {
     if (device->phase != phase || delay != 0) {
-        log_printf(delay != 0 ? "  - Device phase: 0x%x %s %s <= %s (over %lumS)\n" : "  - Device phase: 0x%x %s %s <= %s\n", device->index, get_device_type_name(device->type),
-                   get_device_phase_name(phase), get_device_phase_name(device->phase), delay / 1000);
+        log_printf(delay != 0 ? "  - Device phase: 0x%x %s %s <= %s (over %lumS)\n" : "  - Device phase: 0x%x %s %s <= %s\n", device->index,
+                   get_device_type_name(device->type), get_device_phase_name(phase), get_device_phase_name(device->phase), delay / 1000);
     }
     device->phase = phase;
     device->phase_delay = delay;
@@ -163,8 +168,7 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
             }
         }
         break;
-    default:
-        break;
+    default: break;
     }
 
     if (device->methods->callback_phase != NULL) {
@@ -172,12 +176,16 @@ void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t
     }
 }
 
-bool_t device_event_is_subscribed(device_t *device, app_event_t *event) { return device->event_subscriptions & event->type; }
+bool_t device_event_is_subscribed(device_t *device, app_event_t *event) {
+    return device->event_subscriptions & event->type;
+}
 
-void device_event_subscribe(device_t *device, app_event_type_t type) { device->event_subscriptions |= type; }
+void device_event_subscribe(device_t *device, app_event_type_t type) {
+    device->event_subscriptions |= type;
+}
 
 app_signal_t device_event_report(device_t *device, app_event_t *event) {
-    (void) device;
+    (void)device;
     if (event->producer && event->producer->methods->callback_event) {
         return event->producer->methods->callback_event(event->producer->object, event);
     } else {
@@ -194,7 +202,7 @@ app_signal_t device_event_finalize(device_t *device, app_event_t *event) {
 }
 
 app_signal_t device_tick_catchup(device_t *device, device_tick_t *tick) {
-    (void) device;
+    (void)device;
     app_thread_t *thread = tick->catchup;
     if (thread) {
         tick->catchup = NULL;
@@ -202,6 +210,12 @@ app_signal_t device_tick_catchup(device_t *device, device_tick_t *tick) {
     }
     return APP_SIGNAL_OK;
 }
-inline void device_gpio_set(uint8_t port, uint8_t pin) { return gpio_set(GPIOX(port), pin); }
-inline void device_gpio_clear(uint8_t port, uint8_t pin) { return gpio_clear(GPIOX(port), pin); }
-inline uint32_t device_gpio_get(uint8_t port, uint8_t pin) { return gpio_get(GPIOX(port), pin); }
+inline void device_gpio_set(uint8_t port, uint8_t pin) {
+    return gpio_set(GPIOX(port), pin);
+}
+inline void device_gpio_clear(uint8_t port, uint8_t pin) {
+    return gpio_clear(GPIOX(port), pin);
+}
+inline uint32_t device_gpio_get(uint8_t port, uint8_t pin) {
+    return gpio_get(GPIOX(port), pin);
+}
