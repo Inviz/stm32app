@@ -50,12 +50,7 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (mat
 
   const definition = findDefinition(`UID_OBJ_${index}`);
 
-  if (name.includes('values_')) {
-    name = name.replace('values_', '')
-    var subtype = 'values'
-  } else {
-    subtype = 'config'
-  }
+  var subtype = 'config'
 
   const accessors = [];
   const prototypes = [];

@@ -130,7 +130,7 @@ static app_signal_t w25_tick_high_priority(storage_w25_t *w25, app_event_t *even
     return 0;
 }
 
-static ODR_t OD_write_storage_w25_property(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
+static ODR_t w25_property_write(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
     storage_w25_t *w25 = stream->object;
     (void)w25;
     ODR_t result = OD_writeOriginal(stream, buf, count, countWritten);
@@ -216,4 +216,4 @@ device_methods_t storage_w25_methods = {.validate = w25_validate,
                                         .tick_input = (device_tick_callback_t)w25_tick_input,
                                         .tick_high_priority = (device_tick_callback_t)w25_tick_high_priority,
                                         .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))w25_phase,
-                                        .write_values = OD_write_storage_w25_property};
+                                        .property_write = w25_property_write};

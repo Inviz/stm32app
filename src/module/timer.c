@@ -11,7 +11,7 @@
 
 volatile module_timer_t *module_timers[TIMER_UNITS];
 
-static ODR_t OD_write_module_timer_property(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
+static ODR_t timer_property_write(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
     module_timer_t *timer = stream->object;
     (void)timer;
     ODR_t result = OD_writeOriginal(stream, buf, count, countWritten);
@@ -510,7 +510,7 @@ device_methods_t module_timer_methods = {.validate = timer_validate,
                                          .phase_resuming = (app_method_t)timer_phase_resuming,
                                          //.accept = (int (*)(void *, device_t *device, void *channel))module_timer_accept,
                                          .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))timer_callback_phase,
-                                         .write_values = OD_write_module_timer_property};
+                                         .property_write = timer_property_write};
 
 
 void tim1_isr ( void ) { timer_interrupt(0); }

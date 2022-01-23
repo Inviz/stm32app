@@ -9,8 +9,6 @@ extern "C" {
 #include "core/app.h"
 #include "core/thread.h"
 #include "lib/gpio.h"
-
-#define DEVICES_VALUES_OFFSET 4096
 /* define convenient getters and setters */
 #define OD_ACCESSORS(OD_TYPE, NAME, SUBTYPE, PROPERTY, SUBINDEX, TYPE, SHORT_TYPE)                                                         \
     ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                                      \
@@ -129,8 +127,8 @@ struct device_methods {
 
     ODR_t (*read_config)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
     ODR_t (*write_config)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
-    ODR_t (*read_values)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
-    ODR_t (*write_values)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
+    ODR_t (*property_read)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
+    ODR_t (*property_write)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
 };
 
 int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_t *next_tick);

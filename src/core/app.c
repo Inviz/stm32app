@@ -17,7 +17,6 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         OD_get_u16(config, 0x01, &disabled, true);
         if (disabled != 0)
             break;
-        OD_entry_t *values = OD_find(od, type + DEVICES_VALUES_OFFSET + seq);
 
         if (methods->validate(config) != 0 && destination == NULL) {
             if (app != NULL && app->canopen != NULL) {
@@ -38,16 +37,11 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         device->struct_size = struct_size;
         device->config = config;
         device->methods = methods;
-        device->values = values;
 
-        device->config_extension.write = methods->write_config == NULL ? OD_writeOriginal : methods->write_config;
-        device->config_extension.read = methods->read_config == NULL ? OD_readOriginal : methods->read_config;
-
-        device->values_extension.write = methods->write_values == NULL ? OD_writeOriginal : methods->write_values;
-        device->values_extension.read = methods->read_values == NULL ? OD_readOriginal : methods->read_values;
+        device->config_extension.write = methods->property_write == NULL ? OD_writeOriginal : methods->property_write;
+        device->config_extension.read = methods->property_read == NULL ? OD_readOriginal : methods->property_read;
 
         OD_extension_init(config, &device->config_extension);
-        OD_extension_init(values, &device->values_extension);
     }
     return count;
 }

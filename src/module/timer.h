@@ -33,17 +33,16 @@ struct module_timer {
     device_t *device;
     module_timer_config_t *config;
 
-    uint32_t current_time;
-    uint32_t next_time;
-
-    uint32_t next_tick;
+    uint32_t current_time; // timestamp that gets updated on every interrupt/timer subscription
+    uint32_t next_time;    // next subscription time (-1 if there arent any)
+    uint32_t next_tick;   // scheduled interval (usually equals to timer period)
 
     uint32_t address;
-    uint32_t clock;
-    uint32_t irq;
-    uint32_t reset;
+    uint16_t reset;
+    uint16_t clock;
+    uint8_t irq;
+    uint8_t peripheral_clock;
     uint8_t source;
-    uint32_t peripheral_clock;
 
     #ifdef DEBUG
         uint32_t debug_stopper;
