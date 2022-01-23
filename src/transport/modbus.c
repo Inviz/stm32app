@@ -104,7 +104,7 @@ int transport_modbus_read(transport_modbus_t *modbus, uint8_t *data) {
     }
 
     // check if it's a response to current request
-    if (modbus->device->phase == DEVICE_REQUESTING) {
+    if (device_get_phase(modbus->device) == DEVICE_REQUESTING) {
         request = &modbus->request;
         if (request->type == MODBUS_WRITE_SINGLE_COIL || request->type == MODBUS_WRITE_SINGLE_REGISTER) {
             return memcmp(request, data, 8);
@@ -135,7 +135,7 @@ int transport_modbus_read(transport_modbus_t *modbus, uint8_t *data) {
     }
 
     // respond to request
-    if (modbus->device->phase != DEVICE_REQUESTING) {
+    if (device_get_phase(modbus->device) != DEVICE_REQUESTING) {
         return transport_modbus_respond(modbus, request);
     }
 
@@ -163,7 +163,7 @@ int transport_modbus_request(transport_modbus_t *modbus, uint8_t recipient, uint
                           uint8_t *response) {
     transport_modbus_request_t *request = transport_modbus_allocate_request(modbus);
 
-    if (modbus->device->phase != DEVICE_RUNNING) {
+    if (device_get_phase(modbus->device) != DEVICE_RUNNING) {
         return 1;
     }
     request->recipient = recipient;

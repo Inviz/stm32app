@@ -282,7 +282,7 @@ static app_signal_t timer_notify(module_timer_t *timer) {
 
 static app_signal_t timer_advance(module_timer_t *timer, uint32_t time) {
     // start the timer if it was not ticking
-    if (timer->device->phase != DEVICE_RUNNING) {
+    if (device_get_phase(timer->device) != DEVICE_RUNNING) {
         device_set_phase(timer->device, DEVICE_RUNNING);
     }
     // add passed time to current_time, and adjust timer
@@ -398,7 +398,7 @@ static app_signal_t timer_start_counting(module_timer_t *timer) {
 }
 
 static app_signal_t timer_stop(module_timer_t *timer) {
-    if (timer->device->phase == DEVICE_RUNNING)
+    if (device_get_phase(timer->device) == DEVICE_RUNNING)
         return timer_stop_counting(timer);
     return 0;
 }

@@ -122,11 +122,13 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
 
 /* Attempt to store event in a memory destination if it's not occupied yet */
 void device_set_phase(device_t *device, device_phase_t phase) {
-    if (device->phase != phase) {
+    if (device_get_phase(device) != phase) {
         log_printf("  - Device phase: 0x%x %s %s <= %s\n", device_index(device),
-                   get_device_type_name(device->class->type), get_device_phase_name(phase), get_device_phase_name(device->phase));
+                   get_device_type_name(device->class->type), get_device_phase_name(phase), get_device_phase_name(device_get_phase(device)));
+
+        OD_set_u8(device->properties, device->class->phase_subindex, phase, false);
+    
     }
-    device->phase = phase;
 
     switch (phase) {
     case DEVICE_CONSTRUCTING:
@@ -148,13 +150,13 @@ void device_set_phase(device_t *device, device_phase_t phase) {
         break;
     case DEVICE_STARTING:
         device->class->start(device->object);
-        if (device->phase == DEVICE_STARTING) {
+        if (device_get_phase(device) == DEVICE_STARTING) {
             return device_set_phase(device, DEVICE_RUNNING);
         }
         break;
     case DEVICE_STOPPING:
         device->class->stop(device->object);
-        if (device->phase == DEVICE_STOPPING) {
+        if (device_get_phase(device) == DEVICE_STOPPING) {
             return device_set_phase(device, DEVICE_STOPPED);
         }
         break;
@@ -163,7 +165,7 @@ void device_set_phase(device_t *device, device_phase_t phase) {
             return device_set_phase(device, DEVICE_STOPPING);
         } else {
             device->class->pause(device->object);
-            if (device->phase == DEVICE_PAUSING) {
+            if (device_get_phase(device) == DEVICE_PAUSING) {
                 return device_set_phase(device, DEVICE_PAUSED);
             }
         }
@@ -173,7 +175,7 @@ void device_set_phase(device_t *device, device_phase_t phase) {
             return device_set_phase(device, DEVICE_STARTING);
         } else {
             device->class->resume(device->object);
-            if (device->phase == DEVICE_RESUMING) {
+            if (device_get_phase(device) == DEVICE_RESUMING) {
                 return device_set_phase(device, DEVICE_RUNNING);
             }
         }

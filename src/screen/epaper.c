@@ -398,7 +398,7 @@ static ODR_t epaper_properties_property_write(OD_stream_t *stream, const void *b
 }
 
 static app_signal_t epaper_phase(screen_epaper_t *epaper) {
-    switch (epaper->device->phase) {
+    switch (device_get_phase(epaper->device)) {
     // poll busy pin until and switch to RUNNING when it's clear
     case DEVICE_BUSY: return screen_epaper_set_busy_phase(epaper);
     // go through resetting phases which involve 3 separate delays

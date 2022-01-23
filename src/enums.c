@@ -1,20 +1,33 @@
 #include "enums.h"
-
 char* get_app_signal_name (uint32_t v) {
 switch (v) {
 case 0: return "APP_SIGNAL_OK";
-case 1: return "APP_SIGNAL_TIMEOUT";
-case 2: return "APP_SIGNAL_TIMER";
-case 3: return "APP_SIGNAL_DMA_ERROR";
-case 4: return "APP_SIGNAL_DMA_TRANSFERRING";
-case 5: return "APP_SIGNAL_DMA_IDLE";
-case 6: return "APP_SIGNAL_RX_COMPLETE";
-case 7: return "APP_SIGNAL_TX_COMPLETE";
-case 8: return "APP_SIGNAL_CATCHUP";
-case 9: return "APP_SIGNAL_RESCHEDULE";
-case 10: return "APP_SIGNAL_INCOMING";
-case 11: return "APP_SIGNAL_BUSY";
-case 12: return "APP_SIGNAL_NOT_FOUND";
+case 1: return "APP_SIGNAL_FAILURE";
+case 2: return "APP_SIGNAL_TIMEOUT";
+case 3: return "APP_SIGNAL_TIMER";
+case 4: return "APP_SIGNAL_DMA_ERROR";
+case 5: return "APP_SIGNAL_DMA_TRANSFERRING";
+case 6: return "APP_SIGNAL_DMA_IDLE";
+case 7: return "APP_SIGNAL_RX_COMPLETE";
+case 8: return "APP_SIGNAL_TX_COMPLETE";
+case 9: return "APP_SIGNAL_CATCHUP";
+case 10: return "APP_SIGNAL_RESCHEDULE";
+case 11: return "APP_SIGNAL_INCOMING";
+case 12: return "APP_SIGNAL_BUSY";
+case 13: return "APP_SIGNAL_NOT_FOUND";
+case 14: return "APP_SIGNAL_UNCONFIGURED";
+case 15: return "APP_SIGNAL_OUT_OF_MEMORY";
+default: return "Unknown";
+}
+};
+
+char* get_app_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "CORE_APP_TIMER_INDEX";
+case 2: return "CORE_APP_STORAGE_INDEX";
+case 3: return "CORE_APP_MCU_INDEX";
+case 4: return "CORE_APP_CANOPEN_INDEX";
+case 5: return "CORE_APP_PHASE";
 default: return "Unknown";
 }
 };
@@ -48,20 +61,20 @@ default: return "Unknown";
 char* get_device_type_name (uint32_t v) {
 switch (v) {
 case 12288: return "APP";
-case 14336: return "DEVICE_CIRCUIT";
+case 16384: return "DEVICE_CIRCUIT";
 case 24576: return "SYSTEM_MCU";
-case 24592: return "SYSTEM_CANOPEN";
+case 24608: return "SYSTEM_CANOPEN";
 case 24832: return "MODULE_TIMER";
-case 24864: return "MODULE_ADC";
 case 25088: return "TRANSPORT_CAN";
 case 25120: return "TRANSPORT_SPI";
 case 25152: return "TRANSPORT_USART";
 case 25184: return "TRANSPORT_I2C";
 case 25216: return "TRANSPORT_MODBUS";
-case 25376: return "STORAGE_W25";
-case 26624: return "INPUT_SENSOR";
-case 26880: return "CONTROL_TOUCHSCREEN";
-case 28672: return "SCREEN_EPAPER";
+case 25344: return "MODULE_ADC";
+case 28928: return "STORAGE_W25";
+case 32768: return "INPUT_SENSOR";
+case 33024: return "CONTROL_TOUCHSCREEN";
+case 36864: return "SCREEN_EPAPER";
 default: return "Unknown";
 }
 };
@@ -110,10 +123,81 @@ default: return "Unknown";
 }
 };
 
+char* get_device_circuit_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "DEVICE_CIRCUIT_PORT";
+case 2: return "DEVICE_CIRCUIT_PIN";
+case 3: return "DEVICE_CIRCUIT_LIMIT_CURRENT";
+case 4: return "DEVICE_CIRCUIT_LIMIT_VOLTAGE";
+case 5: return "DEVICE_CIRCUIT_PSU_INDEX";
+case 6: return "DEVICE_CIRCUIT_SENSOR_INDEX";
+case 7: return "DEVICE_CIRCUIT_PHASE";
+case 8: return "DEVICE_CIRCUIT_DUTY_CYCLE";
+case 9: return "DEVICE_CIRCUIT_CURRENT";
+case 16: return "DEVICE_CIRCUIT_VOLTAGE";
+case 17: return "DEVICE_CIRCUIT_CONSUMERS";
+default: return "Unknown";
+}
+};
+
+char* get_input_sensor_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "INPUT_SENSOR_DISABLED";
+case 2: return "INPUT_SENSOR_PORT";
+case 3: return "INPUT_SENSOR_PIN";
+case 4: return "INPUT_SENSOR_ADC_INDEX";
+case 5: return "INPUT_SENSOR_ADC_CHANNEL";
+case 6: return "INPUT_SENSOR_PHASE";
+default: return "Unknown";
+}
+};
+
 char* get_vpool_trunc_name (uint32_t v) {
 switch (v) {
 case 0: return "VPOOL_EXCLUDE";
 case 1: return "VPOOL_INCLUDE";
+default: return "Unknown";
+}
+};
+
+char* get_module_adc_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "MODULE_ADC_INTERVAL";
+case 2: return "MODULE_ADC_SAMPLE_COUNT_PER_CHANNEL";
+case 3: return "MODULE_ADC_DMA_UNIT";
+case 4: return "MODULE_ADC_DMA_STREAM";
+case 5: return "MODULE_ADC_DMA_CHANNEL";
+case 6: return "MODULE_ADC_PHASE";
+default: return "Unknown";
+}
+};
+
+char* get_module_timer_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "MODULE_TIMER_PRESCALER";
+case 2: return "MODULE_TIMER_INITIAL_SUBSCRIPTIONS_COUNT";
+case 3: return "MODULE_TIMER_PERIOD";
+case 4: return "MODULE_TIMER_FREQUENCY";
+case 5: return "MODULE_TIMER_PHASE";
+default: return "Unknown";
+}
+};
+
+char* get_screen_epaper_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "SCREEN_EPAPER_SPI_INDEX";
+case 2: return "SCREEN_EPAPER_DC_PORT";
+case 3: return "SCREEN_EPAPER_DC_PIN";
+case 4: return "SCREEN_EPAPER_CS_PORT";
+case 5: return "SCREEN_EPAPER_CS_PIN";
+case 6: return "SCREEN_EPAPER_BUSY_PORT";
+case 7: return "SCREEN_EPAPER_BUSY_PIN";
+case 8: return "SCREEN_EPAPER_RESET_PORT";
+case 9: return "SCREEN_EPAPER_RESET_PIN";
+case 16: return "SCREEN_EPAPER_WIDTH";
+case 17: return "SCREEN_EPAPER_HEIGHT";
+case 18: return "SCREEN_EPAPER_MODE";
+case 19: return "SCREEN_EPAPER_PHASE";
 default: return "Unknown";
 }
 };
@@ -140,6 +224,79 @@ default: return "Unknown";
 }
 };
 
+char* get_storage_w25_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "STORAGE_W25_SPI_INDEX";
+case 2: return "STORAGE_W25_PAGE_SIZE";
+case 3: return "STORAGE_W25_SIZE";
+case 4: return "STORAGE_W25_PHASE";
+default: return "Unknown";
+}
+};
+
+char* get_system_canopen_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "SYSTEM_CANOPEN_CAN_INDEX";
+case 2: return "SYSTEM_CANOPEN_CAN_FIFO_INDEX";
+case 3: return "SYSTEM_CANOPEN_GREEN_LED_PORT";
+case 4: return "SYSTEM_CANOPEN_GREEN_LED_PIN";
+case 5: return "SYSTEM_CANOPEN_RED_LED_PORT";
+case 6: return "SYSTEM_CANOPEN_RED_LED_PIN";
+case 7: return "SYSTEM_CANOPEN_FIRST_HB_TIME";
+case 8: return "SYSTEM_CANOPEN_SDO_SERVER_TIMEOUT";
+case 9: return "SYSTEM_CANOPEN_SDO_CLIENT_TIMEOUT";
+case 16: return "SYSTEM_CANOPEN_PHASE";
+case 17: return "SYSTEM_CANOPEN_NODE_ID";
+case 18: return "SYSTEM_CANOPEN_BITRATE";
+default: return "Unknown";
+}
+};
+
+char* get_system_mcu_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "SYSTEM_MCU_FAMILY";
+case 2: return "SYSTEM_MCU_BOARD_TYPE";
+case 3: return "SYSTEM_MCU_STORAGE_INDEX";
+case 4: return "SYSTEM_MCU_PHASE";
+case 5: return "SYSTEM_MCU_CPU_TEMPERATURE";
+case 6: return "SYSTEM_MCU_STARTUP_TIME";
+default: return "Unknown";
+}
+};
+
+char* get_transport_can_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "TRANSPORT_CAN_TX_PORT";
+case 2: return "TRANSPORT_CAN_TX_PIN";
+case 3: return "TRANSPORT_CAN_RX_PORT";
+case 4: return "TRANSPORT_CAN_RX_PIN";
+case 5: return "TRANSPORT_CAN_BITRATE";
+case 6: return "TRANSPORT_CAN_BRP";
+case 7: return "TRANSPORT_CAN_SJW";
+case 8: return "TRANSPORT_CAN_PROP";
+case 9: return "TRANSPORT_CAN_PH_SEG1";
+case 16: return "TRANSPORT_CAN_PH_SEG2";
+case 17: return "TRANSPORT_CAN_PHASE";
+default: return "Unknown";
+}
+};
+
+char* get_transport_i2c_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "TRANSPORT_I2C_DMA_RX_UNIT";
+case 2: return "TRANSPORT_I2C_DMA_RX_STREAM";
+case 3: return "TRANSPORT_I2C_DMA_RX_CHANNEL";
+case 4: return "TRANSPORT_I2C_DMA_RX_BUFFER_SIZE";
+case 5: return "TRANSPORT_I2C_DMA_TX_UNIT";
+case 6: return "TRANSPORT_I2C_DMA_TX_STREAM";
+case 7: return "TRANSPORT_I2C_DMA_TX_CHANNEL";
+case 8: return "TRANSPORT_I2C_BAUDRATE";
+case 9: return "TRANSPORT_I2C_DATABITS";
+case 16: return "TRANSPORT_I2C_PHASE";
+default: return "Unknown";
+}
+};
+
 char* get__name (uint32_t v) {
 switch (v) {
 case 1: return "MODBUS_READ_COIL_STATUS";
@@ -150,6 +307,65 @@ case 5: return "MODBUS_WRITE_SINGLE_COIL";
 case 6: return "MODBUS_WRITE_SINGLE_REGISTER";
 case 15: return "MODBUS_WRITE_MULTIPLE_COILS";
 case 16: return "MODBUS_WRITE_MULTIPLE_REGISTERS";
+default: return "Unknown";
+}
+};
+
+char* get_transport_modbus_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "TRANSPORT_MODBUS_USART_INDEX";
+case 2: return "TRANSPORT_MODBUS_RTS_PORT";
+case 3: return "TRANSPORT_MODBUS_RTS_PIN";
+case 4: return "TRANSPORT_MODBUS_SLAVE_ADDRESS";
+case 5: return "TRANSPORT_MODBUS_RX_BUFFER_SIZE";
+case 6: return "TRANSPORT_MODBUS_TIMEOUT";
+case 7: return "TRANSPORT_MODBUS_PHASE";
+default: return "Unknown";
+}
+};
+
+char* get_transport_spi_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "TRANSPORT_SPI_IS_SLAVE";
+case 2: return "TRANSPORT_SPI_SOFTWARE_SS_CONTROL";
+case 3: return "TRANSPORT_SPI_MODE";
+case 4: return "TRANSPORT_SPI_DMA_RX_UNIT";
+case 5: return "TRANSPORT_SPI_DMA_RX_STREAM";
+case 6: return "TRANSPORT_SPI_DMA_RX_CHANNEL";
+case 7: return "TRANSPORT_SPI_DMA_RX_IDLE_TIMEOUT";
+case 8: return "TRANSPORT_SPI_RX_BUFFER_SIZE";
+case 9: return "TRANSPORT_SPI_RX_POOL_MAX_SIZE";
+case 16: return "TRANSPORT_SPI_RX_POOL_INITIAL_SIZE";
+case 17: return "TRANSPORT_SPI_RX_POOL_BLOCK_SIZE";
+case 18: return "TRANSPORT_SPI_DMA_TX_UNIT";
+case 19: return "TRANSPORT_SPI_DMA_TX_STREAM";
+case 20: return "TRANSPORT_SPI_DMA_TX_CHANNEL";
+case 21: return "TRANSPORT_SPI_AF_INDEX";
+case 22: return "TRANSPORT_SPI_SS_PORT";
+case 23: return "TRANSPORT_SPI_SS_PIN";
+case 24: return "TRANSPORT_SPI_SCK_PORT";
+case 25: return "TRANSPORT_SPI_SCK_PIN";
+case 32: return "TRANSPORT_SPI_MISO_PORT";
+case 33: return "TRANSPORT_SPI_MISO_PIN";
+case 34: return "TRANSPORT_SPI_MOSI_PORT";
+case 35: return "TRANSPORT_SPI_MOSI_PIN";
+case 36: return "TRANSPORT_SPI_PHASE";
+default: return "Unknown";
+}
+};
+
+char* get_transport_usart_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "TRANSPORT_USART_DMA_RX_UNIT";
+case 2: return "TRANSPORT_USART_DMA_RX_STREAM";
+case 3: return "TRANSPORT_USART_DMA_RX_CHANNEL";
+case 4: return "TRANSPORT_USART_DMA_RX_BUFFER_SIZE";
+case 5: return "TRANSPORT_USART_DMA_TX_UNIT";
+case 6: return "TRANSPORT_USART_DMA_TX_STREAM";
+case 7: return "TRANSPORT_USART_DMA_TX_CHANNEL";
+case 8: return "TRANSPORT_USART_BAUDRATE";
+case 9: return "TRANSPORT_USART_DATABITS";
+case 16: return "TRANSPORT_USART_PHASE";
 default: return "Unknown";
 }
 };

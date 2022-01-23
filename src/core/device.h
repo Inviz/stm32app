@@ -10,7 +10,7 @@ extern "C" {
 #include "core/thread.h"
 #include "lib/gpio.h"
 
-#define OD_ACCESSORS(OD_TYPE, NAME, SUBTYPE, PROPERTY, SUBINDEX, TYPE, SHORT_TYPE)                                                         \
+/*#define OD_ACCESSORS(OD_TYPE, NAME, SUBTYPE, PROPERTY, SUBINDEX, TYPE, SHORT_TYPE)                                                         \
     static inline ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                        \
         return OD_set_##SHORT_TYPE(NAME->device->SUBTYPE, SUBINDEX, value, false);                                                         \
     }                                                                                                                                      \
@@ -18,10 +18,10 @@ extern "C" {
         TYPE value;                                                                                                                        \
         OD_get_##SHORT_TYPE(NAME->device->SUBTYPE, SUBINDEX, &value, false);                                                               \
         return value;                                                                                                                      \
-    }
+    }*/
 
 #define device_index(device) device->seq + device->class->type
-#define device_phase(device) *((uint8_t *) OD_getPtr(device->class->properties, device->class->phase_subindex, 0, NULL))
+#define device_get_phase(device) *((uint8_t *) OD_getPtr(device->properties, device->class->phase_subindex, 0, NULL))
 
 enum device_phase {
     DEVICE_ENABLED,

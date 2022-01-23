@@ -130,7 +130,7 @@ static app_signal_t adc_stop(module_adc_t *adc) {
 }
 
 static app_signal_t adc_phase(module_adc_t *adc) {
-    switch (adc->device->phase) {
+    switch (device_get_phase(adc->device)) {
     case DEVICE_PREPARING: return adc_calibrate(adc);
 
     case DEVICE_CALIBRATING: return adc_run(adc); break;
