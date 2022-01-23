@@ -2,15 +2,15 @@
 #include "lib/dma.h"
 
 /* ADC must be within range */
-static app_signal_t adc_validate(OD_entry_t *config_entry) {
-    module_adc_config_t *config = (module_adc_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
-    return config->disabled != 0;
+static app_signal_t adc_validate(OD_entry_t *properties_entry) {
+    module_adc_properties_t *properties = (module_adc_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
+    return properties->disabled != 0;
 }
 
 static app_signal_t adc_phase_constructing(module_adc_t *adc, device_t *device) {
-    adc->config = (module_adc_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
+    adc->properties = (module_adc_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
 
-    adc->dma_address = dma_get_address(adc->config->dma_unit);
+    adc->dma_address = dma_get_address(adc->properties->dma_unit);
     if (adc->dma_address == 0) {
         return 0;
     }
@@ -145,10 +145,10 @@ static app_signal_t adc_receive(module_adc_t *adc, device_t *device, void *value
     (void)device;
     (void)value;
     if (adc_integrate_samples(adc) == 0) {
-        log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->values[1]);
+        log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->properties[1]);
         for (size_t i = 0; i < adc->channel_count; i++) {
             size_t channelIndex = adc->channels[i];
-            device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->values[i], (void *)channel);
+            device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->properties[i], (void *)channel);
         }
     }
     return 0;
@@ -172,31 +172,31 @@ device_methods_t module_adc_methods = {.validate = adc_validate,
 void adc_dma_setup(module_adc_t *adc) {
     if (adc->dma_address == DMA1) {
         rcc_periph_clock_enable(RCC_DMA1);
-        nvic_enable_irq(dma_get_interrupt_for_channel_or_stream(adc->config->dma_unit, adc->config->dma_stream));
+        nvic_enable_irq(dma_get_interrupt_for_channel_or_stream(adc->properties->dma_unit, adc->properties->dma_stream));
     }
-    dma_channel_select(adc->dma_address, adc->config->dma_stream, adc->config->dma_channel);
-    dma_disable_channel_or_stream(adc->dma_address, adc->config->dma_stream);
+    dma_channel_select(adc->dma_address, adc->properties->dma_stream, adc->properties->dma_channel);
+    dma_disable_channel_or_stream(adc->dma_address, adc->properties->dma_stream);
 
-    dma_enable_circular_mode(adc->dma_address, adc->config->dma_stream);
-    dma_enable_memory_increment_mode(adc->dma_address, adc->config->dma_stream);
+    dma_enable_circular_mode(adc->dma_address, adc->properties->dma_stream);
+    dma_enable_memory_increment_mode(adc->dma_address, adc->properties->dma_stream);
 
-    dma_set_peripheral_size(adc->dma_address, adc->config->dma_stream, DMA_PSIZE_16BIT);
-    dma_set_memory_size(adc->dma_address, adc->config->dma_stream, DMA_MSIZE_16BIT);
+    dma_set_peripheral_size(adc->dma_address, adc->properties->dma_stream, DMA_PSIZE_16BIT);
+    dma_set_memory_size(adc->dma_address, adc->properties->dma_stream, DMA_MSIZE_16BIT);
 
-    dma_set_read_from_peripheral(adc->dma_address, adc->config->dma_stream);
-    dma_set_peripheral_address(adc->dma_address, adc->config->dma_stream, (uint32_t)&ADC_DR(adc->address));
+    dma_set_read_from_peripheral(adc->dma_address, adc->properties->dma_stream);
+    dma_set_peripheral_address(adc->dma_address, adc->properties->dma_stream, (uint32_t)&ADC_DR(adc->address));
 
-    dma_set_memory_address(adc->dma_address, adc->config->dma_stream, (uint32_t)adc->sample_buffer);
-    dma_set_number_of_data(adc->dma_address, adc->config->dma_stream, adc->sample_buffer_size);
+    dma_set_memory_address(adc->dma_address, adc->properties->dma_stream, (uint32_t)adc->sample_buffer);
+    dma_set_number_of_data(adc->dma_address, adc->properties->dma_stream, adc->sample_buffer_size);
 
-    dma_enable_transfer_complete_interrupt(adc->dma_address, adc->config->dma_stream);
-    dma_enable_channel_or_stream(adc->dma_address, adc->config->dma_stream);
+    dma_enable_transfer_complete_interrupt(adc->dma_address, adc->properties->dma_stream);
+    dma_enable_channel_or_stream(adc->dma_address, adc->properties->dma_stream);
 }
 
 size_t adc_integrate_samples(module_adc_t *adc) {
     if (adc->measurement_counter == 0) {
         memset(adc->accumulators, 0, adc->channel_count * sizeof(uint32_t));
-        memset(adc->values, 0, adc->channel_count * sizeof(uint32_t));
+        memset(adc->properties, 0, adc->channel_count * sizeof(uint32_t));
     }
     /* integrate samples from the buffer into accumulator buffer */
     size_t samples_left_total = adc->measurements_per_second - adc->measurement_counter;
@@ -210,24 +210,24 @@ size_t adc_integrate_samples(module_adc_t *adc) {
     if (adc->measurement_counter == adc->measurements_per_second) {
         adc->measurement_counter = 0;
         for (size_t c = 0; c < adc->channel_count; c++) {
-            adc->values[c] = adc->accumulators[c] / (adc->measurements_per_second / adc->channel_count);
+            adc->properties[c] = adc->accumulators[c] / (adc->measurements_per_second / adc->channel_count);
         }
     }
     return samples_left_total - samples_left_now;
 }
 
 void adc_channels_alloc(module_adc_t *adc, size_t channel_count) {
-    adc->sample_buffer_size = adc->config->sample_count_per_channel * channel_count;
-    adc->measurements_per_second = (1000000 / (adc->config->interval));
+    adc->sample_buffer_size = adc->properties->sample_count_per_channel * channel_count;
+    adc->measurements_per_second = (1000000 / (adc->properties->interval));
     adc->channels = malloc(channel_count * sizeof(size_t));
-    adc->values = malloc(channel_count * sizeof(uint32_t));
+    adc->properties = malloc(channel_count * sizeof(uint32_t));
     adc->accumulators = malloc(channel_count * sizeof(uint32_t));
     adc->sample_buffer = malloc(adc->sample_buffer_size * sizeof(uint16_t));
 }
 
 void adc_channels_free(module_adc_t *adc) {
     free(adc->sample_buffer);
-    free(adc->values);
+    free(adc->properties);
     free(adc->channels);
     free(adc->accumulators);
 }

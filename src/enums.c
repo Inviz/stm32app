@@ -58,7 +58,7 @@ case 25120: return "TRANSPORT_SPI";
 case 25152: return "TRANSPORT_USART";
 case 25184: return "TRANSPORT_I2C";
 case 25216: return "TRANSPORT_MODBUS";
-case 25376: return "STORAGE_WINBOND";
+case 25376: return "STORAGE_W25";
 case 26624: return "INPUT_SENSOR";
 case 26880: return "CONTROL_TOUCHSCREEN";
 case 28672: return "SCREEN_EPAPER";

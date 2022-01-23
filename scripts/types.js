@@ -50,7 +50,7 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (mat
 
   const definition = findDefinition(`UID_OBJ_${index}`);
 
-  var subtype = 'config'
+  var subtype = 'properties'
 
   const accessors = [];
   const prototypes = [];

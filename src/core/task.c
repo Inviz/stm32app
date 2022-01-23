@@ -2,7 +2,7 @@
 
 
 app_signal_t app_task_execute(app_task_t *task) {
-  configASSERT(task);
+  propertiesASSERT(task);
   app_task_signal_t task_signal = app_task_advance(task);
   switch (task_signal) {
     case APP_TASK_COMPLETE:

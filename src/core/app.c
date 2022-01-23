@@ -6,21 +6,21 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
                                  device_t *destination, size_t offset) {
     size_t count = 0;
     for (size_t seq = 0; seq < 128; seq++) {
-        OD_entry_t *config = OD_find(od, type + seq);
-        if (config == NULL && seq >= 10)
+        OD_entry_t *properties = OD_find(od, type + seq);
+        if (properties == NULL && seq >= 10)
             break;
-        if (config == NULL)
+        if (properties == NULL)
             continue;
 
         // Skip devices disabled by OD (first index)
         uint16_t disabled = 0;
-        OD_get_u16(config, 0x01, &disabled, true);
+        OD_get_u16(properties, 0x01, &disabled, true);
         if (disabled != 0)
             break;
 
-        if (methods->validate(config) != 0 && destination == NULL) {
+        if (methods->validate(properties) != 0 && destination == NULL) {
             if (app != NULL && app->canopen != NULL) {
-                app_error_report(app, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(config));
+                app_error_report(app, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(properties));
             }
             continue;
         }
@@ -35,13 +35,13 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         device->seq = seq;
         device->index = type + seq;
         device->struct_size = struct_size;
-        device->config = config;
+        device->properties = properties;
         device->methods = methods;
 
-        device->config_extension.write = methods->property_write == NULL ? OD_writeOriginal : methods->property_write;
-        device->config_extension.read = methods->property_read == NULL ? OD_readOriginal : methods->property_read;
+        device->properties_extension.write = methods->property_write == NULL ? OD_writeOriginal : methods->property_write;
+        device->properties_extension.read = methods->property_read == NULL ? OD_readOriginal : methods->property_read;
 
-        OD_extension_init(config, &device->config_extension);
+        OD_extension_init(properties, &device->properties_extension);
     }
     return count;
 }

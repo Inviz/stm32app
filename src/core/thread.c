@@ -12,7 +12,7 @@ static void app_thread_event_await(app_thread_t *thread, app_event_t *event);
 static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_event_t *event, size_t deferred_count);
 static inline device_tick_t *device_tick_by_index(device_t *device, size_t index);
 
-/* A generic RTOS task function that handles all typical configurations of threads. It supports following features or combinations of
+/* A generic RTOS task function that handles all typical propertiesurations of threads. It supports following features or combinations of
   them:
   - Waking up devices on individual timer alarms to simulate delays and periodical work
   - Aborting or speeding up the timer alarms (with 1ms precision of FreeRTOS)
@@ -412,7 +412,7 @@ int app_thread_allocate(app_thread_t **destination, void *app_or_object, void (*
         if (thread->queue == NULL) {
             return CO_ERROR_OUT_OF_MEMORY;
         }
-#if configQUEUE_REGISTRY_SIZE > 0
+#if propertiesQUEUE_REGISTRY_SIZE > 0
         vQueueAddToRegistry(thread->queue, name);
 #endif
     }

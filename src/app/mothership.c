@@ -23,9 +23,9 @@ static ODR_t mothership_property_write(OD_stream_t *stream, const void *buf, OD_
 }
 
 
-static app_signal_t mothership_validate(OD_entry_t *config_entry) {
-    app_mothership_config_t *config = (app_mothership_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
-    (void)config;
+static app_signal_t mothership_validate(OD_entry_t *properties_entry) {
+    app_mothership_properties_t *properties = (app_mothership_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
+    (void)properties;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
     }
@@ -33,7 +33,7 @@ static app_signal_t mothership_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t mothership_phase_constructing(app_mothership_t *mothership, device_t *device) {
-    mothership->config = (app_mothership_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
+    mothership->properties = (app_mothership_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
     app_threads_allocate((app_t *) mothership);
     return 0;
 }
@@ -59,9 +59,9 @@ static app_signal_t mothership_phase_resuming(app_mothership_t *mothership) {
 }
 
 static app_signal_t mothership_phase_linking(app_mothership_t *mothership) {
-    device_link(mothership->device, (void **)&mothership->mcu, mothership->config->mcu_index, NULL);
-    device_link(mothership->device, (void **)&mothership->canopen,mothership->config->canopen_index, NULL);
-    device_link(mothership->device, (void **)&mothership->timer,mothership->config->timer_index, NULL);
+    device_link(mothership->device, (void **)&mothership->mcu, mothership->properties->mcu_index, NULL);
+    device_link(mothership->device, (void **)&mothership->canopen,mothership->properties->canopen_index, NULL);
+    device_link(mothership->device, (void **)&mothership->timer,mothership->properties->timer_index, NULL);
     return 0;
 }
 
@@ -82,7 +82,7 @@ size_t app_mothership_enumerate_devices(app_t *app, OD_t *od, device_t *destinat
     count += app_device_type_enumerate(app, od, MODULE_ADC, &module_adc_methods, sizeof(module_adc_t), destination, count);
     count += app_device_type_enumerate(app, od, TRANSPORT_CAN, &transport_can_methods, sizeof(transport_can_t), destination, count);
     count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_methods, sizeof(transport_spi_t), destination, count);
-    count += app_device_type_enumerate(app, od, STORAGE_WINBOND, &storage_w25_methods, sizeof(storage_w25_t), destination, count);
+    count += app_device_type_enumerate(app, od, STORAGE_W25, &storage_w25_methods, sizeof(storage_w25_t), destination, count);
     //count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_methods, sizeof(transport_spi_t), destination, count);
     //count += app_device_type_enumerate(MODULE_USART, &transport_usart_methods, sizeof(transport_usart_t), destination, count);
     //count += app_device_type_enumerate(app, od, TRANSPORT_I2C, &transport_i2c_methods, sizeof(transport_i2c_t), destination, count);
@@ -102,7 +102,7 @@ static app_signal_t mothership_high_priority(app_mothership_t *mothership, app_e
         return app_publish(mothership->device->app, &((app_event_t){
             .type = APP_EVENT_INTROSPECTION,
             .producer = mothership->device,
-            .consumer = app_device_find_by_type((app_t *) mothership, STORAGE_WINBOND) 
+            .consumer = app_device_find_by_type((app_t *) mothership, STORAGE_W25) 
         }))*/
     }
     return 0;

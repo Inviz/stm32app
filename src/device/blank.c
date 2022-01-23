@@ -11,9 +11,9 @@ static ODR_t blank_property_write(OD_stream_t *stream, const void *buf, OD_size_
     return result;
 }
 
-static app_signal_t blank_validate(OD_entry_t *config_entry) {
-    device_blank_config_t *config = (device_blank_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
-    (void)config;
+static app_signal_t blank_validate(OD_entry_t *properties_entry) {
+    device_blank_properties_t *properties = (device_blank_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
+    (void)properties;
     if (false) {
         return CO_ERROR_OD_PARAMETERS;
     }
@@ -21,8 +21,8 @@ static app_signal_t blank_validate(OD_entry_t *config_entry) {
 }
 
 static app_signal_t blank_phase_constructing(device_blank_t *blank, device_t *device) {
-    blank->config = (device_blank_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
-    return blank->config->disabled;
+    blank->properties = (device_blank_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
+    return blank->properties->disabled;
 }
 
 static app_signal_t blank_phase_starting(device_blank_t *blank) {

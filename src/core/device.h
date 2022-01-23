@@ -9,6 +9,7 @@ extern "C" {
 #include "core/app.h"
 #include "core/thread.h"
 #include "lib/gpio.h"
+
 /* define convenient getters and setters */
 #define OD_ACCESSORS(OD_TYPE, NAME, SUBTYPE, PROPERTY, SUBINDEX, TYPE, SHORT_TYPE)                                                         \
     ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                                      \
@@ -54,15 +55,14 @@ enum device_type {
     APP = 0x3000,
 
     // custom devices
-    DEVICE_CIRCUIT = 0x3800,
+    DEVICE_CIRCUIT = 0x4000,
 
     // basic features
     SYSTEM_MCU = 0x6000,
-    SYSTEM_CANOPEN = 0x6010,
+    SYSTEM_CANOPEN = 0x6020,
 
     // internal mcu modules
     MODULE_TIMER = 0x6100,
-    MODULE_ADC = 0x6120,
 
     // communication modules
     TRANSPORT_CAN = 0x6200,
@@ -71,16 +71,18 @@ enum device_type {
     TRANSPORT_I2C = 0x6260,
     TRANSPORT_MODBUS = 0x6280,
 
-    STORAGE_WINBOND = 0x6320,
+    MODULE_ADC = 0x6300,
+    
+    STORAGE_W25 = 0x7100,
 
     // input devices
-    INPUT_SENSOR = 0x6800,
+    INPUT_SENSOR = 0x8000,
 
     // control periphery
-    CONTROL_TOUCHSCREEN = 0x6900,
+    CONTROL_TOUCHSCREEN = 0x8100,
 
     // output devices
-    SCREEN_EPAPER = 0x7000,
+    SCREEN_EPAPER = 0x9000,
 };
 
 struct device {
@@ -91,10 +93,10 @@ struct device {
     uint32_t phase_delay;            /* Current lifecycle phase of the device */
     void *object;                    /* Pointer to the device own struct */
     size_t struct_size;              /* Memory requirements for device struct */
-    OD_entry_t *config;              /* OD entry containing configuration for device*/
-    OD_extension_t config_extension; /* OD IO handlers for config changes */
-    OD_entry_t *values;              /* OD entry containing mutable values (optinal) */
-    OD_extension_t values_extension; /* OD IO handlers for mutable changes */
+    OD_entry_t *properties;              /* OD entry containing propertiesuration for device*/
+    OD_extension_t properties_extension; /* OD IO handlers for properties changes */
+    OD_entry_t *properties;              /* OD entry containing mutable properties (optinal) */
+    OD_extension_t properties_extension; /* OD IO handlers for mutable changes */
     device_methods_t *methods;       /* Per-class methods and methods */
     device_ticks_t *ticks;           /* Per-device thread subscription */
     app_t *app;                      /* Reference to root device */
@@ -103,7 +105,7 @@ struct device {
 };
 
 struct device_methods {
-    app_signal_t (*validate)(OD_entry_t *config);                       /* Check if config has all values */
+    app_signal_t (*validate)(OD_entry_t *properties);                       /* Check if properties has all properties */
     app_signal_t (*phase_constructing)(void *object, device_t *device); /* Initialize device at given pointer*/
     app_signal_t (*phase_linking)(void *object);                        /* Link related devices together*/
     app_signal_t (*phase_destructing)(void *object);                    /* Destruct device at given pointer*/
@@ -125,8 +127,8 @@ struct device_methods {
     app_signal_t (*tick_low_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);     /* Low-importance periodical */
     app_signal_t (*tick_bg_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);      /* Lowest priority work that i*/
 
-    ODR_t (*read_config)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
-    ODR_t (*write_config)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
+    ODR_t (*read_properties)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
+    ODR_t (*write_properties)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
     ODR_t (*property_read)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
     ODR_t (*property_write)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
 };

@@ -2,18 +2,18 @@
 #include "lib/dma.h"
 
 /* USART must be within range */
-static app_signal_t usart_validate(OD_entry_t *config_entry) {
-    transport_usart_config_t *config = (transport_usart_config_t *)OD_getPtr(config_entry, 0x00, 0, NULL);
+static app_signal_t usart_validate(OD_entry_t *properties_entry) {
+    transport_usart_properties_t *properties = (transport_usart_properties_t *)OD_getPtr(properties_entry, 0x00, 0, NULL);
     return 0;
 }
 
 static app_signal_t usart_phase_constructing(transport_usart_t *usart, device_t *device) {
-    usart->config = (transport_usart_config_t *)OD_getPtr(device->config, 0x00, 0, NULL);
+    usart->properties = (transport_usart_properties_t *)OD_getPtr(device->properties, 0x00, 0, NULL);
 
-    usart->dma_rx_address = dma_get_address(usart->config->dma_rx_unit);
-    usart->dma_tx_address = dma_get_address(usart->config->dma_tx_unit);
+    usart->dma_rx_address = dma_get_address(usart->properties->dma_rx_unit);
+    usart->dma_tx_address = dma_get_address(usart->properties->dma_tx_unit);
 
-    usart->dma_rx_buffer = malloc(usart->config->dma_rx_buffer_size);
+    usart->dma_rx_buffer = malloc(usart->properties->dma_rx_buffer_size);
 
     if (usart->dma_rx_address == 0 || usart->dma_tx_address == 0) {
         return 0;
@@ -60,11 +60,11 @@ int transport_usart_send(transport_usart_t *usart, char *data, int size) {
 
 
 static uint16_t transport_usart_get_buffer_size(transport_usart_t *usart) {
-    return usart->config->dma_rx_buffer_size;
+    return usart->properties->dma_rx_buffer_size;
 }
 
 static uint16_t transport_usart_get_buffer_size_left(transport_usart_t *usart) {
-    return dma_get_number_of_data(usart->config->dma_rx_unit, usart->config->dma_rx_stream);
+    return dma_get_number_of_data(usart->properties->dma_rx_unit, usart->properties->dma_rx_stream);
 }
 
 static uint16_t transport_usart_get_buffer_size_written(transport_usart_t *usart) {
@@ -83,7 +83,7 @@ static app_signal_t usart_phase_destructing(transport_usart_t *usart) {
 }
 
 static void transport_usart_tx_dma_stop(transport_usart_t *usart) {
-    device_dma_tx_stop(usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel);
+    device_dma_tx_stop(usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel);
     usart_disable_tx_dma(usart->address);
     //usart_disable_tx_complete_interrupt(usart->address);
 }
@@ -91,12 +91,12 @@ static void transport_usart_tx_dma_stop(transport_usart_t *usart) {
 /* Configure memory -> usart transfer*/
 static void transport_usart_tx_dma_start(transport_usart_t *usart, uint8_t *data, uint16_t size) {
     transport_usart_tx_dma_stop(usart);
-    device_dma_tx_start((uint32_t) & (USART_DR(usart->address)), usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel, data, size);
+    device_dma_tx_start((uint32_t) & (USART_DR(usart->address)), usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel, data, size);
     usart_enable_tx_dma(usart->address);
 }
 
 static void transport_usart_rx_dma_stop(transport_usart_t *usart) {
-    device_dma_rx_stop(usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel);
+    device_dma_rx_stop(usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel);
     usart_disable_rx_dma(usart->address);
     //usart_disable_tx_complete_interrupt(usart->address);
 }
@@ -104,13 +104,13 @@ static void transport_usart_rx_dma_stop(transport_usart_t *usart) {
 /* Configure memory <- usart transfer*/
 static void transport_usart_rx_dma_start(transport_usart_t *usart, uint8_t *data, uint16_t size) {
     transport_usart_rx_dma_stop(usart);
-    device_dma_rx_start((uint32_t) & (USART_DR(usart->address)), usart->config->dma_tx_unit, usart->config->dma_tx_stream, usart->config->dma_tx_channel, data, size);
+    device_dma_rx_start((uint32_t) & (USART_DR(usart->address)), usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel, data, size);
     usart_enable_rx_dma(usart->address);
 }
 
 static app_signal_t usart_phase_starting(transport_usart_t *usart) {
-    usart_set_baudrate(usart->address, usart->config->baudrate);
-    usart_set_databits(usart->address, usart->config->databits);
+    usart_set_baudrate(usart->address, usart->properties->baudrate);
+    usart_set_databits(usart->address, usart->properties->databits);
     usart_set_stopbits(usart->address, USART_STOPBITS_1);
     usart_set_mode(usart->address, USART_MODE_TX_RX);
     usart_set_parity(usart->address, USART_PARITY_NONE);
