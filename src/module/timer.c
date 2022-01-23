@@ -14,7 +14,7 @@ static ODR_t timer_property_write(OD_stream_t *stream, const void *buf, OD_size_
 }
 
 static app_signal_t timer_validate(module_timer_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED;
+    return 0;
 }
 
 static app_signal_t timer_construct(module_timer_t *timer) {
@@ -272,7 +272,7 @@ static app_signal_t timer_notify(module_timer_t *timer) {
         if (diff <= 0) {
             device_t *device = subscription->device;
             void *argument = subscription->argument;
-            log_printf("~ Timeout for 0x%x %s (argument: %lu)\n", device->index, get_device_type_name(device->type), (uint32_t)argument);
+            log_printf("~ Timeout for 0x%x %s (argument: %lu)\n", device_index(device), get_device_type_name(device->class->type), (uint32_t)argument);
             *subscription = (module_timer_subscription_t){};
             device_signal(device, timer->device, APP_SIGNAL_TIMEOUT, argument);
         }
@@ -466,7 +466,10 @@ static app_signal_t timer_callback_phase(module_timer_t *timer, device_phase_t p
     return 0;
 }
 
-device_methods_t module_timer_methods = {
+device_class_t module_timer_class = {
+    .type = MODULE_TIMER,
+    .size = sizeof(module_timer_t),
+    .phase_subindex = MODULE_TIMER_PHASE,
     .validate = (app_method_t)timer_validate,
     .construct = (app_method_t)timer_construct,
     .link = (app_method_t)timer_link,

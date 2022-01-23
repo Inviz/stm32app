@@ -21,7 +21,7 @@ static ODR_t mothership_property_write(OD_stream_t *stream, const void *buf, OD_
 }
 
 static app_signal_t mothership_validate(app_mothership_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED;
+    return 0;
 }
 
 static app_signal_t mothership_construct(app_mothership_t *mothership) {
@@ -56,20 +56,20 @@ static app_signal_t mothership_phase(app_mothership_t *mothership, device_phase_
 // If devices is NULL, it will only count the devices
 size_t app_mothership_enumerate_devices(app_t *app, OD_t *od, device_t *destination) {
     size_t count = 0;
-    count += app_device_type_enumerate(app, od, APP, &app_mothership_methods, sizeof(app_mothership_t), destination, count);
-    count += app_device_type_enumerate(app, od, SYSTEM_MCU, &system_mcu_methods, sizeof(system_mcu_t), destination, count);
-    count += app_device_type_enumerate(app, od, SYSTEM_CANOPEN, &system_canopen_methods, sizeof(system_canopen_t), destination, count);
-    count += app_device_type_enumerate(app, od, MODULE_TIMER, &module_timer_methods, sizeof(module_timer_t), destination, count);
-    count += app_device_type_enumerate(app, od, MODULE_ADC, &module_adc_methods, sizeof(module_adc_t), destination, count);
-    count += app_device_type_enumerate(app, od, TRANSPORT_CAN, &transport_can_methods, sizeof(transport_can_t), destination, count);
-    count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_methods, sizeof(transport_spi_t), destination, count);
-    count += app_device_type_enumerate(app, od, STORAGE_W25, &storage_w25_methods, sizeof(storage_w25_t), destination, count);
-    // count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_methods, sizeof(transport_spi_t), destination, count);
-    // count += app_device_type_enumerate(MODULE_USART, &transport_usart_methods, sizeof(transport_usart_t), destination, count);
-    // count += app_device_type_enumerate(app, od, TRANSPORT_I2C, &transport_i2c_methods, sizeof(transport_i2c_t), destination, count);
-    // count += app_device_type_enumerate(app, od, DEVICE_CIRCUIT, &device_circuit_methods, sizeof(device_circuit_t), destination, count);
-    // count += app_device_type_enumerate(app, OD, SCREEN_EPAPER, &screen_epaper_methods, sizeof(screen_epaper_t), destination, count);
-    // count += app_device_type_enumerate(app, od, INPUT_SENSOR, &input_sensor_methods, sizeof(input_sensor_t), destination, count);
+    count += app_device_type_enumerate(app, od, &app_mothership_class, destination, count);
+    count += app_device_type_enumerate(app, od, &system_mcu_class, destination, count);
+    count += app_device_type_enumerate(app, od, &system_canopen_class, destination, count);
+    count += app_device_type_enumerate(app, od, &module_timer_class, destination, count);
+    count += app_device_type_enumerate(app, od, &module_adc_class, destination, count);
+    count += app_device_type_enumerate(app, od, &transport_can_class, destination, count);
+    count += app_device_type_enumerate(app, od, &transport_spi_class, destination, count);
+    count += app_device_type_enumerate(app, od, &storage_w25_class, destination, count);
+    // count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_class, sizeof(transport_spi_t), destination, count);
+    // count += app_device_type_enumerate(MODULE_USART, &transport_usart_class, sizeof(transport_usart_t), destination, count);
+    // count += app_device_type_enumerate(app, od, TRANSPORT_I2C, &transport_i2c_class, sizeof(transport_i2c_t), destination, count);
+    // count += app_device_type_enumerate(app, od, DEVICE_CIRCUIT, &device_circuit_class, sizeof(device_circuit_t), destination, count);
+    // count += app_device_type_enumerate(app, OD, SCREEN_EPAPER, &screen_epaper_class, sizeof(screen_epaper_t), destination, count);
+    // count += app_device_type_enumerate(app, od, INPUT_SENSOR, &input_sensor_class, sizeof(input_sensor_t), destination, count);
     return count;
 }
 
@@ -94,9 +94,12 @@ static app_signal_t mothership_callback_signal(app_mothership_t mothership, devi
     (void) signal;
     (void) argument;
     log_printf("Got signal!\n");
-}
+};
 
-device_methods_t app_mothership_methods = {
+device_class_t app_mothership_class = {
+    .type = APP,
+    .size = sizeof(app_mothership_t),
+    .phase_subindex = CORE_APP_PHASE,
     .validate = (app_method_t)mothership_validate,
     .construct = (app_method_t)mothership_construct,
     .link = (app_method_t)mothership_link,

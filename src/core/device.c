@@ -2,17 +2,17 @@
 #include "system/canopen.h"
 
 int device_send(device_t *device, device_t *origin, void *value, void *argument) {
-    if (device->methods->callback_value == NULL) {
+    if (device->class->callback_value == NULL) {
         return 1;
     }
-    return device->methods->callback_value(device->object, origin, value, argument);
+    return device->class->callback_value(device->object, origin, value, argument);
 }
 
 int device_signal(device_t *device, device_t *origin, app_signal_t signal, void *argument) {
-    if (device->methods->callback_signal == NULL) {
+    if (device->class->callback_signal == NULL) {
         return 1;
     }
-    return device->methods->callback_signal(device->object, origin, signal, argument);
+    return device->class->callback_signal(device->object, origin, signal, argument);
 }
 
 int device_link(device_t *device, void **destination, uint16_t index, void *argument) {
@@ -22,14 +22,14 @@ int device_link(device_t *device, void **destination, uint16_t index, void *argu
     device_t *target = app_device_find(device->app, index);
     if (target != NULL) {
         *destination = target->object;
-        if (target->methods->callback_link != NULL) {
-            target->methods->callback_link(target->object, device, argument);
+        if (target->class->callback_link != NULL) {
+            target->class->callback_link(target->object, device, argument);
         }
 
         return 0;
     } else {
         *destination = NULL;
-        log_printf("    ! Device 0x%x (%s) could not find device 0x%x\n", device->index, get_device_type_name(device->type), index);
+        log_printf("    ! Device 0x%x (%s) could not find device 0x%x\n", device_index(device), get_device_type_name(device->class->type), index);
         device_set_phase(device, DEVICE_DISABLED);
         device_error_report(device, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL);
         return 1;
@@ -37,7 +37,7 @@ int device_link(device_t *device, void **destination, uint16_t index, void *argu
 }
 
 int device_allocate(device_t *device) {
-    device->object = malloc(device->struct_size);
+    device->object = malloc(device->class->size);
     if (device->object == NULL) {
         return APP_SIGNAL_OUT_OF_MEMORY;
     }
@@ -123,56 +123,56 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
 /* Attempt to store event in a memory destination if it's not occupied yet */
 void device_set_phase(device_t *device, device_phase_t phase) {
     if (device->phase != phase) {
-        log_printf("  - Device phase: 0x%x %s %s <= %s\n", device->index,
-                   get_device_type_name(device->type), get_device_phase_name(phase), get_device_phase_name(device->phase));
+        log_printf("  - Device phase: 0x%x %s %s <= %s\n", device_index(device),
+                   get_device_type_name(device->class->type), get_device_phase_name(phase), get_device_phase_name(device->phase));
     }
     device->phase = phase;
 
     switch (phase) {
     case DEVICE_CONSTRUCTING:
-        if (device->methods->construct != NULL) {
-            if (device->methods->construct(device->object)) {
+        if (device->class->construct != NULL) {
+            if (device->class->construct(device->object)) {
                 return device_set_phase(device, DEVICE_DISABLED);
             }
         }
         break;
     case DEVICE_DESTRUCTING:
-        if (device->methods->destruct != NULL) {
-            device->methods->destruct(device->object);
+        if (device->class->destruct != NULL) {
+            device->class->destruct(device->object);
         }
         break;
     case DEVICE_LINKING:
-        if (device->methods->link != NULL) {
-            device->methods->link(device->object);
+        if (device->class->link != NULL) {
+            device->class->link(device->object);
         }
         break;
     case DEVICE_STARTING:
-        device->methods->start(device->object);
+        device->class->start(device->object);
         if (device->phase == DEVICE_STARTING) {
             return device_set_phase(device, DEVICE_RUNNING);
         }
         break;
     case DEVICE_STOPPING:
-        device->methods->stop(device->object);
+        device->class->stop(device->object);
         if (device->phase == DEVICE_STOPPING) {
             return device_set_phase(device, DEVICE_STOPPED);
         }
         break;
     case DEVICE_PAUSING:
-        if (device->methods->pause == NULL) {
+        if (device->class->pause == NULL) {
             return device_set_phase(device, DEVICE_STOPPING);
         } else {
-            device->methods->pause(device->object);
+            device->class->pause(device->object);
             if (device->phase == DEVICE_PAUSING) {
                 return device_set_phase(device, DEVICE_PAUSED);
             }
         }
         break;
     case DEVICE_RESUMING:
-        if (device->methods->resume == NULL) {
+        if (device->class->resume == NULL) {
             return device_set_phase(device, DEVICE_STARTING);
         } else {
-            device->methods->resume(device->object);
+            device->class->resume(device->object);
             if (device->phase == DEVICE_RESUMING) {
                 return device_set_phase(device, DEVICE_RUNNING);
             }
@@ -181,8 +181,8 @@ void device_set_phase(device_t *device, device_phase_t phase) {
     default: break;
     }
 
-    if (device->methods->callback_phase != NULL) {
-        device->methods->callback_phase(device->object, phase);
+    if (device->class->callback_phase != NULL) {
+        device->class->callback_phase(device->object, phase);
     }
 }
 
@@ -196,8 +196,8 @@ void device_event_subscribe(device_t *device, app_event_type_t type) {
 
 app_signal_t device_event_report(device_t *device, app_event_t *event) {
     (void)device;
-    if (event->producer && event->producer->methods->callback_event) {
-        return event->producer->methods->callback_event(event->producer->object, event);
+    if (event->producer && event->producer->class->callback_event) {
+        return event->producer->class->callback_event(event->producer->object, event);
     } else {
         return APP_SIGNAL_OK;
     }

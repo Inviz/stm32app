@@ -12,7 +12,7 @@ static ODR_t modbus_property_write(OD_stream_t *stream, const void *buf, OD_size
 }
 
 static app_signal_t modbus_validate(transport_modbus_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED;
+    return 0;
 }
 
 static app_signal_t modbus_construct(transport_modbus_t *modbus) {
@@ -330,7 +330,10 @@ uint16_t transport_modbus_crc16(const uint8_t *nData, uint16_t wLength) {
     }
     return wCRCWord;
 }
-device_methods_t transport_modbus_methods = {
+device_class_t transport_modbus_class = {
+    .type = TRANSPORT_MODBUS,
+    .size = sizeof(transport_modbus_t),
+    .phase_subindex = TRANSPORT_MODBUS_PHASE,
     .validate = (app_method_t) modbus_validate,
     .construct = (app_method_t)modbus_construct,
     .link = (app_method_t) modbus_link,
@@ -338,6 +341,5 @@ device_methods_t transport_modbus_methods = {
     .start = (app_method_t) modbus_start,
     .stop = (app_method_t) modbus_stop,
     .callback_signal = (device_callback_signal_t) modbus_signal,
-    //.tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))transport_modbus_tick,
     .callback_phase = (device_callback_phase_t)modbus_phase,
-    .property_write = modbus_property_write};
+    .property_write = modbus_property_write,};

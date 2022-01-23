@@ -3,7 +3,7 @@
 
 /* ADC must be within range */
 static app_signal_t adc_validate(module_adc_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED;
+    return 0;
 }
 
 static app_signal_t adc_construct(module_adc_t *adc) {
@@ -89,7 +89,7 @@ static app_signal_t adc_start(module_adc_t *adc) {
     adc_set_sample_time_on_all_channels(adc->address, ADC_SMPR_SMP_144CYC);
 #endif
     adc_power_on(adc->address);
-    //device_set_temporary_phase(adc->device, DEVICE_PREPARING, 10000);
+    // device_set_temporary_phase(adc->device, DEVICE_PREPARING, 10000);
 
     return 0;
 }
@@ -105,7 +105,7 @@ static app_signal_t adc_calibrate(module_adc_t *adc) {
     adc_dma_setup(adc);
     adc_enable_dma(adc->address);
 
-    //device_set_temporary_phase(adc->device, DEVICE_CALIBRATING, ADC_CALIBRATION_DELAY);
+    // device_set_temporary_phase(adc->device, DEVICE_CALIBRATING, ADC_CALIBRATION_DELAY);
 
     return 0;
 }
@@ -157,15 +157,20 @@ static app_signal_t adc_high_priority(module_adc_t *adc), uint32_t time_passed, 
 
 }*/
 
-device_methods_t module_adc_methods = {.validate = (app_method_t) adc_validate,
-                                       .construct = (app_method_t)adc_construct,
-                                       .destruct = (app_method_t) adc_destruct,
-                                       .callback_link = (device_callback_argument_t)adc_accept,
-                                       .callback_value = (device_callback_value_t)adc_receive,
-                                       //.high_priority = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_high_priority,
-                                       .callback_phase = (device_callback_phase_t)adc_phase,
-                                       .start = (app_method_t) adc_start,
-                                       .stop = (app_method_t) adc_stop};
+device_class_t module_adc_class = {
+    .type = MODULE_ADC,
+    .size = sizeof(module_adc_t),
+    .phase_subindex = MODULE_ADC_PHASE,
+    .validate = (app_method_t)adc_validate,
+    .construct = (app_method_t)adc_construct,
+    .destruct = (app_method_t)adc_destruct,
+    .callback_link = (device_callback_argument_t)adc_accept,
+    .callback_value = (device_callback_value_t)adc_receive,
+    //.high_priority = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_high_priority,
+    .callback_phase = (device_callback_phase_t)adc_phase,
+    .start = (app_method_t)adc_start,
+    .stop = (app_method_t)adc_stop,
+};
 
 void adc_dma_setup(module_adc_t *adc) {
     if (adc->dma_address == DMA1) {

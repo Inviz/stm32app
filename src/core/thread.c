@@ -130,7 +130,7 @@ static app_signal_t app_thread_event_device_dispatch(app_thread_t *thread, app_e
     app_signal_t signal;
 
     if (app_thread_should_notify_device(thread, event, device, tick)) {
-        log_printf("~ %s:  dispatching #%s from %s to %s\n", app_thread_get_name(thread), get_app_event_type_name(event->type), get_device_type_name(event->producer->type), get_device_type_name(device->type));
+        log_printf("~ %s:  dispatching #%s from %s to %s\n", app_thread_get_name(thread), get_app_event_type_name(event->type), get_device_type_name(event->producer->class->type), get_device_type_name(device->class->type));
 
 
         if (event->type == APP_EVENT_THREAD_ALARM) {
@@ -345,7 +345,7 @@ bool_t app_thread_notify_generic(app_thread_t *thread, uint32_t value, bool_t ov
 }
 
 bool_t app_thread_publish_generic(app_thread_t *thread, app_event_t *event, bool_t to_front) {
-    log_printf("~ %s: %s publishing #%s for %s\n", app_get_current_thread_name(thread->device->app), get_device_type_name(event->producer->type), get_app_event_type_name(event->type), app_thread_get_name(thread));
+    log_printf("~ %s: %s publishing #%s for %s\n", app_get_current_thread_name(thread->device->app), get_device_type_name(event->producer->class->type), get_app_event_type_name(event->type), app_thread_get_name(thread));
     if (IS_IN_ISR) {
         static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         bool_t result = false;
@@ -491,11 +491,11 @@ size_t app_thread_get_tick_index(app_thread_t *thread) {
 
 int device_ticks_allocate(device_t *device) {
     device->ticks = malloc(sizeof(device_ticks_t));
-    return device_tick_allocate(&device->ticks->input, device->methods->tick_input) ||
-           device_tick_allocate(&device->ticks->medium_priority, device->methods->tick_medium_priority) ||
-           device_tick_allocate(&device->ticks->high_priority, device->methods->tick_high_priority) ||
-           device_tick_allocate(&device->ticks->low_priority, device->methods->tick_low_priority) ||
-           device_tick_allocate(&device->ticks->bg_priority, device->methods->tick_bg_priority);
+    return device_tick_allocate(&device->ticks->input, device->class->tick_input) ||
+           device_tick_allocate(&device->ticks->medium_priority, device->class->tick_medium_priority) ||
+           device_tick_allocate(&device->ticks->high_priority, device->class->tick_high_priority) ||
+           device_tick_allocate(&device->ticks->low_priority, device->class->tick_low_priority) ||
+           device_tick_allocate(&device->ticks->bg_priority, device->class->tick_bg_priority);
 }
 
 int device_ticks_free(device_t *device) {

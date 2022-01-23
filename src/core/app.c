@@ -2,23 +2,23 @@
 #include "system/canopen.h"
 
 // Count or initialize all devices in OD of given type
-size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, device_methods_t *methods, size_t struct_size,
+size_t app_device_type_enumerate(app_t *app, OD_t *od, device_class_t *class,
                                  device_t *destination, size_t offset) {
     size_t count = 0;
+
     for (size_t seq = 0; seq < 128; seq++) {
-        OD_entry_t *properties = OD_find(od, type + seq);
+        OD_entry_t *properties = OD_find(od, class->type + seq);
         if (properties == NULL && seq >= 19)
             break;
         if (properties == NULL)
             continue;
+        
+        uint8_t *phase = OD_getPtr(properties, class->phase_subindex, 0, NULL);
 
-        // Skip devices disabled by OD (first index)
-        uint16_t disabled = 0;
-        OD_get_u16(properties, 0x01, &disabled, true);
-        if (disabled != 0)
-            break;
+        // compute struct offset for phase property
+        // class->phase_offset = (void *) phase - OD_getPtr(properties, 0x00, 0, NULL);
 
-        if (methods->validate(OD_getPtr(properties, 0x00, 0, NULL)) != 0 && destination == NULL) {
+        if (*phase != DEVICE_ENABLED || class->validate(OD_getPtr(properties, 0x00, 0, NULL)) != 0) {
             if (app != NULL && app->canopen != NULL) {
                 app_error_report(app, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(properties));
             }
@@ -31,15 +31,12 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         }
 
         device_t *device = &destination[offset + count - 1];
-        device->type = type;
         device->seq = seq;
-        device->index = type + seq;
-        device->struct_size = struct_size;
         device->properties = properties;
-        device->methods = methods;
+        device->class = class;
 
-        device->properties_extension.write = methods->property_write == NULL ? OD_writeOriginal : methods->property_write;
-        device->properties_extension.read = methods->property_read == NULL ? OD_readOriginal : methods->property_read;
+        device->properties_extension.write = class->property_write == NULL ? OD_writeOriginal : class->property_write;
+        device->properties_extension.read = class->property_read == NULL ? OD_readOriginal : class->property_read;
 
         OD_extension_init(properties, &device->properties_extension);
     }
@@ -48,7 +45,8 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
 
 device_t *app_device_find(app_t *app, uint16_t index) {
     for (size_t i = 0; i < app->device_count; i++) {
-        if (app->device[i].index == index) {
+        device_t *device = &app->device[i];
+        if (device_index(device) == index) {
             return &app->device[i];
         }
     }
@@ -57,7 +55,8 @@ device_t *app_device_find(app_t *app, uint16_t index) {
 
 device_t *app_device_find_by_type(app_t *app, uint16_t type) {
     for (size_t i = 0; i < app->device_count; i++) {
-        if (app->device[i].type == type) {
+        device_t *device = &app->device[i];
+        if (device->class->type == type) {
             return &app->device[i];
         }
     }

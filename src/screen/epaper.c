@@ -5,8 +5,7 @@
 
 /* Epaper needs DC, CS, BUSY, RESET pins set, as well as screen size */
 static app_signal_t epaper_validate(screen_epaper_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED ||
-           properties->dc_pin == 0 || properties->dc_port == 0 || properties->cs_port == 0 || properties->cs_pin == 0 || properties->busy_pin == 0 ||
+    return properties->dc_pin == 0 || properties->dc_port == 0 || properties->cs_port == 0 || properties->cs_pin == 0 || properties->busy_pin == 0 ||
            properties->busy_port == 0 || properties->reset_port == 0 || properties->reset_pin == 0 || properties->width == 0 || properties->height == 0;
 }
 
@@ -420,7 +419,10 @@ static app_signal_t epaper_phase(screen_epaper_t *epaper) {
     return 0;
 }
 
-device_methods_t screen_epaper_methods = {
+device_class_t screen_epaper_class = {
+    .type = SCREEN_EPAPER,
+    .size = sizeof(screen_epaper_t),
+    .phase_subindex = SCREEN_EPAPER_PHASE,
     .validate = (app_method_t) epaper_validate,
     .construct = (app_method_t)epaper_construct,
     .destruct = (app_method_t) epaper_destruct,

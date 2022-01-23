@@ -88,7 +88,9 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (mat
 ODR_t ${type}_${name}_set_${attribute}(${type}_${name}_t *${name}, ${dataType} value); // 0x${attributeOD}: ${name} ${attribute}
 ${dataType} ${type}_${name}_get_${attribute}(${type}_${name}_t *${name}); // 0x${attributeOD}: ${name} ${attribute}`)
 
-accessors.push(`OD_ACCESSORS(${type}, ${name}, ${subtype}, ${attribute}, ${constant}, ${dataType}, ${shorttype}) /* 0x${attributeOD}: ${JSON.stringify(attributeDefinition)} */`);
+//accessors.push(`OD_ACCESSORS(${type}, ${name}, ${subtype}, ${attribute}, ${constant}, ${dataType}, ${shorttype}) /* 0x${attributeOD}: ${JSON.stringify(attributeDefinition)} */`);
+accessors.push(`#define ${type}_${name}_set_${attribute}(${name}, value) OD_set_${shorttype}(${name}->device->${subtype}, ${constant}, value, false)`);
+accessors.push(`#define ${type}_${name}_get_${attribute}(${name}) *((${dataType} *) OD_getPtr(${name}->device->class->properties, ${constant}, 0, NULL))`);
 
 if (!'USE MACROS?')    accessors.push(
 `/* 0x${attributeOD}: ${name} ${attribute} */

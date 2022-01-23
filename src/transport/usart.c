@@ -3,7 +3,7 @@
 
 /* USART must be within range */
 static app_signal_t usart_validate(transport_usart_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED;
+    return 0;
 }
 
 static app_signal_t usart_construct(transport_usart_t *usart) {
@@ -146,7 +146,11 @@ static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, app
     return 0;
 }
 
-device_methods_t transport_usart_methods = {
+device_class_t transport_usart_class = {
+    .type = TRANSPORT_USART,
+    .size = sizeof(transport_usart_t),
+    .phase_subindex = TRANSPORT_USART_PHASE,
+
     .validate = (app_method_t)usart_validate,
     .construct = (app_method_t)usart_construct,
     .destruct = (app_method_t)usart_destruct,

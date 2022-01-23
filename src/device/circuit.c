@@ -21,7 +21,7 @@ static ODR_t circuit_property_write(OD_stream_t *stream, const void *buf, OD_siz
 
 /* Circuit needs its relay GPIO configured */
 static app_signal_t circuit_validate(device_circuit_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED || properties->port == 0 || properties->pin == 0;
+    return properties->port == 0 || properties->pin == 0;
 }
 
 static app_signal_t circuit_construct(device_circuit_t *circuit) {
@@ -66,7 +66,10 @@ void device_circuit_set_state(device_circuit_t *circuit, bool state) {
     }
 }
 
-device_methods_t device_circuit_methods = {
+device_class_t device_circuit_class = {
+    .type = DEVICE_CIRCUIT,
+    .size = sizeof(device_circuit_t),
+    .phase_subindex = DEVICE_CIRCUIT_PHASE,
     .validate = (app_method_t)circuit_validate,
     .construct = (app_method_t)circuit_construct,
     .start = (app_method_t)circuit_start,

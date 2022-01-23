@@ -2,7 +2,7 @@
 
 
 static void app_thread_canopen_notify(app_thread_t *thread);
-static void system_canopen_initialize_methods(system_canopen_t *canopen);
+static void system_canopen_initialize_class(system_canopen_t *canopen);
 
 static ODR_t canopen_property_write(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
     system_canopen_t *canopen = stream->object;
@@ -12,7 +12,7 @@ static ODR_t canopen_property_write(OD_stream_t *stream, const void *buf, OD_siz
 }
 
 static app_signal_t canopen_validate(system_canopen_properties_t *properties) {
-    return properties->phase != DEVICE_ENABLED;
+    return 0;
 }
 
 static app_signal_t canopen_construct(system_canopen_t *canopen) {
@@ -104,7 +104,7 @@ static app_signal_t canopen_start(system_canopen_t *canopen) {
         return err;
     }
 
-    system_canopen_initialize_methods(canopen);
+    system_canopen_initialize_class(canopen);
 
     /* Initialize CANopen itself */
     err = CO_CANopenInit(canopen->instance,                   /* CANopen object */
@@ -232,7 +232,11 @@ static void app_thread_canopen_notify(app_thread_t *thread) {
     app_thread_publish(thread, &event);
 }
 
-device_methods_t system_canopen_methods = {
+device_class_t system_canopen_class = {
+    .type = SYSTEM_CANOPEN,
+    .size = sizeof(system_canopen_t),
+    .phase_subindex = SYSTEM_CANOPEN_PHASE,
+
     .validate = (app_method_t) canopen_validate,
     .construct = (app_method_t)canopen_construct,
     .destruct = (app_method_t)canopen_destruct,
@@ -248,7 +252,7 @@ device_methods_t system_canopen_methods = {
     .property_write = canopen_property_write,
 };
 
-static void system_canopen_initialize_methods(system_canopen_t *canopen) {
+static void system_canopen_initialize_class(system_canopen_t *canopen) {
     app_t *app = canopen->device->app;
 
     /* Mainline tasks */
