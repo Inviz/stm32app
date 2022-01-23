@@ -13,11 +13,11 @@ static app_signal_t mcu_validate(system_mcu_properties_t *properties) {
 }
 
 
-static app_signal_t mcu_phase_constructing(system_mcu_t *mcu) {
+static app_signal_t mcu_construct(system_mcu_t *mcu) {
     return 0;
 }
 
-static app_signal_t mcu_phase_starting(system_mcu_t *mcu) {
+static app_signal_t mcu_start(system_mcu_t *mcu) {
 #if defined(STM32F1)
     mcu->clock = &rcc_hsi_propertiess[RCC_CLOCK_HSE8_72MHZ];
 #elif defined(STM32F4)
@@ -27,22 +27,12 @@ static app_signal_t mcu_phase_starting(system_mcu_t *mcu) {
     return 0;
 }
 
-static app_signal_t mcu_phase_stoping(system_mcu_t *mcu) {
+static app_signal_t mcu_stop(system_mcu_t *mcu) {
     (void)mcu;
     return 0;
 }
 
-static app_signal_t mcu_phase_pausing(system_mcu_t *mcu) {
-    (void)mcu;
-    return 0;
-}
-
-static app_signal_t mcu_phase_resuming(system_mcu_t *mcu) {
-    (void)mcu;
-    return 0;
-}
-
-static app_signal_t mcu_phase_linking(system_mcu_t *mcu) {
+static app_signal_t mcu_link(system_mcu_t *mcu) {
     (void)mcu;
     return device_link(mcu->device, (void **)&mcu->storage, mcu->properties->storage_index, NULL);
 }
@@ -54,12 +44,9 @@ static app_signal_t mcu_phase(system_mcu_t *mcu, device_phase_t phase) {
 }
 
 device_methods_t system_mcu_methods = {.validate = (app_method_t) mcu_validate,
-                                           .phase_constructing = (app_method_t)mcu_phase_constructing,
-                                           .phase_linking = (app_method_t) mcu_phase_linking,
-                                           .phase_starting = (app_method_t) mcu_phase_starting,
-                                           .phase_stoping = (app_method_t) mcu_phase_stoping,
-                                           .phase_pausing = (app_method_t) mcu_phase_pausing,
-                                           .phase_resuming = (app_method_t) mcu_phase_resuming,
-                                           //.accept = (int (*)(void *, device_t *device, void *channel))system_mcu_accept,
+                                           .construct = (app_method_t)mcu_construct,
+                                           .link = (app_method_t) mcu_link,
+                                           .start = (app_method_t) mcu_start,
+                                           .stop = (app_method_t) mcu_stop,
                                            .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))mcu_phase,
                                            .property_write = mcu_property_write};

@@ -24,32 +24,22 @@ static app_signal_t mothership_validate(app_mothership_properties_t *properties)
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t mothership_phase_constructing(app_mothership_t *mothership) {
+static app_signal_t mothership_construct(app_mothership_t *mothership) {
     app_threads_allocate((app_t *)mothership);
     return 0;
 }
 
-static app_signal_t mothership_phase_starting(app_mothership_t *mothership) {
+static app_signal_t mothership_start(app_mothership_t *mothership) {
     (void)mothership;
     return 0;
 }
 
-static app_signal_t mothership_phase_stoping(app_mothership_t *mothership) {
+static app_signal_t mothership_stop(app_mothership_t *mothership) {
     (void)mothership;
     return 0;
 }
 
-static app_signal_t mothership_phase_pausing(app_mothership_t *mothership) {
-    (void)mothership;
-    return 0;
-}
-
-static app_signal_t mothership_phase_resuming(app_mothership_t *mothership) {
-    (void)mothership;
-    return 0;
-}
-
-static app_signal_t mothership_phase_linking(app_mothership_t *mothership) {
+static app_signal_t mothership_link(app_mothership_t *mothership) {
     device_link(mothership->device, (void **)&mothership->mcu, mothership->properties->mcu_index, NULL);
     device_link(mothership->device, (void **)&mothership->canopen, mothership->properties->canopen_index, NULL);
     device_link(mothership->device, (void **)&mothership->timer, mothership->properties->timer_index, NULL);
@@ -104,13 +94,10 @@ static app_signal_t mothership_callback_signal(app_mothership_t mothership, devi
 
 device_methods_t app_mothership_methods = {
     .validate = (app_method_t)mothership_validate,
-    .phase_constructing = (app_method_t)mothership_phase_constructing,
-    .phase_linking = (app_method_t)mothership_phase_linking,
-    .phase_starting = (app_method_t)mothership_phase_starting,
-    .phase_stoping = (app_method_t)mothership_phase_stoping,
-    .phase_pausing = (app_method_t)mothership_phase_pausing,
-    .phase_resuming = (app_method_t)mothership_phase_resuming,
-    //.accept = (int (*)(void *, device_t *device, void *channel))app_mothership_accept,
+    .construct = (app_method_t)mothership_construct,
+    .link = (app_method_t)mothership_link,
+    .start = (app_method_t)mothership_start,
+    .stop = (app_method_t)mothership_stop,
     .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))mothership_phase,
     .callback_signal = (app_signal_t(*)(void *, device_t *device, uint32_t signal, void *argument))mothership_callback_signal,
     .tick_high_priority = (device_tick_callback_t)mothership_high_priority,

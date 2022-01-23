@@ -5,7 +5,7 @@ static app_signal_t spi_validate(transport_spi_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t spi_phase_constructing(transport_spi_t *spi) {
+static app_signal_t spi_construct(transport_spi_t *spi) {
     switch (spi->device->seq) {
     case 0:
         spi->clock = RCC_SPI1;
@@ -56,12 +56,12 @@ static app_signal_t spi_phase_constructing(transport_spi_t *spi) {
     return 0;
 }
 
-static app_signal_t spi_phase_destructing(transport_spi_t *spi) {
+static app_signal_t spi_destruct(transport_spi_t *spi) {
     (void)spi;
     return 0;
 }
 
-static app_signal_t spi_phase_starting(transport_spi_t *spi) {
+static app_signal_t spi_start(transport_spi_t *spi) {
     (void)spi;
     rcc_periph_clock_enable(spi->clock);
 
@@ -125,7 +125,7 @@ static app_signal_t spi_phase_starting(transport_spi_t *spi) {
     return 0;
 }
 
-static app_signal_t spi_phase_stoping(transport_spi_t *spi) {
+static app_signal_t spi_stop(transport_spi_t *spi) {
     spi_reset(spi->clock);
     spi_disable(spi->clock);
     return 0;
@@ -221,9 +221,9 @@ static app_signal_t spi_tick_input(transport_spi_t *spi, app_event_t *event, dev
 }
 
 device_methods_t transport_spi_methods = {.validate = (app_method_t) spi_validate,
-                                          .phase_constructing = (app_method_t)spi_phase_constructing,
-                                          .phase_destructing = (app_method_t) spi_phase_destructing,
-                                          .phase_starting = (app_method_t) spi_phase_starting,
+                                          .construct = (app_method_t)spi_construct,
+                                          .destruct = (app_method_t) spi_destruct,
+                                          .start = (app_method_t) spi_start,
                                           .tick_input = (device_tick_callback_t)spi_tick_input,
                                           .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))spi_signal,
-                                          .phase_stoping = (app_method_t) spi_phase_stoping};
+                                          .stop = (app_method_t) spi_stop};

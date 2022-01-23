@@ -72,8 +72,8 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (mat
     
 
 
-    const constant = `SUBIDX_${name.toUpperCase()}_${attribute.toUpperCase()}`
-    defs.push(`#define ${constant} 0x${(attributeIndex + 1)}`);
+    const constant = `${type.toUpperCase()}_${name.toUpperCase()}_${attribute.toUpperCase()}`
+    defs.push(`${constant} = 0x${(attributeIndex + 1)}`);
     const attributeOD = `${index.replace(/\d\d$/, 'XX')}${toHex(attributeIndex + 1)}`
     const attributeDefinition = findDefinition(`UID_SUB_${index}${toHex(attributeIndex + 1)}`);
     const shorttype = dataType.replace(/_t/, '').replace(/([a-z])[a-z]+/, '$1');
@@ -113,7 +113,7 @@ ODR_t ${name}_read_${attribute}(${type}_${name}_t *${name}, ${dataType} value) {
       types[typeName] = true;
       if (!files[filePath]) files[filePath] = { types: [], accessors: [], prototypes: [], defs: [] };
       files[filePath].types.push(`/* 0x${index}: ${definition.label}${definition.description && '\n   ' + definition.description} */\ntypedef struct ${typeName} {\n    uint8_t parameter_count;\n${struct}\n} ${typeName}_t;`)
-      files[filePath].defs.push(defs.join('\n'))
+      files[filePath].defs.push(`typedef enum ${typeName}_properties {\n  ${defs.join(',\n  ')}\n} ${typeName}_properties_t;`)
       files[filePath].accessors.push(accessors.join('\n'))
       files[filePath].prototypes.push(prototypes.join(''))
       files[filePath].struct = structName;

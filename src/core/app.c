@@ -7,7 +7,7 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
     size_t count = 0;
     for (size_t seq = 0; seq < 128; seq++) {
         OD_entry_t *properties = OD_find(od, type + seq);
-        if (properties == NULL && seq >= 10)
+        if (properties == NULL && seq >= 19)
             break;
         if (properties == NULL)
             continue;
@@ -35,6 +35,7 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_type_t type, devic
         device->seq = seq;
         device->index = type + seq;
         device->struct_size = struct_size;
+        device->properties = properties;
         device->methods = methods;
 
         device->properties_extension.write = methods->property_write == NULL ? OD_writeOriginal : methods->property_write;
@@ -91,7 +92,7 @@ int app_allocate(app_t **app, OD_t *od, size_t (*enumerator)(app_t *app, OD_t *o
     device_t *devices = malloc(sizeof(device_t) * device_count);
 
     if (devices == NULL) {
-        return CO_ERROR_OUT_OF_MEMORY;
+        return APP_SIGNAL_OUT_OF_MEMORY;
     }
     // run device constructors
     enumerator(*app, od, devices);

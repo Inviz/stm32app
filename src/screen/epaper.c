@@ -10,11 +10,11 @@ static app_signal_t epaper_validate(screen_epaper_properties_t *properties) {
            properties->busy_port == 0 || properties->reset_port == 0 || properties->reset_pin == 0 || properties->width == 0 || properties->height == 0;
 }
 
-static app_signal_t epaper_phase_constructing(screen_epaper_t *epaper) {
+static app_signal_t epaper_construct(screen_epaper_t *epaper) {
     return 0;
 }
 
-static app_signal_t epaper_phase_linking(screen_epaper_t *epaper) {
+static app_signal_t epaper_link(screen_epaper_t *epaper) {
     return device_link(epaper->device, (void **)&epaper->spi, epaper->properties->spi_index, NULL);
 }
 
@@ -89,15 +89,15 @@ static app_signal_t epaper_set_resetting_phase(screen_epaper_t *epaper) {
     switch (epaper->resetting_phase) {
     case 1:
         device_gpio_set(epaper->properties->reset_port, epaper->properties->reset_pin);
-        device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
+        //device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
         break;
     case 2:
         device_gpio_clear(epaper->properties->reset_port, epaper->properties->reset_pin);
-        device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 2000);
+        //device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 2000);
         break;
     case 3:
         device_gpio_set(epaper->properties->reset_port, epaper->properties->reset_pin);
-        device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
+        //device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
         break;
     case 4: epaper->resetting_phase = 0; device_set_phase(epaper->device, DEVICE_RUNNING);
     }
@@ -297,7 +297,7 @@ static void screen_epaper_sleep(screen_epaper_t *epaper) {
     //  vDelay(100);
 }
 
-static app_signal_t epaper_phase_destructing(screen_epaper_t *epaper) {
+static app_signal_t epaper_destruct(screen_epaper_t *epaper) {
     (void)epaper;
     return 0;
 }
@@ -373,7 +373,7 @@ static app_signal_t epaper_set_initializing_phase(screen_epaper_t *epaper) {
     return 0;
 }
 
-static app_signal_t epaper_phase_starting(screen_epaper_t *epaper) {
+static app_signal_t epaper_start(screen_epaper_t *epaper) {
     device_gpio_configure_input("Busy", epaper->properties->busy_port, epaper->properties->busy_pin);
     device_gpio_configure_output_with_value("Reset", epaper->properties->reset_port, epaper->properties->busy_pin, 0, 1);
     device_gpio_configure_output_with_value("DC", epaper->properties->dc_port, epaper->properties->dc_pin, 0, 0);
@@ -384,21 +384,11 @@ static app_signal_t epaper_phase_starting(screen_epaper_t *epaper) {
     return 0;
 }
 
-static app_signal_t epaper_phase_stoping(screen_epaper_t *epaper) {
+static app_signal_t epaper_stop(screen_epaper_t *epaper) {
     device_gpio_clear(epaper->properties->dc_port, epaper->properties->dc_pin);
     device_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
     device_gpio_clear(epaper->properties->reset_port, epaper->properties->reset_pin);
     return 0;
-}
-
-static app_signal_t epaper_phase_pausing(screen_epaper_t *epaper) {
-    screen_epaper_sleep(epaper);
-    return 0;
-}
-
-static app_signal_t epaper_phase_resuming(screen_epaper_t *epaper) {
-    (void)epaper;
-    return CO_ERROR_NO;
 }
 
 static ODR_t epaper_properties_property_write(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
@@ -432,13 +422,11 @@ static app_signal_t epaper_phase(screen_epaper_t *epaper) {
 
 device_methods_t screen_epaper_methods = {
     .validate = (app_method_t) epaper_validate,
-    .phase_constructing = (app_method_t)epaper_phase_constructing,
-    .phase_destructing = (app_method_t) epaper_phase_destructing,
-    .phase_starting = (app_method_t) epaper_phase_starting,
-    .phase_stoping = (app_method_t) epaper_phase_stoping,
-    .phase_linking = (app_method_t) epaper_phase_linking,
-    .phase_pausing = (app_method_t) epaper_phase_pausing,
-    .phase_resuming = (app_method_t) epaper_phase_resuming,
+    .construct = (app_method_t)epaper_construct,
+    .destruct = (app_method_t) epaper_destruct,
+    .start = (app_method_t) epaper_start,
+    .stop = (app_method_t) epaper_stop,
+    .link = (app_method_t) epaper_link,
     .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))epaper_phase,
     .property_write = epaper_properties_property_write,
 };

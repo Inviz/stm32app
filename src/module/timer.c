@@ -17,7 +17,7 @@ static app_signal_t timer_validate(module_timer_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t timer_phase_constructing(module_timer_t *timer) {
+static app_signal_t timer_construct(module_timer_t *timer) {
     timer->subscriptions = malloc(sizeof(module_timer_subscription_t) * timer->properties->initial_subscriptions_count);
     timer->next_time = -1;
     timer->next_tick = timer->properties->period;
@@ -282,8 +282,8 @@ static app_signal_t timer_notify(module_timer_t *timer) {
 
 static app_signal_t timer_advance(module_timer_t *timer, uint32_t time) {
     // start the timer if it was not ticking
-    if (timer->device->phase != DEVICE_WORKING) {
-        device_set_phase(timer->device, DEVICE_WORKING);
+    if (timer->device->phase != DEVICE_RUNNING) {
+        device_set_phase(timer->device, DEVICE_RUNNING);
     }
     // add passed time to current_time, and adjust timer
     timer->current_time += time;
@@ -348,8 +348,9 @@ app_signal_t module_timer_timeout(module_timer_t *timer, device_t *device, void 
 
     // update subscription
     module_timer_subscription_t *subscription = timer_get_subscription(timer, device, argument);
-    if (subscription == NULL)
-        return CO_ERROR_OUT_OF_MEMORY;
+    if (subscription == NULL) {
+        return APP_SIGNAL_OUT_OF_MEMORY;
+    }
     subscription->device = device;
     subscription->argument = argument;
 
@@ -384,25 +385,25 @@ app_signal_t module_timer_clear(module_timer_t *timer, device_t *device, void *a
     return 0;
 }
 
-static app_signal_t timer_phase_idle(module_timer_t *timer) {
+static app_signal_t timer_stop_counting(module_timer_t *timer) {
     timer->next_time = -1;
     timer->next_tick = timer->properties->period;
     timer_disable_counter(timer->address);
     return 0;
 }
 
-static app_signal_t timer_phase_working(module_timer_t *timer) {
+static app_signal_t timer_start_counting(module_timer_t *timer) {
     timer_enable_counter(timer->address);
     return 0;
 }
 
-static app_signal_t timer_phase_stoping(module_timer_t *timer) {
-    if (timer->device->phase == DEVICE_WORKING)
-        return timer_phase_idle(timer);
+static app_signal_t timer_stop(module_timer_t *timer) {
+    if (timer->device->phase == DEVICE_RUNNING)
+        return timer_stop_counting(timer);
     return 0;
 }
 
-static app_signal_t timer_phase_starting(module_timer_t *timer) {
+static app_signal_t timer_start(module_timer_t *timer) {
     uint32_t source_frequency;
 
     rcc_periph_clock_enable(timer->clock);
@@ -442,30 +443,21 @@ static app_signal_t timer_phase_starting(module_timer_t *timer) {
     return 0;
 }
 
-static app_signal_t timer_phase_pausing(module_timer_t *timer) {
-    return timer_phase_stoping(timer);
-}
-
-static app_signal_t timer_phase_resuming(module_timer_t *timer) {
-    return timer_phase_starting(timer);
-}
-
-static app_signal_t timer_phase_linking(module_timer_t *timer) {
+static app_signal_t timer_link(module_timer_t *timer) {
     (void)timer;
     return 0;
 }
 
 static app_signal_t timer_callback_phase(module_timer_t *timer, device_phase_t phase) {
     switch (phase) {
-    case DEVICE_WORKING: return timer_phase_working(timer); break;
+    case DEVICE_RUNNING: return timer_start_counting(timer); break;
 
-    case DEVICE_IDLE: return timer_phase_idle(timer); break;
+    case DEVICE_IDLE: return timer_stop_counting(timer); break;
 
     case DEVICE_STARTING:
+    case DEVICE_RESUMING:
         if (timer_get_next_subscription(timer) == NULL) {
             device_set_phase(timer->device, DEVICE_IDLE);
-        } else {
-            device_set_phase(timer->device, DEVICE_WORKING);
         }
         break;
 
@@ -474,19 +466,15 @@ static app_signal_t timer_callback_phase(module_timer_t *timer, device_phase_t p
     return 0;
 }
 
-// static app_signal_t mcu_timeout(device_mcu_t *mcu) {
-//}
-
-device_methods_t module_timer_methods = {.validate = (app_method_t)timer_validate,
-                                         .phase_constructing = (app_method_t)timer_phase_constructing,
-                                         .phase_linking = (app_method_t)timer_phase_linking,
-                                         .phase_starting = (app_method_t)timer_phase_starting,
-                                         .phase_stoping = (app_method_t)timer_phase_stoping,
-                                         .phase_pausing = (app_method_t)timer_phase_pausing,
-                                         .phase_resuming = (app_method_t)timer_phase_resuming,
-                                         //.accept = (int (*)(void *, device_t *device, void *channel))module_timer_accept,
-                                         .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))timer_callback_phase,
-                                         .property_write = timer_property_write};
+device_methods_t module_timer_methods = {
+    .validate = (app_method_t)timer_validate,
+    .construct = (app_method_t)timer_construct,
+    .link = (app_method_t)timer_link,
+    .start = (app_method_t)timer_start,
+    .stop = (app_method_t)timer_stop,
+    .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))timer_callback_phase,
+    .property_write = timer_property_write,
+};
 
 void tim1_isr(void) {
     timer_interrupt(0);

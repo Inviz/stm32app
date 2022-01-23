@@ -15,14 +15,14 @@ static app_signal_t canopen_validate(system_canopen_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t canopen_phase_constructing(system_canopen_t *canopen) {
+static app_signal_t canopen_construct(system_canopen_t *canopen) {
 
     /* Allocate memory */
     uint32_t heapMemoryUsed = 0;
     canopen->instance = CO_new(NULL, &heapMemoryUsed);
     if (canopen->instance == NULL) {
         log_printf("Error: Can't allocate memory\n");
-        return CO_ERROR_OUT_OF_MEMORY;
+        return APP_SIGNAL_OUT_OF_MEMORY;
     } else {
         if (heapMemoryUsed == 0) {
             log_printf("Config - Static memory\n");
@@ -50,7 +50,7 @@ static app_signal_t canopen_phase_constructing(system_canopen_t *canopen) {
     return 0;
 }
 
-static app_signal_t canopen_phase_destructing(system_canopen_t *canopen) {
+static app_signal_t canopen_destruct(system_canopen_t *canopen) {
     CO_CANsetConfigurationMode(canopen->instance);
     CO_delete(canopen->instance);
     return 0;
@@ -63,7 +63,7 @@ static bool_t system_canopen_store_lss(system_canopen_t *canopen, uint8_t node_i
     return 0;
 }
 
-static app_signal_t canopen_phase_starting(system_canopen_t *canopen) {
+static app_signal_t canopen_start(system_canopen_t *canopen) {
     CO_ReturnError_t err;
     uint32_t errInfo = 0;
 
@@ -146,24 +146,14 @@ static app_signal_t canopen_phase_starting(system_canopen_t *canopen) {
     return 0;
 }
 
-static app_signal_t canopen_phase_stoping(system_canopen_t *canopen) {
+static app_signal_t canopen_stop(system_canopen_t *canopen) {
     log_printf("Config - Unloading...\n");
     CO_CANsetConfigurationMode((void *)&canopen->instance);
     CO_delete(canopen->instance);
     return 0;
 }
 
-static app_signal_t canopen_phase_pausing(system_canopen_t *canopen) {
-    (void)canopen;
-    return 0;
-}
-
-static app_signal_t canopen_phase_resuming(system_canopen_t *canopen) {
-    (void)canopen;
-    return 0;
-}
-
-static app_signal_t canopen_phase_linking(system_canopen_t *canopen) {
+static app_signal_t canopen_link(system_canopen_t *canopen) {
     device_link(canopen->device, (void **)&canopen->can, canopen->properties->can_index, NULL);
     return 0;
 }
@@ -244,13 +234,11 @@ static void app_thread_canopen_notify(app_thread_t *thread) {
 
 device_methods_t system_canopen_methods = {
     .validate = (app_method_t) canopen_validate,
-    .phase_constructing = (app_method_t)canopen_phase_constructing,
-    .phase_destructing = (app_method_t)canopen_phase_destructing,
-    .phase_linking = (app_method_t)canopen_phase_linking,
-    .phase_starting = (app_method_t)canopen_phase_starting,
-    .phase_stoping = (app_method_t)canopen_phase_stoping,
-    .phase_pausing = (app_method_t)canopen_phase_pausing,
-    .phase_resuming = (app_method_t)canopen_phase_resuming,
+    .construct = (app_method_t)canopen_construct,
+    .destruct = (app_method_t)canopen_destruct,
+    .link = (app_method_t)canopen_link,
+    .start = (app_method_t)canopen_start,
+    .stop = (app_method_t)canopen_stop,
 
     .tick_input = (device_tick_callback_t)canopen_tick_input,
     .tick_high_priority = (device_tick_callback_t)canopen_tick_high_priority,

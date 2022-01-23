@@ -6,7 +6,7 @@ static app_signal_t usart_validate(transport_usart_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t usart_phase_constructing(transport_usart_t *usart) {
+static app_signal_t usart_construct(transport_usart_t *usart) {
 
     usart->dma_rx_address = dma_get_address(usart->properties->dma_rx_unit);
     usart->dma_tx_address = dma_get_address(usart->properties->dma_tx_unit);
@@ -75,7 +75,7 @@ static app_signal_t usart_accept(transport_usart_t *usart, device_t *target, voi
     return 0;
 }
 
-static app_signal_t usart_phase_destructing(transport_usart_t *usart) {
+static app_signal_t usart_destruct(transport_usart_t *usart) {
     free(usart->dma_rx_buffer);
     return 0;
 }
@@ -106,7 +106,7 @@ static void transport_usart_rx_dma_start(transport_usart_t *usart, uint8_t *data
     usart_enable_rx_dma(usart->address);
 }
 
-static app_signal_t usart_phase_starting(transport_usart_t *usart) {
+static app_signal_t usart_start(transport_usart_t *usart) {
     usart_set_baudrate(usart->address, usart->properties->baudrate);
     usart_set_databits(usart->address, usart->properties->databits);
     usart_set_stopbits(usart->address, USART_STOPBITS_1);
@@ -124,7 +124,7 @@ static app_signal_t usart_phase_starting(transport_usart_t *usart) {
     return 0;
 }
 
-static app_signal_t usart_phase_stoping(transport_usart_t *usart) {
+static app_signal_t usart_stop(transport_usart_t *usart) {
     (void)usart;
     return 0;
 }
@@ -146,9 +146,9 @@ static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, int
 
 device_methods_t transport_usart_methods = {
     .validate = (app_method_t) usart_validate,
-    .phase_constructing = (app_method_t)usart_phase_constructing,
-    .phase_destructing = (app_method_t) usart_phase_destructing,
-    .phase_starting = (app_method_t) usart_phase_starting,
-    .phase_stoping = (app_method_t) usart_phase_stoping,
+    .construct = (app_method_t)usart_construct,
+    .destruct = (app_method_t) usart_destruct,
+    .start = (app_method_t) usart_start,
+    .stop = (app_method_t) usart_stop,
     .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))usart_signal,
     .callback_link = (int (*)(void *, device_t *device, void *channel)) usart_accept,};

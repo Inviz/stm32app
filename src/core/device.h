@@ -11,10 +11,10 @@ extern "C" {
 #include "lib/gpio.h"
 
 #define OD_ACCESSORS(OD_TYPE, NAME, SUBTYPE, PROPERTY, SUBINDEX, TYPE, SHORT_TYPE)                                                         \
-    __attribute__((weak)) ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                                      \
+    __attribute__((weak)) ODR_t OD_TYPE##_##NAME##_set_##PROPERTY(OD_TYPE##_##NAME##_t *NAME, TYPE value) {                                \
         return OD_set_##SHORT_TYPE(NAME->device->SUBTYPE, SUBINDEX, value, false);                                                         \
     }                                                                                                                                      \
-    __attribute__((weak)) TYPE OD_TYPE##_##NAME##_get_##PROPERTY(OD_TYPE##_##NAME##_t *NAME) {                                                                   \
+    __attribute__((weak)) TYPE OD_TYPE##_##NAME##_get_##PROPERTY(OD_TYPE##_##NAME##_t *NAME) {                                             \
         TYPE value;                                                                                                                        \
         OD_get_##SHORT_TYPE(NAME->device->SUBTYPE, SUBINDEX, &value, false);                                                               \
         return value;                                                                                                                      \
@@ -29,7 +29,7 @@ enum device_phase {
     DEVICE_CALIBRATING,
     DEVICE_PREPARING,
     DEVICE_RUNNING,
-    
+
     DEVICE_REQUESTING,
     DEVICE_RESPONDING,
 
@@ -71,7 +71,7 @@ enum device_type {
     TRANSPORT_MODBUS = 0x6280,
 
     MODULE_ADC = 0x6300,
-    
+
     STORAGE_W25 = 0x7100,
 
     // input devices
@@ -85,31 +85,29 @@ enum device_type {
 };
 
 struct device {
-    device_type_t type;              /* OD index of a first device of this type */
-    uint8_t seq;                     /* Sequence number of the device in its family  */
-    int16_t index;                   /* Actual OD address of this device */
-    device_phase_t phase;            /* Current lifecycle phase of the device */
-    uint32_t phase_delay;            /* Current lifecycle phase of the device */
-    void *object;                    /* Pointer to the device own struct */
-    size_t struct_size;              /* Memory requirements for device struct */
+    device_type_t type;                  /* OD index of a first device of this type */
+    uint8_t seq;                         /* Sequence number of the device in its family  */
+    int16_t index;                       /* Actual OD address of this device */
+    device_phase_t phase;                /* Current lifecycle phase of the device */
+    void *object;                        /* Pointer to the device own struct */
+    size_t struct_size;                  /* Memory requirements for device struct */
     OD_entry_t *properties;              /* OD entry containing propertiesuration for device*/
     OD_extension_t properties_extension; /* OD IO handlers for properties changes */
-    device_methods_t *methods;       /* Per-class methods and methods */
-    device_ticks_t *ticks;           /* Per-device thread subscription */
-    app_t *app;                      /* Reference to root device */
-    uint32_t event_subscriptions;    /* Mask for different event types that device recieves */
-    bool_t *h;
+    device_methods_t *methods;           /* Per-class methods and methods */
+    device_ticks_t *ticks;               /* Per-device thread subscription */
+    app_t *app;                          /* Reference to root device */
+    uint32_t event_subscriptions;        /* Mask for different event types that device recieves */
 };
 
 struct device_methods {
-    app_signal_t (*validate)(OD_entry_t *properties);                       /* Check if properties has all properties */
-    app_signal_t (*phase_constructing)(void *object, device_t *device); /* Initialize device at given pointer*/
-    app_signal_t (*phase_linking)(void *object);                        /* Link related devices together*/
-    app_signal_t (*phase_destructing)(void *object);                    /* Destruct device at given pointer*/
-    app_signal_t (*phase_starting)(void *object);                       /* Prepare periphery and run initial logic */
-    app_signal_t (*phase_stoping)(void *object);                        /* Reset periphery and deinitialize */
-    app_signal_t (*phase_pausing)(void *object);                        /* Put device to sleep temporarily */
-    app_signal_t (*phase_resuming)(void *object);                       /* Wake device up from sleep */
+    app_signal_t (*validate)(void *properties);       /* Check if properties has all properties */
+    app_signal_t (*construct)(void *object); /* Initialize device at given pointer*/
+    app_signal_t (*link)(void *object);      /* Link related devices together*/
+    app_signal_t (*destruct)(void *object);  /* Destruct device at given pointer*/
+    app_signal_t (*start)(void *object);     /* Prepare periphery and run initial logic */
+    app_signal_t (*stop)(void *object);      /* Reset periphery and deinitialize */
+    app_signal_t (*pause)(void *object);      /* Put device to sleep temporarily */
+    app_signal_t (*resume)(void *object);     /* Wake device up from sleep */
 
     app_signal_t (*callback_task)(void *object, app_task_t *task);                                    /* Task has been complete */
     app_signal_t (*callback_event)(void *object, app_event_t *event);                                 /* Somebody processed the event */
@@ -121,11 +119,9 @@ struct device_methods {
     app_signal_t (*tick_input)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);         /* Processing input events asap */
     app_signal_t (*tick_high_priority)(void *o, app_event_t *e, device_tick_t *tick, app_thread_t *t); /* Important work that isnt input */
     app_signal_t (*tick_medium_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t); /* Medmium importance periphery */
-    app_signal_t (*tick_low_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);     /* Low-importance periodical */
-    app_signal_t (*tick_bg_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);      /* Lowest priority work that i*/
+    app_signal_t (*tick_low_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);    /* Low-importance periodical */
+    app_signal_t (*tick_bg_priority)(void *p, app_event_t *e, device_tick_t *tick, app_thread_t *t);     /* Lowest priority work that i*/
 
-    ODR_t (*read_properties)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
-    ODR_t (*write_properties)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
     ODR_t (*property_read)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
     ODR_t (*property_write)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
 };
@@ -145,7 +141,6 @@ int device_allocate(device_t *device);
 int device_free(device_t *device);
 
 void device_set_phase(device_t *device, device_phase_t phase);
-void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t delay);
 
 void device_gpio_set(uint8_t port, uint8_t pin);
 void device_gpio_clear(uint8_t port, uint8_t pin);

@@ -15,39 +15,29 @@ static app_signal_t modbus_validate(transport_modbus_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t modbus_phase_constructing(transport_modbus_t *modbus) {
+static app_signal_t modbus_construct(transport_modbus_t *modbus) {
     modbus->rx_buffer = malloc(modbus->properties->rx_buffer_size);
     return 0;
 }
 
-static app_signal_t modbus_phase_destructing(transport_modbus_t *modbus) {
+static app_signal_t modbus_destruct(transport_modbus_t *modbus) {
     free(modbus->rx_buffer);
     return 0;
 }
 
-static app_signal_t modbus_phase_starting(transport_modbus_t *modbus) {
+static app_signal_t modbus_start(transport_modbus_t *modbus) {
     (void)modbus;
     device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
 
-static app_signal_t modbus_phase_stoping(transport_modbus_t *modbus) {
+static app_signal_t modbus_stop(transport_modbus_t *modbus) {
     (void)modbus;
     device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
 
-static app_signal_t modbus_phase_pausing(transport_modbus_t *modbus) {
-    (void)modbus;
-    return 0;
-}
-
-static app_signal_t modbus_phase_resuming(transport_modbus_t *modbus) {
-    (void)modbus;
-    return 0;
-}
-
-static app_signal_t modbus_phase_linking(transport_modbus_t *modbus) {
+static app_signal_t modbus_link(transport_modbus_t *modbus) {
     return device_link(modbus->device, (void **)&modbus->usart, modbus->properties->usart_index, NULL);
 }
 
@@ -66,15 +56,12 @@ static app_signal_t modbus_phase(transport_modbus_t *modbus, device_phase_t phas
 
 device_methods_t transport_modbus_methods = {
     .validate = (app_method_t) modbus_validate,
-    .phase_constructing = (app_method_t)modbus_phase_constructing,
-    .phase_linking = (app_method_t) modbus_phase_linking,
-    .phase_destructing = (app_method_t) modbus_phase_destructing,
-    .phase_starting = (app_method_t) modbus_phase_starting,
-    .phase_stoping = (app_method_t) modbus_phase_stoping,
-    .phase_pausing = (app_method_t) modbus_phase_pausing,
-    .phase_resuming = (app_method_t) modbus_phase_resuming,
+    .construct = (app_method_t)modbus_construct,
+    .link = (app_method_t) modbus_link,
+    .destruct = (app_method_t) modbus_destruct,
+    .start = (app_method_t) modbus_start,
+    .stop = (app_method_t) modbus_stop,
     //.tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))transport_modbus_tick,
-    //.accept = (int (*)(void *, device_t *device, void *channel))transport_modbus_accept,
     .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))modbus_phase,
     .property_write = modbus_property_write};
 
@@ -167,7 +154,7 @@ int transport_modbus_read(transport_modbus_t *modbus, uint8_t *data) {
 }
 int transport_modbus_respond(transport_modbus_t *modbus, transport_modbus_request_t *request) {
     (void)request;
-    device_set_temporary_phase(modbus->device, DEVICE_RESPONDING, modbus->properties->timeout);
+    //device_set_temporary_phase(modbus->device, DEVICE_RESPONDING, modbus->properties->timeout);
     device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
@@ -195,7 +182,7 @@ int transport_modbus_request(transport_modbus_t *modbus, uint8_t recipient, uint
     request->crc = transport_modbus_crc16((uint8_t *)&request, 6);
     request->response = response;
 
-    device_set_temporary_phase(modbus->device, DEVICE_REQUESTING, modbus->properties->timeout);
+    //device_set_temporary_phase(modbus->device, DEVICE_REQUESTING, modbus->properties->timeout);
     device_gpio_set(modbus->properties->rts_port, modbus->properties->rts_pin);
     return transport_usart_send(modbus->usart, (char *)&request, 8);
 }

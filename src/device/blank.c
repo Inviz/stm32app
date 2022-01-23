@@ -13,30 +13,21 @@ static app_signal_t blank_validate(device_blank_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t blank_phase_constructing(device_blank_t *blank) {
+static app_signal_t blank_construct(device_blank_t *blank) {
     return 0;
 }
 
-static app_signal_t blank_phase_starting(device_blank_t *blank) {
+static app_signal_t blank_start(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
 
-static app_signal_t blank_phase_stoping(device_blank_t *blank) {
+static app_signal_t blank_stop(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
 
-static app_signal_t blank_phase_pausing(device_blank_t *blank) {
-    (void)blank;
-    return 0;
-}
-
-static app_signal_t blank_phase_resuming(device_blank_t *blank) {
-    (void)blank;
-    return 0;
-}
-static app_signal_t blank_phase_linking(device_blank_t *blank) {
+static app_signal_t blank_link(device_blank_t *blank) {
     (void)blank;
     return 0;
 }
@@ -48,12 +39,9 @@ static app_signal_t blank_phase(device_blank_t *blank, device_phase_t phase) {
 }
 
 device_methods_t device_blank_methods = {.validate = (app_method_t) blank_validate,
-                                             .phase_constructing = (app_method_t)blank_phase_constructing,
-                                             .phase_linking = (app_method_t) blank_phase_linking,
-                                             .phase_starting = (app_method_t) blank_phase_starting,
-                                             .phase_stoping = (app_method_t) blank_phase_stoping,
-                                             .phase_pausing = (app_method_t) blank_phase_pausing,
-                                             .phase_resuming = (app_method_t) blank_phase_resuming,
-                                             //.accept = (int (*)(void *, device_t *device, void *channel))device_blank_accept,
+                                             .construct = (app_method_t)blank_construct,
+                                             .link = (app_method_t) blank_link,
+                                             .start = (app_method_t) blank_start,
+                                             .stop = (app_method_t) blank_stop,
                                              .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))blank_phase,
                                              .property_write = blank_property_write};

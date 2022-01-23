@@ -20,26 +20,16 @@ static void i2c_tx_dma_start(transport_i2c_t *i2c, uint8_t *data, uint16_t size)
     i2c_enable_txdma(i2c->address);
 }
 
-static app_signal_t i2c_phase_constructing(transport_i2c_t *i2c) {
+static app_signal_t i2c_construct(transport_i2c_t *i2c) {
     return 0;
 }
 
-static app_signal_t i2c_phase_starting(transport_i2c_t *i2c) {
+static app_signal_t i2c_start(transport_i2c_t *i2c) {
     (void)i2c;
     return 0;
 }
 
-static app_signal_t i2c_phase_stoping(transport_i2c_t *i2c) {
-    (void)i2c;
-    return 0;
-}
-
-static app_signal_t i2c_phase_pausing(transport_i2c_t *i2c) {
-    (void)i2c;
-    return 0;
-}
-
-static app_signal_t i2c_phase_resuming(transport_i2c_t *i2c) {
+static app_signal_t i2c_stop(transport_i2c_t *i2c) {
     (void)i2c;
     return 0;
 }
@@ -51,7 +41,7 @@ static app_signal_t i2c_tick(transport_i2c_t *i2c, uint32_t time_passed, uint32_
     return 0;
 }
 
-static app_signal_t i2c_phase_linking(transport_i2c_t *i2c) {
+static app_signal_t i2c_link(transport_i2c_t *i2c) {
     (void)i2c;
     return 0;
 }
@@ -63,12 +53,9 @@ static app_signal_t i2c_phase(transport_i2c_t *i2c, device_phase_t phase) {
 }
 
 device_methods_t transport_i2c_methods = {.validate = (app_method_t) i2c_validate,
-                                             .phase_constructing = (app_method_t)i2c_phase_constructing,
-                                             .phase_linking = (app_method_t) i2c_phase_linking,
-                                             .phase_starting = (app_method_t) i2c_phase_starting,
-                                             .phase_stoping = (app_method_t) i2c_phase_stoping,
-                                             .phase_pausing = (app_method_t) i2c_phase_pausing,
-                                             .phase_resuming = (app_method_t) i2c_phase_resuming,
-                                             //.accept = (int (*)(void *, device_t *device, void *channel))transport_i2c_accept,
+                                             .construct = (app_method_t)i2c_construct,
+                                             .link = (app_method_t) i2c_link,
+                                             .start = (app_method_t) i2c_start,
+                                             .stop = (app_method_t) i2c_stop,
                                              .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))i2c_phase,
                                              .property_write = i2c_property_write};

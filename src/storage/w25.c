@@ -138,31 +138,24 @@ static app_signal_t w25_validate(storage_w25_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED;
 }
 
-static app_signal_t w25_phase_constructing(storage_w25_t *w25) {
+static app_signal_t w25_construct(storage_w25_t *w25) {
     return 0;
 }
 
-static app_signal_t w25_phase_pausing(storage_w25_t *w25) {
+static app_signal_t w25_stop(storage_w25_t *w25) {
     return device_event_handle_and_start_task(w25->device, &((app_event_t){
         .type = APP_EVENT_DISABLE
     }), &w25->task, w25->device->app->threads->bg_priority, w25_task_disable);
 }
 
-static app_signal_t w25_phase_resuming(storage_w25_t *w25) {
+static app_signal_t w25_start(storage_w25_t *w25) {
     return device_event_handle_and_start_task(w25->device, &((app_event_t){
         .type = APP_EVENT_ENABLE
     }), &w25->task, w25->device->app->threads->bg_priority, w25_task_enable);
 }
-static app_signal_t w25_phase_starting(storage_w25_t *w25) {
-    return w25_phase_resuming(w25);
-}
 
-static app_signal_t w25_phase_stoping(storage_w25_t *w25) {
-    return w25_phase_pausing(w25);
-    //return storage_w25_command(w25, 0xB9);
-}
 /* Link w25 device with its spi module (i2c, spi, uart) */
-static app_signal_t w25_phase_linking(storage_w25_t *w25) {
+static app_signal_t w25_link(storage_w25_t *w25) {
     device_link(w25->device, (void **)&w25->spi, w25->properties->spi_index, NULL);
     return 0;
 }
@@ -197,13 +190,10 @@ static app_signal_t w25_tick_input(storage_w25_t *w25, app_event_t *event, devic
 }
 
 device_methods_t storage_w25_methods = {.validate = (app_method_t) w25_validate,
-                                        .phase_constructing = (app_method_t)w25_phase_constructing,
-                                        .phase_linking = (app_method_t)w25_phase_linking,
-                                        .phase_starting = (app_method_t)w25_phase_starting,
-                                        .phase_stoping = (app_method_t)w25_phase_stoping,
-                                        .phase_pausing = (app_method_t)w25_phase_pausing,
-                                        .phase_resuming = (app_method_t)w25_phase_resuming,
-                                        //.accept = (int (*)(void *, device_t *device, void *channel))storage_w25_accept,
+                                        .construct = (app_method_t)w25_construct,
+                                        .link = (app_method_t)w25_link,
+                                        .start = (app_method_t)w25_start,
+                                        .stop = (app_method_t)w25_stop,
                                         .tick_input = (device_tick_callback_t)w25_tick_input,
                                         .tick_high_priority = (device_tick_callback_t)w25_tick_high_priority,
                                         .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))w25_phase,

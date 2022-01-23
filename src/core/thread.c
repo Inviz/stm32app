@@ -379,7 +379,7 @@ int device_tick_allocate(device_tick_t **destination, device_tick_callback_t cal
     if (callback != NULL) {
         *destination = malloc(sizeof(device_tick_t));
         if (*destination == NULL) {
-            return CO_ERROR_OUT_OF_MEMORY;
+            return APP_SIGNAL_OUT_OF_MEMORY;
         }
         device_tick_initialize(*destination);
         (*destination)->callback = callback;
@@ -405,12 +405,12 @@ int app_thread_allocate(app_thread_t **destination, void *app_or_object, void (*
     thread->device = ((app_t *)app_or_object)->device;
     xTaskCreate(callback, name, stack_depth, (void *)thread, priority, (void *)&thread->task);
     if (thread->task == NULL) {
-        return CO_ERROR_OUT_OF_MEMORY;
+        return APP_SIGNAL_OUT_OF_MEMORY;
     }
     if (queue_size > 0) {
         thread->queue = xQueueCreate(queue_size, sizeof(app_event_t));
         if (thread->queue == NULL) {
-            return CO_ERROR_OUT_OF_MEMORY;
+            return APP_SIGNAL_OUT_OF_MEMORY;
         }
 #if propertiesQUEUE_REGISTRY_SIZE > 0
         vQueueAddToRegistry(thread->queue, name);

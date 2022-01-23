@@ -38,14 +38,16 @@ int device_link(device_t *device, void **destination, uint16_t index, void *argu
 
 int device_allocate(device_t *device) {
     device->object = malloc(device->struct_size);
-    // by convention each object struct has pointer to device as its first member
-    memcpy(device->object, &device, sizeof(device_t *));
-    // second member is `properties` poiting to memory struct in OD
-    memcpy(device->object + sizeof(device_t *), OD_getPtr(device->properties, 0x00, 0, NULL), sizeof(device_t *));
-
     if (device->object == NULL) {
-        return CO_ERROR_OUT_OF_MEMORY;
+        return APP_SIGNAL_OUT_OF_MEMORY;
     }
+    // cast to app object which is following device conventions
+    app_t *obj = device->object;
+    // by convention each object struct has pointer to device as its first member
+    obj->device = device;
+    // second member is `properties` poiting to memory struct in OD
+    obj->properties = OD_getPtr(device->properties, 0x00, 0, NULL);
+
     return device_ticks_allocate(device);
 }
 
@@ -65,10 +67,6 @@ int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_
         *clock = 0;
         return 0;
     }
-}
-
-void device_set_phase(device_t *device, device_phase_t phase) {
-    device_set_temporary_phase(device, phase, 0);
 }
 
 app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
@@ -123,48 +121,60 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
 }
 
 /* Attempt to store event in a memory destination if it's not occupied yet */
-void device_set_temporary_phase(device_t *device, device_phase_t phase, uint32_t delay) {
-    if (device->phase != phase || delay != 0) {
-        log_printf(delay != 0 ? "  - Device phase: 0x%x %s %s <= %s (over %lumS)\n" : "  - Device phase: 0x%x %s %s <= %s\n", device->index,
-                   get_device_type_name(device->type), get_device_phase_name(phase), get_device_phase_name(device->phase), delay / 1000);
+void device_set_phase(device_t *device, device_phase_t phase) {
+    if (device->phase != phase) {
+        log_printf("  - Device phase: 0x%x %s %s <= %s\n", device->index,
+                   get_device_type_name(device->type), get_device_phase_name(phase), get_device_phase_name(device->phase));
     }
     device->phase = phase;
-    device->phase_delay = delay;
-
-    if (delay != 0)
-        return;
 
     switch (phase) {
     case DEVICE_CONSTRUCTING:
-        if (device->methods->phase_constructing != NULL) {
-            if (device->methods->phase_constructing(device->object, device) != 0) {
+        if (device->methods->construct != NULL) {
+            if (device->methods->construct(device->object)) {
                 return device_set_phase(device, DEVICE_DISABLED);
             }
         }
         break;
     case DEVICE_DESTRUCTING:
-        if (device->methods->phase_destructing != NULL) {
-            device->methods->phase_destructing(device->object);
+        if (device->methods->destruct != NULL) {
+            device->methods->destruct(device->object);
         }
         break;
     case DEVICE_LINKING:
-        if (device->methods->phase_linking != NULL) {
-            device->methods->phase_linking(device->object);
+        if (device->methods->link != NULL) {
+            device->methods->link(device->object);
         }
         break;
     case DEVICE_STARTING:
-        if (device->methods->phase_starting != NULL) {
-            device->methods->phase_starting(device->object);
-            if (device->phase == DEVICE_STARTING) {
-                device_set_phase(device, DEVICE_RUNNING);
-            }
+        device->methods->start(device->object);
+        if (device->phase == DEVICE_STARTING) {
+            return device_set_phase(device, DEVICE_RUNNING);
         }
         break;
     case DEVICE_STOPPING:
-        if (device->methods->phase_stoping != NULL) {
-            device->methods->phase_stoping(device->object);
-            if (device->phase == DEVICE_STOPPING) {
-                device_set_phase(device, DEVICE_STOPPED);
+        device->methods->stop(device->object);
+        if (device->phase == DEVICE_STOPPING) {
+            return device_set_phase(device, DEVICE_STOPPED);
+        }
+        break;
+    case DEVICE_PAUSING:
+        if (device->methods->pause == NULL) {
+            return device_set_phase(device, DEVICE_STOPPING);
+        } else {
+            device->methods->pause(device->object);
+            if (device->phase == DEVICE_PAUSING) {
+                return device_set_phase(device, DEVICE_PAUSED);
+            }
+        }
+        break;
+    case DEVICE_RESUMING:
+        if (device->methods->resume == NULL) {
+            return device_set_phase(device, DEVICE_STARTING);
+        } else {
+            device->methods->resume(device->object);
+            if (device->phase == DEVICE_RESUMING) {
+                return device_set_phase(device, DEVICE_RUNNING);
             }
         }
         break;

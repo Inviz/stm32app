@@ -12,11 +12,11 @@ static app_signal_t can_validate(transport_can_properties_t *properties) {
     return properties->phase != DEVICE_ENABLED || properties->tx_port == 0 || properties->rx_port == 0;
 }
 
-static app_signal_t can_phase_constructing(transport_can_t *can) {
+static app_signal_t can_construct(transport_can_t *can) {
     return 0;
 }
 
-static app_signal_t can_phase_starting(transport_can_t *can) {
+static app_signal_t can_start(transport_can_t *can) {
     log_printf("    > CAN%i TX ", can->device->seq + 1);
     gpio_configure_output(can->properties->tx_port, can->properties->tx_pin, 0);
     log_printf("    > CAN%i RX ", can->device->seq + 1);
@@ -39,22 +39,12 @@ static app_signal_t can_phase_starting(transport_can_t *can) {
     return 0;
 }
 
-static app_signal_t can_phase_stoping(transport_can_t *can) {
+static app_signal_t can_stop(transport_can_t *can) {
     (void)can;
     return 0;
 }
 
-static app_signal_t can_phase_pausing(transport_can_t *can) {
-    (void)can;
-    return 0;
-}
-
-static app_signal_t can_phase_resuming(transport_can_t *can) {
-    (void)can;
-    return 0;
-}
-
-static app_signal_t can_phase_linking(transport_can_t *can) {
+static app_signal_t can_link(transport_can_t *can) {
     (void)can;
     return 0;
 }
@@ -74,12 +64,10 @@ static app_signal_t can_accept(transport_can_t *can, device_t *origin, void *arg
 
 device_methods_t transport_can_methods = {
     .validate = (app_method_t) can_validate,
-    .phase_constructing = (app_method_t)can_phase_constructing,
-    .phase_linking = (app_method_t) can_phase_linking,
-    .phase_starting = (app_method_t) can_phase_starting,
-    .phase_stoping = (app_method_t) can_phase_stoping,
-    .phase_pausing = (app_method_t) can_phase_pausing,
-    .phase_resuming = (app_method_t) can_phase_resuming,
+    .construct = (app_method_t)can_construct,
+    .link = (app_method_t) can_link,
+    .start = (app_method_t) can_start,
+    .stop = (app_method_t) can_stop,
     .callback_link = (int (*)(void *, device_t *device, void *channel))can_accept,
     .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))can_phase,
     .property_write = can_property_write};
