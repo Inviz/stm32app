@@ -3,3 +3,4 @@ compile_commands.json
 .vscode
 PVS*
 .DS_STORE
+**/node_modules
