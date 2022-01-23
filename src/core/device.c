@@ -8,11 +8,11 @@ int device_send(device_t *device, device_t *origin, void *value, void *argument)
     return device->methods->callback_value(device->object, origin, value, argument);
 }
 
-int device_signal(device_t *device, device_t *origin, uint32_t value, void *argument) {
+int device_signal(device_t *device, device_t *origin, app_signal_t signal, void *argument) {
     if (device->methods->callback_signal == NULL) {
         return 1;
     }
-    return device->methods->callback_signal(device->object, origin, value, argument);
+    return device->methods->callback_signal(device->object, origin, signal, argument);
 }
 
 int device_link(device_t *device, void **destination, uint16_t index, void *argument) {
@@ -71,7 +71,7 @@ int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_
 
 app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
                                                      app_event_status_t ready_status, app_event_status_t busy_status,
-                                                     app_event_handler_t handler) {
+                                                     device_event_handler_t handler) {
     // Check if destination can store the incoming event, otherwise device will be considered busy
     if (destination != NULL || destination->type != APP_EVENT_IDLE) {
         event->consumer = device;
@@ -88,7 +88,7 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
 }
 
 app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
-                                                        app_task_handler_t handler, app_event_status_t ready_status,
+                                                        device_task_t handler, app_event_status_t ready_status,
                                                         app_event_status_t busy_status) {
     app_signal_t signal = device_event_accept_and_process_generic(device, event, &task->inciting_event, ready_status, busy_status, NULL);
     if (signal == APP_SIGNAL_OK) {
@@ -107,7 +107,7 @@ app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_ev
 }
 
 app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
-                                                          app_task_handler_t handler, app_event_status_t ready_status,
+                                                          device_task_t handler, app_event_status_t ready_status,
                                                           app_event_status_t busy_status) {
     if (task->handler != handler) {
         event->status = busy_status;

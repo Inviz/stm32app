@@ -244,7 +244,7 @@ device_methods_t system_canopen_methods = {
     .tick_high_priority = (device_tick_callback_t)canopen_tick_high_priority,
     .tick_bg_priority = (device_tick_callback_t)canopen_tick_bg_priority,
 
-    .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))canopen_phase,
+    .callback_phase = (device_callback_phase_t)canopen_phase,
     .property_write = canopen_property_write,
 };
 

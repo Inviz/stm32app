@@ -54,17 +54,6 @@ static app_signal_t modbus_phase(transport_modbus_t *modbus, device_phase_t phas
     return 0;
 }
 
-device_methods_t transport_modbus_methods = {
-    .validate = (app_method_t) modbus_validate,
-    .construct = (app_method_t)modbus_construct,
-    .link = (app_method_t) modbus_link,
-    .destruct = (app_method_t) modbus_destruct,
-    .start = (app_method_t) modbus_start,
-    .stop = (app_method_t) modbus_stop,
-    //.tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))transport_modbus_tick,
-    .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))modbus_phase,
-    .property_write = modbus_property_write};
-
 // int transport_modbus_send(transport_modbus_t *modbus, uint8_t *data, uint8_t length) { return 0; }
 
 static app_signal_t modbus_validate_message(transport_modbus_t *modbus, uint8_t *data) {
@@ -91,7 +80,7 @@ static void transport_modbus_ingest_buffer(transport_modbus_t *modbus) {
     }
 }
 
-static app_signal_t modbus_signal(transport_modbus_t *modbus, device_t *device, int signal, char *source) {
+static app_signal_t modbus_signal(transport_modbus_t *modbus, device_t *device, app_signal_t signal, char *source) {
     switch (signal) {
         /* usart is idle, need to wait 3.5 characters to start reading */
         case APP_SIGNAL_RX_COMPLETE:
@@ -100,6 +89,8 @@ static app_signal_t modbus_signal(transport_modbus_t *modbus, device_t *device, 
         /* 3.5 characters delay time is over, ready to process messages in buffer */
         case APP_SIGNAL_TIMEOUT:
             transport_modbus_ingest_buffer(modbus);
+            break;
+        default:
             break;
     }
 }
@@ -339,3 +330,14 @@ uint16_t transport_modbus_crc16(const uint8_t *nData, uint16_t wLength) {
     }
     return wCRCWord;
 }
+device_methods_t transport_modbus_methods = {
+    .validate = (app_method_t) modbus_validate,
+    .construct = (app_method_t)modbus_construct,
+    .link = (app_method_t) modbus_link,
+    .destruct = (app_method_t) modbus_destruct,
+    .start = (app_method_t) modbus_start,
+    .stop = (app_method_t) modbus_stop,
+    .callback_signal = (device_callback_signal_t) modbus_signal,
+    //.tick = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))transport_modbus_tick,
+    .callback_phase = (device_callback_phase_t)modbus_phase,
+    .property_write = modbus_property_write};

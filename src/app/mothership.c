@@ -88,7 +88,11 @@ static app_signal_t mothership_high_priority(app_mothership_t *mothership, app_e
     return 0;
 }
 
-static app_signal_t mothership_callback_signal(app_mothership_t mothership, device_t *device, uint32_t signal, void *argument) {
+static app_signal_t mothership_callback_signal(app_mothership_t mothership, device_t *device, app_signal_t signal, void *argument) {
+    (void) mothership;
+    (void) device;
+    (void) signal;
+    (void) argument;
     log_printf("Got signal!\n");
 }
 
@@ -98,8 +102,8 @@ device_methods_t app_mothership_methods = {
     .link = (app_method_t)mothership_link,
     .start = (app_method_t)mothership_start,
     .stop = (app_method_t)mothership_stop,
-    .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))mothership_phase,
-    .callback_signal = (app_signal_t(*)(void *, device_t *device, uint32_t signal, void *argument))mothership_callback_signal,
+    .callback_phase = (device_callback_phase_t)mothership_phase,
+    .callback_signal = (device_callback_signal_t) mothership_callback_signal,
     .tick_high_priority = (device_tick_callback_t)mothership_high_priority,
     .property_write = mothership_property_write,
 };

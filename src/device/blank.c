@@ -14,6 +14,7 @@ static app_signal_t blank_validate(device_blank_properties_t *properties) {
 }
 
 static app_signal_t blank_construct(device_blank_t *blank) {
+    (void)blank;
     return 0;
 }
 
@@ -43,5 +44,5 @@ device_methods_t device_blank_methods = {.validate = (app_method_t) blank_valida
                                              .link = (app_method_t) blank_link,
                                              .start = (app_method_t) blank_start,
                                              .stop = (app_method_t) blank_stop,
-                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))blank_phase,
+                                             .callback_phase = (device_callback_phase_t)blank_phase,
                                              .property_write = blank_property_write};

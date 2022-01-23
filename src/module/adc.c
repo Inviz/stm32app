@@ -143,7 +143,7 @@ static app_signal_t adc_receive(module_adc_t *adc, device_t *device, void *value
     (void)device;
     (void)value;
     if (adc_integrate_samples(adc) == 0) {
-        log_printf("ADC%i - Measurement ready %i\n", adc->device->seq, adc->values[1]);
+        log_printf("ADC%i - Measurement ready %lu\n", adc->device->seq, adc->values[1]);
         for (size_t i = 0; i < adc->channel_count; i++) {
             size_t channelIndex = adc->channels[i];
             device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->values[i], (void *)channel);
@@ -160,10 +160,10 @@ static app_signal_t adc_high_priority(module_adc_t *adc), uint32_t time_passed, 
 device_methods_t module_adc_methods = {.validate = (app_method_t) adc_validate,
                                        .construct = (app_method_t)adc_construct,
                                        .destruct = (app_method_t) adc_destruct,
-                                       .link = (app_signal_t(*)(void *, device_t *device, void *channel))adc_accept,
-                                       .callback_value = (app_signal_t(*)(void *, device_t *device, void *value, void *channel))adc_receive,
+                                       .callback_link = (device_callback_argument_t)adc_accept,
+                                       .callback_value = (device_callback_value_t)adc_receive,
                                        //.high_priority = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_high_priority,
-                                       .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))adc_phase,
+                                       .callback_phase = (device_callback_phase_t)adc_phase,
                                        .start = (app_method_t) adc_start,
                                        .stop = (app_method_t) adc_stop};
 

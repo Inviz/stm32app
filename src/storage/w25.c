@@ -196,5 +196,5 @@ device_methods_t storage_w25_methods = {.validate = (app_method_t) w25_validate,
                                         .stop = (app_method_t)w25_stop,
                                         .tick_input = (device_tick_callback_t)w25_tick_input,
                                         .tick_high_priority = (device_tick_callback_t)w25_tick_high_priority,
-                                        .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))w25_phase,
+                                        .callback_phase = (device_callback_phase_t)w25_phase,
                                         .property_write = w25_property_write};

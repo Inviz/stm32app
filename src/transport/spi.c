@@ -225,5 +225,5 @@ device_methods_t transport_spi_methods = {.validate = (app_method_t) spi_validat
                                           .destruct = (app_method_t) spi_destruct,
                                           .start = (app_method_t) spi_start,
                                           .tick_input = (device_tick_callback_t)spi_tick_input,
-                                          .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))spi_signal,
+                                          .callback_signal = (device_callback_signal_t) spi_signal,
                                           .stop = (app_method_t) spi_stop};

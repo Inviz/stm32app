@@ -427,6 +427,6 @@ device_methods_t screen_epaper_methods = {
     .start = (app_method_t) epaper_start,
     .stop = (app_method_t) epaper_stop,
     .link = (app_method_t) epaper_link,
-    .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))epaper_phase,
+    .callback_phase = (device_callback_phase_t)epaper_phase,
     .property_write = epaper_properties_property_write,
 };

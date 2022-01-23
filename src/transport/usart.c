@@ -43,19 +43,17 @@ static app_signal_t usart_construct(transport_usart_t *usart) {
         break;
 #endif
         return 1;
-    default:
-        return 1;
+    default: return 1;
     }
     return 0;
 }
 
 int transport_usart_send(transport_usart_t *usart, char *data, int size) {
-    (void) usart;
-    (void) data;
-    (void) size;
+    (void)usart;
+    (void)data;
+    (void)size;
     return 0;
 }
-
 
 static uint16_t transport_usart_get_buffer_size(transport_usart_t *usart) {
     return usart->properties->dma_rx_buffer_size;
@@ -83,26 +81,28 @@ static app_signal_t usart_destruct(transport_usart_t *usart) {
 static void transport_usart_tx_dma_stop(transport_usart_t *usart) {
     device_dma_tx_stop(usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel);
     usart_disable_tx_dma(usart->address);
-    //usart_disable_tx_complete_interrupt(usart->address);
+    // usart_disable_tx_complete_interrupt(usart->address);
 }
 
 /* Configure memory -> usart transfer*/
 static void transport_usart_tx_dma_start(transport_usart_t *usart, uint8_t *data, uint16_t size) {
     transport_usart_tx_dma_stop(usart);
-    device_dma_tx_start((uint32_t) & (USART_DR(usart->address)), usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel, data, size);
+    device_dma_tx_start((uint32_t) & (USART_DR(usart->address)), usart->properties->dma_tx_unit, usart->properties->dma_tx_stream,
+                        usart->properties->dma_tx_channel, data, size);
     usart_enable_tx_dma(usart->address);
 }
 
 static void transport_usart_rx_dma_stop(transport_usart_t *usart) {
     device_dma_rx_stop(usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel);
     usart_disable_rx_dma(usart->address);
-    //usart_disable_tx_complete_interrupt(usart->address);
+    // usart_disable_tx_complete_interrupt(usart->address);
 }
 
 /* Configure memory <- usart transfer*/
 static void transport_usart_rx_dma_start(transport_usart_t *usart, uint8_t *data, uint16_t size) {
     transport_usart_rx_dma_stop(usart);
-    device_dma_rx_start((uint32_t) & (USART_DR(usart->address)), usart->properties->dma_tx_unit, usart->properties->dma_tx_stream, usart->properties->dma_tx_channel, data, size);
+    device_dma_rx_start((uint32_t) & (USART_DR(usart->address)), usart->properties->dma_tx_unit, usart->properties->dma_tx_stream,
+                        usart->properties->dma_tx_channel, data, size);
     usart_enable_rx_dma(usart->address);
 }
 
@@ -119,7 +119,7 @@ static app_signal_t usart_start(transport_usart_t *usart) {
 
     usart_enable(usart->address);
 
-    //transport_usart_rx_dma_start(usart);
+    // transport_usart_rx_dma_start(usart);
 
     return 0;
 }
@@ -128,16 +128,18 @@ static app_signal_t usart_stop(transport_usart_t *usart) {
     (void)usart;
     return 0;
 }
-static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, int interrupt, char *source) {
+static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, app_signal_t signal, void *source) {
     (void)device;
     (void)source;
-    switch (interrupt) {
-    case DMA_TCIF: // DMA_TCIF, transfer complete
+    switch (signal) {
+    case APP_SIGNAL_TX_COMPLETE: // DMA_TCIF, transfer complete
         device_signal(usart->target_device, usart->device, APP_SIGNAL_TX_COMPLETE, usart->target_argument);
         transport_usart_tx_dma_stop(usart);
         break;
-    case USART_CR1_IDLEIE: // USART IDLE, probably complete transfer
+    case APP_SIGNAL_RX_COMPLETE: // USART IDLE, probably complete transfer
         device_signal(usart->target_device, usart->device, APP_SIGNAL_RX_COMPLETE, usart->target_argument);
+        break;
+    default:
         break;
     }
 
@@ -145,10 +147,11 @@ static app_signal_t usart_signal(transport_usart_t *usart, device_t *device, int
 }
 
 device_methods_t transport_usart_methods = {
-    .validate = (app_method_t) usart_validate,
+    .validate = (app_method_t)usart_validate,
     .construct = (app_method_t)usart_construct,
-    .destruct = (app_method_t) usart_destruct,
-    .start = (app_method_t) usart_start,
-    .stop = (app_method_t) usart_stop,
-    .callback_signal = (app_signal_t (*)(void *, device_t *device, uint32_t signal, void *channel))usart_signal,
-    .callback_link = (int (*)(void *, device_t *device, void *channel)) usart_accept,};
+    .destruct = (app_method_t)usart_destruct,
+    .start = (app_method_t)usart_start,
+    .stop = (app_method_t)usart_stop,
+    .callback_signal = (device_callback_signal_t)usart_signal,
+    .callback_link = (device_callback_argument_t)usart_accept,
+};

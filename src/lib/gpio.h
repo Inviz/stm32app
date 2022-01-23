@@ -20,6 +20,8 @@ void gpio_configure_output_generic(uint8_t port, uint8_t pin, uint8_t speed, uin
 void gpio_configure_af_output(uint8_t port, uint8_t pins, uint8_t speed, bool_t pullup, uint8_t af_index);
 void gpio_set_state(uint8_t port, uint8_t pins, uint8_t state);
 
+uint8_t gpio_get_speed_setting(uint8_t speed);
+
 #define gpio_configure_output(port, pin, speed) gpio_configure_output_generic(port, pin, speed, -1, 0, 0)
 #define gpio_configure_output_pullup(port, pin, speed) gpio_configure_output_generic(port, pin, speed, -1, 0, 1)
 #define gpio_configure_output_pulldown(port, pin, speed) gpio_configure_output_generic(port, pin, speed, -1, 0, 2)

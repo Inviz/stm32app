@@ -332,7 +332,7 @@ static inline void app_thread_event_await(app_thread_t *thread, app_event_t *eve
 }
 
 bool_t app_thread_notify_generic(app_thread_t *thread, uint32_t value, bool_t overwrite) {
-    log_printf("~ %s:  notifying #%s with %s\n", app_get_current_thread_name(thread->device->app), value < 50 ? get_app_signal_name(value) : (char) value, app_thread_get_name(thread));
+    log_printf("~ %s:  notifying #%s with %s\n", app_get_current_thread_name(thread->device->app), value < 50 ? get_app_signal_name(value) : (char ) value, app_thread_get_name(thread));
     if (IS_IN_ISR) {
         static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         bool_t result = xTaskNotifyFromISR(thread->task, value, overwrite ? eSetValueWithOverwrite : eSetValueWithoutOverwrite,

@@ -57,5 +57,5 @@ device_methods_t transport_i2c_methods = {.validate = (app_method_t) i2c_validat
                                              .link = (app_method_t) i2c_link,
                                              .start = (app_method_t) i2c_start,
                                              .stop = (app_method_t) i2c_stop,
-                                             .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))i2c_phase,
+                                             .callback_phase = (device_callback_phase_t)i2c_phase,
                                              .property_write = i2c_property_write};

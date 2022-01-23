@@ -14,6 +14,7 @@ static app_signal_t sensor_validate(input_sensor_properties_t *properties) {
 }
 
 static app_signal_t sensor_construct(input_sensor_t *sensor) {
+    (void)sensor;
     return 0;
 }
 
@@ -58,7 +59,7 @@ device_methods_t input_sensor_methods = {
     .link = (app_method_t) sensor_link,
     .start = (app_method_t) sensor_start,
     .stop = (app_method_t) sensor_stop,
-    .callback_link = (app_signal_t (*)(void *, device_t *device, void *channel))sensor_accept,
-    .callback_value = (app_signal_t (*)(void *, device_t *device, void *value, void *channel))sensor_receive,
-    .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))sensor_phase,
+    .callback_link = (device_callback_argument_t)sensor_accept,
+    .callback_value = (device_callback_value_t)sensor_receive,
+    .callback_phase = (device_callback_phase_t)sensor_phase,
     .property_write = sensor_property_write};

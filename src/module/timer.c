@@ -472,7 +472,7 @@ device_methods_t module_timer_methods = {
     .link = (app_method_t)timer_link,
     .start = (app_method_t)timer_start,
     .stop = (app_method_t)timer_stop,
-    .callback_phase = (app_signal_t(*)(void *, device_phase_t phase))timer_callback_phase,
+    .callback_phase = (device_callback_phase_t)timer_callback_phase,
     .property_write = timer_property_write,
 };
 

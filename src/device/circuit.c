@@ -25,6 +25,7 @@ static app_signal_t circuit_validate(device_circuit_properties_t *properties) {
 }
 
 static app_signal_t circuit_construct(device_circuit_t *circuit) {
+    (void)circuit;
     return 0;
 }
 
@@ -43,7 +44,7 @@ static app_signal_t circuit_callback_value(device_circuit_t *circuit, device_t *
 }
 
 static app_signal_t circuit_start(device_circuit_t *circuit) {
-    device_gpio_configure("Relay", circuit->properties->port, circuit->properties->pin, 0);
+    device_gpio_configure_input("Relay", circuit->properties->port, circuit->properties->pin, 0);
     // device_gpio_set_state(device_circuit_get_state(circuit));
 
     return 0;
@@ -71,6 +72,6 @@ device_methods_t device_circuit_methods = {
     .start = (app_method_t)circuit_start,
     .stop = (app_method_t)circuit_stop,
     .link = (app_method_t)circuit_link,
-    .callback_value = (app_signal_t(*)(void *, device_t *device, void *value, void *argument))circuit_callback_value,
+    .callback_value = (device_callback_value_t)circuit_callback_value,
     .property_write = circuit_property_write,
 };

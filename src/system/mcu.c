@@ -48,5 +48,5 @@ device_methods_t system_mcu_methods = {.validate = (app_method_t) mcu_validate,
                                            .link = (app_method_t) mcu_link,
                                            .start = (app_method_t) mcu_start,
                                            .stop = (app_method_t) mcu_stop,
-                                           .callback_phase = (app_signal_t (*)(void *, device_phase_t phase))mcu_phase,
+                                           .callback_phase = (device_callback_phase_t)mcu_phase,
                                            .property_write = mcu_property_write};
