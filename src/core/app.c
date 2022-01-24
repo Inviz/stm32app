@@ -16,7 +16,7 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_class_t *class,
         uint8_t *phase = OD_getPtr(properties, class->phase_subindex, 0, NULL);
 
         // compute struct offset for phase property
-        // class->phase_offset = (void *) phase - OD_getPtr(properties, 0x00, 0, NULL);
+        class->phase_offset = (void *) phase - OD_getPtr(properties, 0x00, 0, NULL);
 
         if (*phase != DEVICE_ENABLED || class->validate(OD_getPtr(properties, 0x00, 0, NULL)) != 0) {
             if (app != NULL && app->canopen != NULL) {

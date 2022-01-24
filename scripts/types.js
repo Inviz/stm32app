@@ -20,10 +20,10 @@ const files = {};
 const structs = {};
 
 const findDefinition = (uid) => {
-  const re = new RegExp(`<q1:parameter uniqueID="${uid}"[^>]*?>([\\s\\S]*?)</q1:parameter>`, 'g')
+  const re = new RegExp(`<q1:parameter uniqueID="${uid.toUpperCase()}"[^>]*?>([\\s\\S]*?)</q1:parameter>`, 'g')
   const match = re.exec(xml)
   if (match) {
-    const labelRe = new RegExp(`<CANopenObject[^>]*?index="${uid.replace(/[^\d]/g, '')}"[^>]*?name="([^"]+?)"`, 'g')
+    const labelRe = new RegExp(`<CANopenObject[^>]*?index="${uid.toUpperCase().replace(/[^\d]/g, '')}"[^>]*?name="([^"]+?)"`, 'g')
     const label = labelRe.exec(xml);
     return {
       description: (match[1].match(/<description[^>]+>(.*?)<\/description>/) || [null, null])[1],
@@ -75,7 +75,7 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (mat
     const constant = `${type.toUpperCase()}_${name.toUpperCase()}_${attribute.toUpperCase()}`
     defs.push(`${constant} = 0x${(attributeIndex + 1)}`);
     const attributeOD = `${index.replace(/\d\d$/, 'XX')}${toHex(attributeIndex + 1)}`
-    const attributeDefinition = findDefinition(`UID_SUB_${index}${toHex(attributeIndex + 1)}`);
+    const attributeDefinition = findDefinition(`UID_SUB_${index}${toHex(attributeIndex + 2)}`);
     const shorttype = dataType.replace(/_t/, '').replace(/([a-z])[a-z]+/, '$1');
     if (attributeDefinition.description) {
       struct = struct.replace(' ' + attribute + ';', ' ' + attribute + '; // ' + attributeDefinition.description + ' ')
@@ -89,7 +89,8 @@ ODR_t ${type}_${name}_set_${attribute}(${type}_${name}_t *${name}, ${dataType} v
 ${dataType} ${type}_${name}_get_${attribute}(${type}_${name}_t *${name}); // 0x${attributeOD}: ${name} ${attribute}`)
 
 //accessors.push(`OD_ACCESSORS(${type}, ${name}, ${subtype}, ${attribute}, ${constant}, ${dataType}, ${shorttype}) /* 0x${attributeOD}: ${JSON.stringify(attributeDefinition)} */`);
-accessors.push(`#define ${type}_${name}_set_${attribute}(${name}, value) OD_set_${shorttype}(${name}->device->${subtype}, ${constant}, value, false)`);
+accessors.push(`/* 0x${attributeOD}: ${attributeDefinition.description} */
+#define ${type}_${name}_set_${attribute}(${name}, value) OD_set_${shorttype}(${name}->device->${subtype}, ${constant}, value, false)`);
 accessors.push(`#define ${type}_${name}_get_${attribute}(${name}) *((${dataType} *) OD_getPtr(${name}->device->${subtype}, ${constant}, 0, NULL))`);
 
 if (!'USE MACROS?')    accessors.push(

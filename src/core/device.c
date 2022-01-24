@@ -126,8 +126,7 @@ void device_set_phase(device_t *device, device_phase_t phase) {
         log_printf("  - Device phase: 0x%x %s %s <= %s\n", device_index(device),
                    get_device_type_name(device->class->type), get_device_phase_name(phase), get_device_phase_name(device_get_phase(device)));
 
-        OD_set_u8(device->properties, device->class->phase_subindex, phase, false);
-    
+        device_set_phase_directly(device, phase);
     }
 
     switch (phase) {

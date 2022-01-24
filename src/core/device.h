@@ -20,9 +20,6 @@ extern "C" {
         return value;                                                                                                                      \
     }*/
 
-#define device_index(device) device->seq + device->class->type
-#define device_get_phase(device) *((uint8_t *) OD_getPtr(device->properties, device->class->phase_subindex, 0, NULL))
-
 enum device_phase {
     DEVICE_ENABLED,
     DEVICE_CONSTRUCTING,
@@ -103,7 +100,7 @@ struct device {
 struct device_class {
     device_type_t type;                  /* OD index of a first device of this type */
     uint8_t phase_subindex;              /* OD subindex containing phase property*/
-    //uint8_t phase_offset;                /* OD subindex containing phase property*/
+    uint8_t phase_offset;                /* OD subindex containing phase property*/
     size_t size;                         /* Memory requirements for device struct */
 
     app_signal_t (*validate)(void *properties); /* Check if properties has all properties */
@@ -131,6 +128,18 @@ struct device_class {
     ODR_t (*property_read)(OD_stream_t *stream, void *buf, OD_size_t count, OD_size_t *countRead);
     ODR_t (*property_write)(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten);
 };
+
+// Compute device's own index
+#define device_index(device) (device->seq + device->class->type)
+// Get struct containing devices OD values
+#define device_get_properties(device) ((uint8_t *) ((app_t *) device->object)->properties)
+// Optimized getter for device phase
+#define device_get_phase(device) device_get_properties(device)[device->class->phase_offset]
+// Optimized setter for device phase (will not trigger observers)
+#define device_set_phase_directly(device, phase) device_get_properties(device)[device->class->phase_offset] = phase
+// Regular setter for device phase that will trigger OD observers
+#define device_set_phase_od(device, phase) OD_set_u8(device->properties, device->class->phase_subindex, phase, false)
+
 
 int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_t *next_tick);
 
