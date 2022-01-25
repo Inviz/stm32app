@@ -10,10 +10,10 @@ static ODR_t circuit_property_write(OD_stream_t *stream, const void *buf, OD_siz
     }
     switch (stream->subIndex) {
     case DEVICE_CIRCUIT_DUTY_CYCLE:
-        log_printf("OD - Circuit [%X] duty cycle:  %i\n", circuit->device->seq, circuit->properties->duty_cycle);
+        log_printf("OD - Circuit [%X] duty cycle:  %i\n", circuit->actor->seq, circuit->properties->duty_cycle);
         break;
     case DEVICE_CIRCUIT_CONSUMERS:
-        log_printf("OD - Circuit [%X] consumers: %i\n", circuit->device->seq, circuit->properties->consumers);
+        log_printf("OD - Circuit [%X] consumers: %i\n", circuit->actor->seq, circuit->properties->consumers);
         break;
     }
     return result;
@@ -30,22 +30,22 @@ static app_signal_t circuit_construct(device_circuit_t *circuit) {
 }
 
 static app_signal_t circuit_link(device_circuit_t *circuit) {
-    return device_link(circuit->device, (void **)&circuit->current_sensor, circuit->properties->sensor_index, NULL) +
-           device_link(circuit->device, (void **)&circuit->psu, circuit->properties->psu_index, NULL);
+    return actor_link(circuit->actor, (void **)&circuit->current_sensor, circuit->properties->sensor_index, NULL) +
+           actor_link(circuit->actor, (void **)&circuit->psu, circuit->properties->psu_index, NULL);
 }
 
 // receive value from current sensor
-static app_signal_t circuit_on_value(device_circuit_t *circuit, device_t *device, void *value, void *argument) {
+static app_signal_t circuit_on_value(device_circuit_t *circuit, actor_t *actor, void *value, void *argument) {
     (void)argument;
-    if (circuit->current_sensor->device == device) {
+    if (circuit->current_sensor->actor == actor) {
         device_circuit_set_current(circuit, (uint16_t)((uint32_t)value));
     }
     return 1;
 }
 
 static app_signal_t circuit_start(device_circuit_t *circuit) {
-    device_gpio_configure_input("Relay", circuit->properties->port, circuit->properties->pin, 0);
-    // device_gpio_set_state(device_circuit_get_state(circuit));
+    actor_gpio_configure_input("Relay", circuit->properties->port, circuit->properties->pin, 0);
+    // actor_gpio_set_state(device_circuit_get_state(circuit));
 
     return 0;
 }
@@ -66,7 +66,7 @@ void device_circuit_set_state(device_circuit_t *circuit, bool state) {
     }
 }
 
-device_class_t device_circuit_class = {
+actor_class_t device_circuit_class = {
     .type = DEVICE_CIRCUIT,
     .size = sizeof(device_circuit_t),
     .phase_subindex = DEVICE_CIRCUIT_PHASE,
@@ -75,6 +75,6 @@ device_class_t device_circuit_class = {
     .start = (app_method_t)circuit_start,
     .stop = (app_method_t)circuit_stop,
     .link = (app_method_t)circuit_link,
-    .on_value = (device_on_value_t)circuit_on_value,
+    .on_value = (actor_on_value_t)circuit_on_value,
     .property_write = circuit_property_write,
 };

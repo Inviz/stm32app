@@ -22,9 +22,9 @@ static app_signal_t timer_construct(module_timer_t *timer) {
     timer->next_time = -1;
     timer->next_tick = timer->properties->period;
 
-    module_timers[timer->device->seq] = timer;
+    module_timers[timer->actor->seq] = timer;
 
-    switch (timer->device->seq) {
+    switch (timer->actor->seq) {
     case 0:
         timer->clock = RCC_TIM1;
         timer->irq = NVIC_TIM1_CC_IRQ;
@@ -223,7 +223,7 @@ static app_signal_t timer_construct(module_timer_t *timer) {
 #endif
         break;
 #endif
-    default: error_printf("TIM%i is not supported by this device", timer->device->seq + 1);
+    default: error_printf("TIM%i is not supported by this actor", timer->actor->seq + 1);
     }
     return 0;
 }
@@ -234,7 +234,7 @@ static module_timer_subscription_t *timer_get_next_subscription(module_timer_t *
     int difference = 0x7FFFFFFF;
     for (size_t i = 0; i < timer->properties->initial_subscriptions_count; i++) {
         module_timer_subscription_t *subscription = &timer->subscriptions[i];
-        if (subscription->device == NULL) {
+        if (subscription->actor == NULL) {
             continue;
         }
         int d = subscription->time - timer->next_time;
@@ -265,16 +265,16 @@ static app_signal_t timer_schedule(module_timer_t *timer, uint32_t next_time) {
 static app_signal_t timer_notify(module_timer_t *timer) {
     for (size_t i = 0; i < timer->properties->initial_subscriptions_count; i++) {
         module_timer_subscription_t *subscription = &timer->subscriptions[i];
-        if (subscription->device == NULL) {
+        if (subscription->actor == NULL) {
             continue;
         }
         int diff = subscription->time - timer->current_time;
         if (diff <= 0) {
-            device_t *device = subscription->device;
+            actor_t *actor = subscription->actor;
             void *argument = subscription->argument;
-            log_printf("~ Timeout for 0x%x %s (argument: %lu)\n", device_index(device), get_device_type_name(device->class->type), (uint32_t)argument);
+            log_printf("~ Timeout for 0x%x %s (argument: %lu)\n", actor_index(actor), get_actor_type_name(actor->class->type), (uint32_t)argument);
             *subscription = (module_timer_subscription_t){};
-            device_signal(device, timer->device, APP_SIGNAL_TIMEOUT, argument);
+            actor_signal(actor, timer->actor, APP_SIGNAL_TIMEOUT, argument);
         }
     }
     return 0;
@@ -282,8 +282,8 @@ static app_signal_t timer_notify(module_timer_t *timer) {
 
 static app_signal_t timer_advance(module_timer_t *timer, uint32_t time) {
     // start the timer if it was not ticking
-    if (device_get_phase(timer->device) != DEVICE_RUNNING) {
-        device_set_phase(timer->device, DEVICE_RUNNING);
+    if (actor_get_phase(timer->actor) != ACTOR_RUNNING) {
+        actor_set_phase(timer->actor, ACTOR_RUNNING);
     }
     // add passed time to current_time, and adjust timer
     timer->current_time += time;
@@ -296,7 +296,7 @@ static app_signal_t timer_advance(module_timer_t *timer, uint32_t time) {
         // stop the timer if there aren't any more subscriptions left
         module_timer_subscription_t *next = timer_get_next_subscription(timer);
         if (next == NULL) {
-            device_set_phase(timer->device, DEVICE_IDLE);
+            actor_set_phase(timer->actor, ACTOR_IDLE);
             return 0;
         } else {
             timer->next_time = next->time;
@@ -315,16 +315,16 @@ static void timer_interrupt(size_t index) {
     }
 }
 
-// find subscription slot for device/argument pair
-static module_timer_subscription_t *timer_get_subscription(module_timer_t *timer, device_t *device, void *argument) {
+// find subscription slot for actor/argument pair
+static module_timer_subscription_t *timer_get_subscription(module_timer_t *timer, actor_t *actor, void *argument) {
     size_t i = 0;
     size_t free = -1;
-    // find subscription that matches device and argument
+    // find subscription that matches actor and argument
     for (; i < timer->properties->initial_subscriptions_count; i++) {
         module_timer_subscription_t *subscription = &timer->subscriptions[i];
-        if (subscription->device == device && subscription->argument == argument) {
+        if (subscription->actor == actor && subscription->argument == argument) {
             return subscription;
-        } else if (subscription->device == NULL && free == (uint32_t)-1) {
+        } else if (subscription->actor == NULL && free == (uint32_t)-1) {
             free = i;
         }
     }
@@ -342,16 +342,16 @@ static module_timer_subscription_t *timer_get_subscription(module_timer_t *timer
     return &timer->subscriptions[i];
 }
 
-app_signal_t module_timer_timeout(module_timer_t *timer, device_t *device, void *argument, uint32_t timeout) {
+app_signal_t module_timer_timeout(module_timer_t *timer, actor_t *actor, void *argument, uint32_t timeout) {
     // ensure that current_time of a timer is up to date, adjust timers accordingly
     timer_advance(timer, timer_get_counter(timer->address) - (timer->properties->period - timer->next_tick));
 
     // update subscription
-    module_timer_subscription_t *subscription = timer_get_subscription(timer, device, argument);
+    module_timer_subscription_t *subscription = timer_get_subscription(timer, actor, argument);
     if (subscription == NULL) {
         return APP_SIGNAL_OUT_OF_MEMORY;
     }
-    subscription->device = device;
+    subscription->actor = actor;
     subscription->argument = argument;
 
     bool_t was_next = timer->next_time == (uint32_t)-1 || timer->next_time == subscription->time;
@@ -368,8 +368,8 @@ app_signal_t module_timer_timeout(module_timer_t *timer, device_t *device, void 
     return 0;
 }
 
-app_signal_t module_timer_clear(module_timer_t *timer, device_t *device, void *argument) {
-    module_timer_subscription_t *subscription = timer_get_subscription(timer, device, argument);
+app_signal_t module_timer_clear(module_timer_t *timer, actor_t *actor, void *argument) {
+    module_timer_subscription_t *subscription = timer_get_subscription(timer, actor, argument);
     if (subscription == NULL)
         return 0;
     bool_t was_next = timer->next_time == subscription->time;
@@ -398,7 +398,7 @@ static app_signal_t timer_start_counting(module_timer_t *timer) {
 }
 
 static app_signal_t timer_stop(module_timer_t *timer) {
-    if (device_get_phase(timer->device) == DEVICE_RUNNING)
+    if (actor_get_phase(timer->actor) == ACTOR_RUNNING)
         return timer_stop_counting(timer);
     return 0;
 }
@@ -410,7 +410,7 @@ static app_signal_t timer_start(module_timer_t *timer) {
     rcc_periph_reset_pulse(timer->reset);
 
     if (timer->source == 0) {
-        source_frequency = timer->device->app->mcu->clock->apb1_frequency;
+        source_frequency = timer->actor->app->mcu->clock->apb1_frequency;
         rcc_peripheral_enable_clock(&RCC_APB1ENR, timer->peripheral_clock);
 #ifdef DEBUG
         rcc_peripheral_enable_clock(&RCC_APB2ENR, 1 << 22);
@@ -418,7 +418,7 @@ static app_signal_t timer_start(module_timer_t *timer) {
 #endif
 
     } else {
-        source_frequency = timer->device->app->mcu->clock->apb2_frequency;
+        source_frequency = timer->actor->app->mcu->clock->apb2_frequency;
         rcc_peripheral_enable_clock(&RCC_APB2ENR, timer->peripheral_clock);
 #ifdef DEBUG
         rcc_peripheral_enable_clock(&RCC_APB2ENR, 1 << 22);
@@ -448,16 +448,16 @@ static app_signal_t timer_link(module_timer_t *timer) {
     return 0;
 }
 
-static app_signal_t timer_on_phase(module_timer_t *timer, device_phase_t phase) {
+static app_signal_t timer_on_phase(module_timer_t *timer, actor_phase_t phase) {
     switch (phase) {
-    case DEVICE_RUNNING: return timer_start_counting(timer); break;
+    case ACTOR_RUNNING: return timer_start_counting(timer); break;
 
-    case DEVICE_IDLE: return timer_stop_counting(timer); break;
+    case ACTOR_IDLE: return timer_stop_counting(timer); break;
 
-    case DEVICE_STARTING:
-    case DEVICE_RESUMING:
+    case ACTOR_STARTING:
+    case ACTOR_RESUMING:
         if (timer_get_next_subscription(timer) == NULL) {
-            device_set_phase(timer->device, DEVICE_IDLE);
+            actor_set_phase(timer->actor, ACTOR_IDLE);
         }
         break;
 
@@ -466,7 +466,7 @@ static app_signal_t timer_on_phase(module_timer_t *timer, device_phase_t phase) 
     return 0;
 }
 
-device_class_t module_timer_class = {
+actor_class_t module_timer_class = {
     .type = MODULE_TIMER,
     .size = sizeof(module_timer_t),
     .phase_subindex = MODULE_TIMER_PHASE,
@@ -475,7 +475,7 @@ device_class_t module_timer_class = {
     .link = (app_method_t)timer_link,
     .start = (app_method_t)timer_start,
     .stop = (app_method_t)timer_stop,
-    .on_phase = (device_on_phase_t)timer_on_phase,
+    .on_phase = (actor_on_phase_t)timer_on_phase,
     .property_write = timer_property_write,
 };
 

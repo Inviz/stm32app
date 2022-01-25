@@ -45,13 +45,13 @@ static app_signal_t i2c_link(transport_i2c_t *i2c) {
     return 0;
 }
 
-static app_signal_t i2c_phase(transport_i2c_t *i2c, device_phase_t phase) {
+static app_signal_t i2c_phase(transport_i2c_t *i2c, actor_phase_t phase) {
     (void)i2c;
     (void)phase;
     return 0;
 }
 
-device_class_t transport_i2c_class = {
+actor_class_t transport_i2c_class = {
     .type = TRANSPORT_I2C,
     .size = sizeof(transport_i2c_t),
     .phase_subindex = TRANSPORT_I2C_PHASE,
@@ -60,6 +60,6 @@ device_class_t transport_i2c_class = {
     .link = (app_method_t)i2c_link,
     .start = (app_method_t)i2c_start,
     .stop = (app_method_t)i2c_stop,
-    .on_phase = (device_on_phase_t)i2c_phase,
+    .on_phase = (actor_on_phase_t)i2c_phase,
     .property_write = i2c_property_write,
 };

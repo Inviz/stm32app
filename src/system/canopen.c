@@ -74,7 +74,7 @@ static app_signal_t canopen_start(system_canopen_t *canopen) {
     CO_CANmodule_disable(canopen->instance->CANmodule);
 
     /* Pass CAN propertiesuration to CANopen driver */
-    canopen->instance->CANmodule->port = canopen->can->device->seq == 0 ? CAN1 : CAN2;
+    canopen->instance->CANmodule->port = canopen->can->actor->seq == 0 ? CAN1 : CAN2;
     canopen->instance->CANmodule->rxFifoIndex = canopen->properties->can_fifo_index;
     canopen->instance->CANmodule->sjw = canopen->can->properties->sjw;
     canopen->instance->CANmodule->prop = canopen->can->properties->prop;
@@ -154,22 +154,22 @@ static app_signal_t canopen_stop(system_canopen_t *canopen) {
 }
 
 static app_signal_t canopen_link(system_canopen_t *canopen) {
-    device_link(canopen->device, (void **)&canopen->can, canopen->properties->can_index, NULL);
-    device_link(canopen->device, (void **)&canopen->red_led, canopen->properties->red_led_index, NULL);
-    device_link(canopen->device, (void **)&canopen->green_led, canopen->properties->green_led_index, NULL);
+    actor_link(canopen->actor, (void **)&canopen->can, canopen->properties->can_index, NULL);
+    actor_link(canopen->actor, (void **)&canopen->red_led, canopen->properties->red_led_index, NULL);
+    actor_link(canopen->actor, (void **)&canopen->green_led, canopen->properties->green_led_index, NULL);
     return 0;
 }
 
-static app_signal_t canopen_tick_high_priority(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t canopen_tick_high_priority(system_canopen_t *canopen, void *argument, actor_tick_t *tick, app_thread_t *thread) {
     (void)argument;
     tick->next_time = 0;
 
     uint32_t us_since_last = (thread->current_time - tick->last_time) * US_PER_TICK;
     uint32_t us_until_next = -1;
     switch (CO_process(canopen->instance, false, us_since_last, &us_until_next)) {
-    case CO_RESET_COMM: device_set_phase(canopen->device->app->device, DEVICE_RESETTING); break;
+    case CO_RESET_COMM: actor_set_phase(canopen->actor->app->actor, ACTOR_RESETTING); break;
     case CO_RESET_APP:
-    case CO_RESET_QUIT: device_set_phase(canopen->device, DEVICE_RESETTING); break;
+    case CO_RESET_QUIT: actor_set_phase(canopen->actor, ACTOR_RESETTING); break;
     default: break;
     }
 
@@ -185,7 +185,7 @@ static app_signal_t canopen_tick_high_priority(system_canopen_t *canopen, void *
 }
 
 /* CANopen accepts its input from interrupts */
-static app_signal_t canopen_tick_input(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t canopen_tick_input(system_canopen_t *canopen, void *argument, actor_tick_t *tick, app_thread_t *thread) {
     (void)argument;
 
     uint32_t us_since_last = (thread->current_time - tick->last_time) * 1000;
@@ -212,7 +212,7 @@ static app_signal_t canopen_tick_input(system_canopen_t *canopen, void *argument
     return 0;
 }
 
-static app_signal_t canopen_phase(system_canopen_t *canopen, device_phase_t phase) {
+static app_signal_t canopen_phase(system_canopen_t *canopen, actor_phase_t phase) {
     (void)canopen;
     (void)phase;
     return 0;
@@ -220,14 +220,14 @@ static app_signal_t canopen_phase(system_canopen_t *canopen, device_phase_t phas
 
 /* Publish a wakeup event to thread for immediate processing */
 static void app_thread_canopen_notify(app_thread_t *thread) {
-    system_canopen_t *canopen = thread->device->app->canopen;
+    system_canopen_t *canopen = thread->actor->app->canopen;
 
-    app_event_t event = {.type = APP_EVENT_RESPONSE, .producer = canopen->device, .consumer = canopen->device};
+    app_event_t event = {.type = APP_EVENT_RESPONSE, .producer = canopen->actor, .consumer = canopen->actor};
     // canopen messages are safe to send in any order and it is desirable to handle them asap
     app_thread_publish(thread, &event);
 }
 
-device_class_t system_canopen_class = {
+actor_class_t system_canopen_class = {
     .type = SYSTEM_CANOPEN,
     .size = sizeof(system_canopen_t),
     .phase_subindex = SYSTEM_CANOPEN_PHASE,
@@ -239,15 +239,15 @@ device_class_t system_canopen_class = {
     .start = (app_method_t)canopen_start,
     .stop = (app_method_t)canopen_stop,
 
-    .tick_input = (device_on_tick_t)canopen_tick_input,
-    .tick_high_priority = (device_on_tick_t)canopen_tick_high_priority,
+    .tick_input = (actor_on_tick_t)canopen_tick_input,
+    .tick_high_priority = (actor_on_tick_t)canopen_tick_high_priority,
 
-    .on_phase = (device_on_phase_t)canopen_phase,
+    .on_phase = (actor_on_phase_t)canopen_phase,
     .property_write = canopen_property_write,
 };
 
 static void system_canopen_initialize_class(system_canopen_t *canopen) {
-    app_t *app = canopen->device->app;
+    app_t *app = canopen->actor->app;
 
     /* Mainline tasks */
     if (CO_GET_CNT(EM) == 1) {

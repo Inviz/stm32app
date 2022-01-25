@@ -14,7 +14,7 @@ static app_signal_t epaper_construct(screen_epaper_t *epaper) {
 }
 
 static app_signal_t epaper_link(screen_epaper_t *epaper) {
-    return device_link(epaper->device, (void **)&epaper->spi, epaper->properties->spi_index, NULL);
+    return actor_link(epaper->actor, (void **)&epaper->spi, epaper->properties->spi_index, NULL);
 }
 
 const unsigned char screen_epaper_lut_full_update[] = {
@@ -56,49 +56,49 @@ const unsigned char screen_epaper_lut_partial_update[] = {
 
 /* send command */
 static void screen_epaper_send_command(screen_epaper_t *epaper, uint8_t cmd) {
-    device_gpio_clear(epaper->properties->dc_port, epaper->properties->dc_pin);
-    device_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
+    actor_gpio_clear(epaper->properties->dc_port, epaper->properties->dc_pin);
+    actor_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
     transport_spi_send(epaper->spi, cmd);
-    device_gpio_set(epaper->properties->cs_port, epaper->properties->cs_pin);
+    actor_gpio_set(epaper->properties->cs_port, epaper->properties->cs_pin);
 }
 
 /* Write data */
 static void screen_epaper_send_data(screen_epaper_t *epaper, uint8_t data) {
-    device_gpio_set(epaper->properties->dc_port, epaper->properties->dc_pin);
-    device_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
+    actor_gpio_set(epaper->properties->dc_port, epaper->properties->dc_pin);
+    actor_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
     transport_spi_send(epaper->spi, data);
-    device_gpio_set(epaper->properties->cs_port, epaper->properties->cs_pin);
+    actor_gpio_set(epaper->properties->cs_port, epaper->properties->cs_pin);
 }
 
 /* Wait until the busy_pin goes LOW */
 static app_signal_t epaper_set_busy_phase(screen_epaper_t *epaper) {
-    if (device_gpio_get(epaper->properties->busy_port, epaper->properties->busy_pin) == 1) {
-        device_set_temporary_phase(epaper->device, DEVICE_BUSY, 10000); // 50000
+    if (actor_gpio_get(epaper->properties->busy_port, epaper->properties->busy_pin) == 1) {
+        actor_set_temporary_phase(epaper->actor, ACTOR_BUSY, 10000); // 50000
         return 1;
     } else {
-        device_set_phase(epaper->device, DEVICE_RUNNING);
+        actor_set_phase(epaper->actor, ACTOR_RUNNING);
     }
     return 0;
 }
 
-/* Reset the device screen */
+/* Reset the actor screen */
 static app_signal_t epaper_set_resetting_phase(screen_epaper_t *epaper) {
     epaper->resetting_phase++;
 
     switch (epaper->resetting_phase) {
     case 1:
-        device_gpio_set(epaper->properties->reset_port, epaper->properties->reset_pin);
-        //device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
+        actor_gpio_set(epaper->properties->reset_port, epaper->properties->reset_pin);
+        //actor_set_temporary_phase(epaper->actor, ACTOR_RESETTING, 200000);
         break;
     case 2:
-        device_gpio_clear(epaper->properties->reset_port, epaper->properties->reset_pin);
-        //device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 2000);
+        actor_gpio_clear(epaper->properties->reset_port, epaper->properties->reset_pin);
+        //actor_set_temporary_phase(epaper->actor, ACTOR_RESETTING, 2000);
         break;
     case 3:
-        device_gpio_set(epaper->properties->reset_port, epaper->properties->reset_pin);
-        //device_set_temporary_phase(epaper->device, DEVICE_RESETTING, 200000);
+        actor_gpio_set(epaper->properties->reset_port, epaper->properties->reset_pin);
+        //actor_set_temporary_phase(epaper->actor, ACTOR_RESETTING, 200000);
         break;
-    case 4: epaper->resetting_phase = 0; device_set_phase(epaper->device, DEVICE_RUNNING);
+    case 4: epaper->resetting_phase = 0; actor_set_phase(epaper->actor, ACTOR_RUNNING);
     }
     return 0;
 }
@@ -301,7 +301,7 @@ static app_signal_t epaper_destruct(screen_epaper_t *epaper) {
     return 0;
 }
 
-/* Reset the device screen */
+/* Reset the actor screen */
 static app_signal_t epaper_set_initializing_phase(screen_epaper_t *epaper) {
     epaper->initializing_phase++;
 
@@ -373,10 +373,10 @@ static app_signal_t epaper_set_initializing_phase(screen_epaper_t *epaper) {
 }
 
 static app_signal_t epaper_start(screen_epaper_t *epaper) {
-    device_gpio_configure_input("Busy", epaper->properties->busy_port, epaper->properties->busy_pin);
-    device_gpio_configure_output_with_value("Reset", epaper->properties->reset_port, epaper->properties->busy_pin, 0, 1);
-    device_gpio_configure_output_with_value("DC", epaper->properties->dc_port, epaper->properties->dc_pin, 0, 0);
-    device_gpio_configure_output_with_value("CS", epaper->properties->cs_port, epaper->properties->cs_pin, 0, 0);
+    actor_gpio_configure_input("Busy", epaper->properties->busy_port, epaper->properties->busy_pin);
+    actor_gpio_configure_output_with_value("Reset", epaper->properties->reset_port, epaper->properties->busy_pin, 0, 1);
+    actor_gpio_configure_output_with_value("DC", epaper->properties->dc_port, epaper->properties->dc_pin, 0, 0);
+    actor_gpio_configure_output_with_value("CS", epaper->properties->cs_port, epaper->properties->cs_pin, 0, 0);
 
     screen_epaper_set_initializing_phase(epaper);
     // screen_epaper_init_mode(epaper, screen_epaper_FULL);
@@ -384,9 +384,9 @@ static app_signal_t epaper_start(screen_epaper_t *epaper) {
 }
 
 static app_signal_t epaper_stop(screen_epaper_t *epaper) {
-    device_gpio_clear(epaper->properties->dc_port, epaper->properties->dc_pin);
-    device_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
-    device_gpio_clear(epaper->properties->reset_port, epaper->properties->reset_pin);
+    actor_gpio_clear(epaper->properties->dc_port, epaper->properties->dc_pin);
+    actor_gpio_clear(epaper->properties->cs_port, epaper->properties->cs_pin);
+    actor_gpio_clear(epaper->properties->reset_port, epaper->properties->reset_pin);
     return 0;
 }
 
@@ -398,13 +398,13 @@ static ODR_t epaper_properties_property_write(OD_stream_t *stream, const void *b
 }
 
 static app_signal_t epaper_phase(screen_epaper_t *epaper) {
-    switch (device_get_phase(epaper->device)) {
+    switch (actor_get_phase(epaper->actor)) {
     // poll busy pin until and switch to RUNNING when it's clear
-    case DEVICE_BUSY: return screen_epaper_set_busy_phase(epaper);
+    case ACTOR_BUSY: return screen_epaper_set_busy_phase(epaper);
     // go through resetting phases which involve 3 separate delays
-    case DEVICE_RESETTING: return screen_epaper_set_resetting_phase(epaper);
-    // clear device initially
-    case DEVICE_RUNNING:
+    case ACTOR_RESETTING: return screen_epaper_set_resetting_phase(epaper);
+    // clear actor initially
+    case ACTOR_RUNNING:
         if (epaper->initializing_phase == 0) {
         }
         //        if (epaper->initializing_phase == 1) {
@@ -419,7 +419,7 @@ static app_signal_t epaper_phase(screen_epaper_t *epaper) {
     return 0;
 }
 
-device_class_t screen_epaper_class = {
+actor_class_t screen_epaper_class = {
     .type = SCREEN_EPAPER,
     .size = sizeof(screen_epaper_t),
     .phase_subindex = SCREEN_EPAPER_PHASE,
@@ -429,6 +429,6 @@ device_class_t screen_epaper_class = {
     .start = (app_method_t) epaper_start,
     .stop = (app_method_t) epaper_stop,
     .link = (app_method_t) epaper_link,
-    .on_phase = (device_on_phase_t)epaper_phase,
+    .on_phase = (actor_on_phase_t)epaper_phase,
     .property_write = epaper_properties_property_write,
 };

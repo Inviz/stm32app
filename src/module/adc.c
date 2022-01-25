@@ -13,7 +13,7 @@ static app_signal_t adc_construct(module_adc_t *adc) {
         return 0;
     }
 
-    switch (adc->device->seq) {
+    switch (adc->actor->seq) {
     case 0:
         adc->address = ADC1;
         adc->clock = RCC_ADC1;
@@ -58,7 +58,7 @@ static app_signal_t adc_start(module_adc_t *adc) {
 
     // create array of used channels
     size_t channel_index = 0;
-    for (size_t channel = 0; channel < DEVICE_ADC_MAX_CHANNELS; channel++) {
+    for (size_t channel = 0; channel < ACTOR_ADC_MAX_CHANNELS; channel++) {
         if (adc->subscribers[channel] != NULL) {
             adc->channels[channel_index] = channel;
             channel_index++;
@@ -89,7 +89,7 @@ static app_signal_t adc_start(module_adc_t *adc) {
     adc_set_sample_time_on_all_channels(adc->address, ADC_SMPR_SMP_144CYC);
 #endif
     adc_power_on(adc->address);
-    // device_set_temporary_phase(adc->device, DEVICE_PREPARING, 10000);
+    // actor_set_temporary_phase(adc->actor, ACTOR_PREPARING, 10000);
 
     return 0;
 }
@@ -105,20 +105,20 @@ static app_signal_t adc_calibrate(module_adc_t *adc) {
     adc_dma_setup(adc);
     adc_enable_dma(adc->address);
 
-    // device_set_temporary_phase(adc->device, DEVICE_CALIBRATING, ADC_CALIBRATION_DELAY);
+    // actor_set_temporary_phase(adc->actor, ACTOR_CALIBRATING, ADC_CALIBRATION_DELAY);
 
     return 0;
 }
 
 static app_signal_t adc_run(module_adc_t *adc) {
     adc_start_conversion_regular(adc->address);
-    device_set_phase(adc->device, DEVICE_RUNNING);
+    actor_set_phase(adc->actor, ACTOR_RUNNING);
     return 0;
 }
 
-static app_signal_t adc_accept(module_adc_t *adc, device_t *device, void *channel) {
+static app_signal_t adc_accept(module_adc_t *adc, actor_t *actor, void *channel) {
     adc->channel_count++;
-    adc->subscribers[(size_t)channel] = device;
+    adc->subscribers[(size_t)channel] = actor;
     return 0;
 }
 
@@ -130,23 +130,23 @@ static app_signal_t adc_stop(module_adc_t *adc) {
 }
 
 static app_signal_t adc_phase(module_adc_t *adc) {
-    switch (device_get_phase(adc->device)) {
-    case DEVICE_PREPARING: return adc_calibrate(adc);
+    switch (actor_get_phase(adc->actor)) {
+    case ACTOR_PREPARING: return adc_calibrate(adc);
 
-    case DEVICE_CALIBRATING: return adc_run(adc); break;
+    case ACTOR_CALIBRATING: return adc_run(adc); break;
     default: break;
     }
     return 0;
 }
 
-static app_signal_t adc_receive(module_adc_t *adc, device_t *device, void *value, void *channel) {
-    (void)device;
+static app_signal_t adc_receive(module_adc_t *adc, actor_t *actor, void *value, void *channel) {
+    (void)actor;
     (void)value;
     if (adc_integrate_samples(adc) == 0) {
-        log_printf("ADC%i - Measurement ready %lu\n", adc->device->seq, adc->values[1]);
+        log_printf("ADC%i - Measurement ready %lu\n", adc->actor->seq, adc->values[1]);
         for (size_t i = 0; i < adc->channel_count; i++) {
             size_t channelIndex = adc->channels[i];
-            device_send(adc->device, adc->subscribers[channelIndex], (void *)adc->values[i], (void *)channel);
+            actor_send(adc->actor, adc->subscribers[channelIndex], (void *)adc->values[i], (void *)channel);
         }
     }
     return 0;
@@ -157,17 +157,17 @@ static app_signal_t adc_high_priority(module_adc_t *adc), uint32_t time_passed, 
 
 }*/
 
-device_class_t module_adc_class = {
+actor_class_t module_adc_class = {
     .type = MODULE_ADC,
     .size = sizeof(module_adc_t),
     .phase_subindex = MODULE_ADC_PHASE,
     .validate = (app_method_t)adc_validate,
     .construct = (app_method_t)adc_construct,
     .destruct = (app_method_t)adc_destruct,
-    .on_link = (device_on_link_t)adc_accept,
-    .on_value = (device_on_value_t)adc_receive,
+    .on_link = (actor_on_link_t)adc_accept,
+    .on_value = (actor_on_value_t)adc_receive,
     //.high_priority = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_high_priority,
-    .on_phase = (device_on_phase_t)adc_phase,
+    .on_phase = (actor_on_phase_t)adc_phase,
     .start = (app_method_t)adc_start,
     .stop = (app_method_t)adc_stop,
 };

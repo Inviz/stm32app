@@ -1,9 +1,9 @@
 #include "app.h"
 #include "system/canopen.h"
 
-// Count or initialize all devices in OD of given type
-size_t app_device_type_enumerate(app_t *app, OD_t *od, device_class_t *class,
-                                 device_t *destination, size_t offset) {
+// Count or initialize all actors in OD of given type
+size_t app_actor_type_enumerate(app_t *app, OD_t *od, actor_class_t *class,
+                                 actor_t *destination, size_t offset) {
     size_t count = 0;
 
     for (size_t seq = 0; seq < 128; seq++) {
@@ -18,7 +18,7 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_class_t *class,
         // compute struct offset for phase property
         class->phase_offset = (void *) phase - OD_getPtr(properties, 0x00, 0, NULL);
 
-        if (*phase != DEVICE_ENABLED || class->validate(OD_getPtr(properties, 0x00, 0, NULL)) != 0) {
+        if (*phase != ACTOR_ENABLED || class->validate(OD_getPtr(properties, 0x00, 0, NULL)) != 0) {
             if (app != NULL && app->canopen != NULL) {
                 app_error_report(app, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL, OD_getIndex(properties));
             }
@@ -30,100 +30,100 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_class_t *class,
             continue;
         }
 
-        device_t *device = &destination[offset + count - 1];
-        device->seq = seq;
-        device->entry = properties;
-        device->class = class;
+        actor_t *actor = &destination[offset + count - 1];
+        actor->seq = seq;
+        actor->entry = properties;
+        actor->class = class;
 
-        device->entry_extension.write = class->property_write == NULL ? OD_writeOriginal : class->property_write;
-        device->entry_extension.read = class->property_read == NULL ? OD_readOriginal : class->property_read;
+        actor->entry_extension.write = class->property_write == NULL ? OD_writeOriginal : class->property_write;
+        actor->entry_extension.read = class->property_read == NULL ? OD_readOriginal : class->property_read;
 
-        OD_extension_init(properties, &device->entry_extension);
+        OD_extension_init(properties, &actor->entry_extension);
     }
     return count;
 }
 
-device_t *app_device_find(app_t *app, uint16_t index) {
-    for (size_t i = 0; i < app->device_count; i++) {
-        device_t *device = &app->device[i];
-        if (device_index(device) == index) {
-            return &app->device[i];
+actor_t *app_actor_find(app_t *app, uint16_t index) {
+    for (size_t i = 0; i < app->actor_count; i++) {
+        actor_t *actor = &app->actor[i];
+        if (actor_index(actor) == index) {
+            return &app->actor[i];
         }
     }
     return NULL;
 }
 
-device_t *app_device_find_by_type(app_t *app, uint16_t type) {
-    for (size_t i = 0; i < app->device_count; i++) {
-        device_t *device = &app->device[i];
-        if (device->class->type == type) {
-            return &app->device[i];
+actor_t *app_actor_find_by_type(app_t *app, uint16_t type) {
+    for (size_t i = 0; i < app->actor_count; i++) {
+        actor_t *actor = &app->actor[i];
+        if (actor->class->type == type) {
+            return &app->actor[i];
         }
     }
     return NULL;
 }
 
-device_t *app_device_find_by_number(app_t *app, uint8_t number) {
-    return &app->device[number];
+actor_t *app_actor_find_by_number(app_t *app, uint8_t number) {
+    return &app->actor[number];
 }
 
-uint8_t app_device_find_number(app_t *app, device_t *device) {
-    for (size_t i = 0; i < app->device_count; i++) {
-        if (&app->device[i] == device) {
+uint8_t app_actor_find_number(app_t *app, actor_t *actor) {
+    for (size_t i = 0; i < app->actor_count; i++) {
+        if (&app->actor[i] == actor) {
             return i;
         }
     }
     return 255;
 }
 
-void app_set_phase(app_t *app, device_phase_t phase) {
-    log_printf("Devices - phase %s\n", get_device_phase_name(phase));
-    for (size_t i = 0; i < app->device_count; i++) {
-        if (app->device[i].phase != DEVICE_DISABLED) {
-            device_set_phase(&app->device[i], phase);
+void app_set_phase(app_t *app, actor_phase_t phase) {
+    log_printf("Devices - phase %s\n", get_actor_phase_name(phase));
+    for (size_t i = 0; i < app->actor_count; i++) {
+        if (app->actor[i].phase != ACTOR_DISABLED) {
+            actor_set_phase(&app->actor[i], phase);
         }
     }
 }
 
-int app_allocate(app_t **app, OD_t *od, size_t (*enumerator)(app_t *app, OD_t *od, device_t *devices)) {
-    // count devices first to allocate specific size of an array
-    size_t device_count = enumerator(NULL, od, NULL);
-    device_t *devices = malloc(sizeof(device_t) * device_count);
+int app_allocate(app_t **app, OD_t *od, size_t (*enumerator)(app_t *app, OD_t *od, actor_t *actors)) {
+    // count actors first to allocate specific size of an array
+    size_t actor_count = enumerator(NULL, od, NULL);
+    actor_t *actors = malloc(sizeof(actor_t) * actor_count);
 
-    if (devices == NULL) {
+    if (actors == NULL) {
         return APP_SIGNAL_OUT_OF_MEMORY;
     }
-    // run device constructors
-    enumerator(*app, od, devices);
+    // run actor constructors
+    enumerator(*app, od, actors);
 
-    for (size_t i = 0; i < device_count; i++) {
-        // allocate memory for device struct
-        int ret = device_allocate(&devices[i]);
+    for (size_t i = 0; i < actor_count; i++) {
+        // allocate memory for actor struct
+        int ret = actor_allocate(&actors[i]);
         if (ret != 0) {
             return ret;
         }
 
-        // first device must be app device
-        // store device count
+        // first actor must be app actor
+        // store actor count
         if (i == 0) {
-            *app = devices->object;
-            (*app)->device_count = device_count;
+            *app = actors->object;
+            (*app)->actor_count = actor_count;
         }
 
-        // link device to the app
-        (&devices[i])->app = *app;
+        // link actor to the app
+        (&actors[i])->app = *app;
     }
 
     return 0;
 }
 
 int app_free(app_t **app) {
-    for (size_t i = 0; i < (*app)->device_count; i++) {
-        int ret = device_free(&(*app)->device[i]);
+    for (size_t i = 0; i < (*app)->actor_count; i++) {
+        int ret = actor_free(&(*app)->actor[i]);
         if (ret != 0)
             return ret;
     }
-    (*app)->device_count = 0;
-    free((*app)->device);
+    (*app)->actor_count = 0;
+    free((*app)->actor);
     return 0;
 }

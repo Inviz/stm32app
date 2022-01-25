@@ -25,7 +25,7 @@
 #ifndef CO_DRIVER_TARGET_H
 #define CO_DRIVER_TARGET_H
 
-/* This file contains device and application specific definitions.
+/* This file contains actor and application specific definitions.
  * It is included from CO_driver.h, which contains documentation
  * for common definitions below. */
 

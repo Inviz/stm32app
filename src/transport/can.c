@@ -16,9 +16,9 @@ static app_signal_t can_construct(transport_can_t *can) {
 }
 
 static app_signal_t can_start(transport_can_t *can) {
-    log_printf("    > CAN%i TX ", can->device->seq + 1);
+    log_printf("    > CAN%i TX ", can->actor->seq + 1);
     gpio_configure_output(can->properties->tx_port, can->properties->tx_pin, 0);
-    log_printf("    > CAN%i RX ", can->device->seq + 1);
+    log_printf("    > CAN%i RX ", can->actor->seq + 1);
     gpio_configure_input(can->properties->rx_port, can->properties->rx_pin);
 
 #ifdef STM32F1
@@ -47,20 +47,20 @@ static app_signal_t can_link(transport_can_t *can) {
     return 0;
 }
 
-static app_signal_t can_phase(transport_can_t *can, device_phase_t phase) {
+static app_signal_t can_phase(transport_can_t *can, actor_phase_t phase) {
     (void)can;
     (void)phase;
     return 0;
 }
 
 // CANopenNode's driver configures its CAN interface so we dont have to
-static app_signal_t can_accept(transport_can_t *can, device_t *origin, void *arg) {
+static app_signal_t can_accept(transport_can_t *can, actor_t *origin, void *arg) {
     (void)arg;
     can->canopen = origin;
     return 0;
 }
 
-device_class_t transport_can_class = {
+actor_class_t transport_can_class = {
     .type = TRANSPORT_CAN,
     .size = sizeof(transport_can_t),
     .phase_subindex = TRANSPORT_CAN_PHASE,
@@ -69,7 +69,7 @@ device_class_t transport_can_class = {
     .link = (app_method_t)can_link,
     .start = (app_method_t)can_start,
     .stop = (app_method_t)can_stop,
-    .on_link = (device_on_link_t)can_accept,
-    .on_phase = (device_on_phase_t)can_phase,
+    .on_link = (actor_on_link_t)can_accept,
+    .on_phase = (actor_on_phase_t)can_phase,
     .property_write = can_property_write,
 };

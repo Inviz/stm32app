@@ -8,10 +8,10 @@ app_signal_t app_task_execute(app_task_t *task) {
     case APP_TASK_COMPLETE:
     case APP_TASK_HALT:
       app_task_finalize(task);
-      device_tick_catchup(task->device, task->tick);
+      actor_tick_catchup(task->actor, task->tick);
       break;
     case APP_TASK_STEP_WAIT:
-      device_event_finalize(task->device, &task->awaited_event);  // free up room for a new event
+      actor_event_finalize(task->actor, &task->awaited_event);  // free up room for a new event
       break;
     default:
       break;
@@ -53,10 +53,10 @@ app_task_signal_t app_task_advance(app_task_t *task) {
 }
 
 app_signal_t app_task_finalize(app_task_t *task) {
-  if (task->device->class->on_task != NULL) {
-    task->device->class->on_task(task->device->object, task);
+  if (task->actor->class->on_task != NULL) {
+    task->actor->class->on_task(task->actor->object, task);
   }
-  device_event_finalize(task->device, &task->inciting_event);
-  device_event_finalize(task->device, &task->awaited_event);
+  actor_event_finalize(task->actor, &task->inciting_event);
+  actor_event_finalize(task->actor, &task->awaited_event);
   return 0;
 }

@@ -26,33 +26,33 @@ static app_signal_t sensor_stop(input_sensor_t *sensor) {
     return 0;
 }
 
-// pass over adc value to the linked device
-static app_signal_t sensor_receive(input_sensor_t *sensor, device_t *device, void *value, void *channel) {
+// pass over adc value to the linked actor
+static app_signal_t sensor_receive(input_sensor_t *sensor, actor_t *actor, void *value, void *channel) {
     (void)channel; /*unused*/
-    if (sensor->adc->device == device) {
-        device_send(sensor->device, sensor->target_device, value, sensor->target_argument);
+    if (sensor->adc->actor == actor) {
+        actor_send(sensor->actor, sensor->target_actor, value, sensor->target_argument);
     }
     return 0;
 }
 
 static app_signal_t sensor_link(input_sensor_t *sensor) {
-    return device_link(sensor->device, (void **)&sensor->adc, sensor->properties->adc_index,
+    return actor_link(sensor->actor, (void **)&sensor->adc, sensor->properties->adc_index,
                        (void *)(uint32_t)sensor->properties->adc_channel);
 }
 
-static app_signal_t sensor_accept(input_sensor_t *sensor, device_t *target, void *argument) {
-    sensor->target_device = target;
+static app_signal_t sensor_accept(input_sensor_t *sensor, actor_t *target, void *argument) {
+    sensor->target_actor = target;
     sensor->target_argument = argument;
     return 0;
 }
 
-static app_signal_t sensor_phase(input_sensor_t *sensor, device_phase_t phase) {
+static app_signal_t sensor_phase(input_sensor_t *sensor, actor_phase_t phase) {
     (void)sensor;
     (void)phase;
     return 0;
 }
 
-device_class_t input_sensor_class = {
+actor_class_t input_sensor_class = {
     .type = INPUT_SENSOR,
     .size = sizeof(input_sensor_t),
     .phase_subindex = INPUT_SENSOR_PHASE,
@@ -61,8 +61,8 @@ device_class_t input_sensor_class = {
     .link = (app_method_t)sensor_link,
     .start = (app_method_t)sensor_start,
     .stop = (app_method_t)sensor_stop,
-    .on_link = (device_on_link_t)sensor_accept,
-    .on_value = (device_on_value_t)sensor_receive,
-    .on_phase = (device_on_phase_t)sensor_phase,
+    .on_link = (actor_on_link_t)sensor_accept,
+    .on_value = (actor_on_value_t)sensor_receive,
+    .on_phase = (actor_on_phase_t)sensor_phase,
     .property_write = sensor_property_write,
 };

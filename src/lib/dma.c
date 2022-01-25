@@ -107,43 +107,43 @@ uint8_t dma_get_interrupt_for_stream(uint32_t dma, uint8_t index) {
 #endif
 }
 
-volatile device_t *devices_dma[DMA_BUFFER_SIZE];
+volatile actor_t *actors_dma[DMA_BUFFER_SIZE];
 
-void device_register_dma(uint8_t unit, uint8_t index, device_t *device) {
-    devices_dma[DMA_INDEX(unit, index)] = device;
+void actor_register_dma(uint8_t unit, uint8_t index, actor_t *actor) {
+    actors_dma[DMA_INDEX(unit, index)] = actor;
 };
 
-void device_unregister_dma(uint8_t unit, uint8_t index) { devices_dma[DMA_INDEX(unit, index)] = NULL; };
+void actor_unregister_dma(uint8_t unit, uint8_t index) { actors_dma[DMA_INDEX(unit, index)] = NULL; };
 
-void devices_dma_notify(uint8_t unit, uint8_t index) {
-    volatile device_t *device = devices_dma[DMA_INDEX(unit, index)];
+void actors_dma_notify(uint8_t unit, uint8_t index) {
+    volatile actor_t *actor = actors_dma[DMA_INDEX(unit, index)];
     if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
         error_printf("DMA Error in channel %i", index);
-        if (device->class->on_signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
+        if (actor->class->on_signal(actor->object, NULL, APP_SIGNAL_DMA_ERROR, actor_dma_pack_source(unit, index))) {
             dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
         }
     } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
-        if (device->class->on_signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
+        if (actor->class->on_signal(actor->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, actor_dma_pack_source(unit, index)) == 0) {
             dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
         }
     }
 }
 
-void *device_dma_pack_source(uint8_t unit, uint8_t index) {
+void *actor_dma_pack_source(uint8_t unit, uint8_t index) {
     return (void *) (uint32_t) ((unit << 0) + (index << 8));
 }
 
-bool_t device_dma_match_source(void *source, uint8_t unit, uint8_t index) {
+bool_t actor_dma_match_source(void *source, uint8_t unit, uint8_t index) {
     return unit == (((uint32_t)source) & 0xff) && index == (((uint32_t)source) >> 8 & 0xff);
 }
 
-uint16_t device_dma_get_buffer_position(uint8_t unit, uint8_t index, uint16_t buffer_size) {
+uint16_t actor_dma_get_buffer_position(uint8_t unit, uint8_t index, uint16_t buffer_size) {
     return buffer_size - dma_get_number_of_data(dma_get_address(unit), index);
 }
 
-void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t buffer_size, uint16_t *cursor, struct vpool *pool) {
+void actor_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t buffer_size, uint16_t *cursor, struct vpool *pool) {
     /* Calculate current position in buffer and check for new data available */
-    uint16_t pos = device_dma_get_buffer_position(unit, index, buffer_size);
+    uint16_t pos = actor_dma_get_buffer_position(unit, index, buffer_size);
     if (pos != *cursor) {                       /* Check change in received data */
         if (pos > *cursor) {   
             vpool_insert(pool, UINT16_MAX, &buffer[*cursor], pos - *cursor);
@@ -157,7 +157,7 @@ void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t bu
     }
 }
 
-void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+void actor_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
     log_printf("DMA%u(%u/%u)\tRX started\t(%u bytes)\n", unit + 1, stream, channel, size);
 	uint32_t dma_address = dma_get_address(unit);
 
@@ -192,7 +192,7 @@ void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t strea
 	dma_enable_stream(DMA1, stream);
 }
 
-void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+void actor_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
     log_printf("DMA%u(%u/%u)\tTX stopped\n", unit + 1, stream, channel);
     uint32_t dma_address = dma_get_address(unit);
     dma_disable_stream(dma_address, stream);
@@ -200,7 +200,7 @@ void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
     nvic_disable_irq(nvic_dma_get_channel_base(unit) + stream);
 }
 
-void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+void actor_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
     log_printf("DMA%u(%u/%u)\tTX started\t(%u bytes)\n", unit + 1, stream, channel, size);
     uint32_t dma_address = dma_get_address(unit);
     rcc_periph_clock_enable(dma_get_clock_address(unit));
@@ -236,7 +236,7 @@ void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t strea
     dma_enable_stream(dma_address, stream);
 }
 
-void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+void actor_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
     log_printf("DMA%u(%u/%u)\tTX stopped\n", unit + 1, stream, channel);
     uint32_t dma_address = dma_get_address(unit);
     dma_disable_stream(dma_address, stream);
@@ -257,42 +257,42 @@ void dma_set_read_from_memory(uint32_t dma, uint8_t stream) {
 
 #ifdef DMA_CHANNEL1
 
-void dma1_channel1_isr(void) { devices_dma_notify(1, 1); }
-void dma1_channel2_isr(void) { devices_dma_notify(1, 2); }
-void dma1_channel3_isr(void) { devices_dma_notify(1, 3); }
-void dma1_channel4_isr(void) { devices_dma_notify(1, 4); }
-void dma1_channel5_isr(void) { devices_dma_notify(1, 5); }
-void dma1_channel6_isr(void) { devices_dma_notify(1, 6); }
-void dma1_channel7_isr(void) { devices_dma_notify(1, 7); }
-void dma1_channel8_isr(void) { devices_dma_notify(1, 8); }
+void dma1_channel1_isr(void) { actors_dma_notify(1, 1); }
+void dma1_channel2_isr(void) { actors_dma_notify(1, 2); }
+void dma1_channel3_isr(void) { actors_dma_notify(1, 3); }
+void dma1_channel4_isr(void) { actors_dma_notify(1, 4); }
+void dma1_channel5_isr(void) { actors_dma_notify(1, 5); }
+void dma1_channel6_isr(void) { actors_dma_notify(1, 6); }
+void dma1_channel7_isr(void) { actors_dma_notify(1, 7); }
+void dma1_channel8_isr(void) { actors_dma_notify(1, 8); }
 
-void dma2_channel1_isr(void) { devices_dma_notify(2, 1); }
-void dma2_channel2_isr(void) { devices_dma_notify(2, 2); }
-void dma2_channel3_isr(void) { devices_dma_notify(2, 3); }
-void dma2_channel4_isr(void) { devices_dma_notify(2, 4); }
-void dma2_channel5_isr(void) { devices_dma_notify(2, 5); }
-void dma2_channel6_isr(void) { devices_dma_notify(2, 6); }
-void dma2_channel7_isr(void) { devices_dma_notify(2, 7); }
-void dma2_channel8_isr(void) { devices_dma_notify(2, 8); }
+void dma2_channel1_isr(void) { actors_dma_notify(2, 1); }
+void dma2_channel2_isr(void) { actors_dma_notify(2, 2); }
+void dma2_channel3_isr(void) { actors_dma_notify(2, 3); }
+void dma2_channel4_isr(void) { actors_dma_notify(2, 4); }
+void dma2_channel5_isr(void) { actors_dma_notify(2, 5); }
+void dma2_channel6_isr(void) { actors_dma_notify(2, 6); }
+void dma2_channel7_isr(void) { actors_dma_notify(2, 7); }
+void dma2_channel8_isr(void) { actors_dma_notify(2, 8); }
 
 #else
 
-void dma1_stream0_isr(void) { devices_dma_notify(1, 0); }
-void dma1_stream1_isr(void) { devices_dma_notify(1, 1); }
-void dma1_stream2_isr(void) { devices_dma_notify(1, 2); }
-void dma1_stream3_isr(void) { devices_dma_notify(1, 3); }
-void dma1_stream4_isr(void) { devices_dma_notify(1, 4); }
-void dma1_stream5_isr(void) { devices_dma_notify(1, 5); }
-void dma1_stream6_isr(void) { devices_dma_notify(1, 6); }
-void dma1_stream7_isr(void) { devices_dma_notify(1, 7); }
+void dma1_stream0_isr(void) { actors_dma_notify(1, 0); }
+void dma1_stream1_isr(void) { actors_dma_notify(1, 1); }
+void dma1_stream2_isr(void) { actors_dma_notify(1, 2); }
+void dma1_stream3_isr(void) { actors_dma_notify(1, 3); }
+void dma1_stream4_isr(void) { actors_dma_notify(1, 4); }
+void dma1_stream5_isr(void) { actors_dma_notify(1, 5); }
+void dma1_stream6_isr(void) { actors_dma_notify(1, 6); }
+void dma1_stream7_isr(void) { actors_dma_notify(1, 7); }
 
-void dma2_stream0_isr(void) { devices_dma_notify(2, 0); }
-void dma2_stream1_isr(void) { devices_dma_notify(2, 1); }
-void dma2_stream2_isr(void) { devices_dma_notify(2, 2); }
-void dma2_stream3_isr(void) { devices_dma_notify(2, 3); }
-void dma2_stream4_isr(void) { devices_dma_notify(2, 4); }
-void dma2_stream5_isr(void) { devices_dma_notify(2, 5); }
-void dma2_stream6_isr(void) { devices_dma_notify(2, 6); }
-void dma2_stream7_isr(void) { devices_dma_notify(2, 7); }
+void dma2_stream0_isr(void) { actors_dma_notify(2, 0); }
+void dma2_stream1_isr(void) { actors_dma_notify(2, 1); }
+void dma2_stream2_isr(void) { actors_dma_notify(2, 2); }
+void dma2_stream3_isr(void) { actors_dma_notify(2, 3); }
+void dma2_stream4_isr(void) { actors_dma_notify(2, 4); }
+void dma2_stream5_isr(void) { actors_dma_notify(2, 5); }
+void dma2_stream6_isr(void) { actors_dma_notify(2, 6); }
+void dma2_stream7_isr(void) { actors_dma_notify(2, 7); }
 #endif
 

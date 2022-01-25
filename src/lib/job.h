@@ -1,7 +1,7 @@
 
 
 typedef struct {
-    device_t *device,
+    actor_t *actor,
     vpool pool,
     
 } job_t;

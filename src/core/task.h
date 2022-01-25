@@ -10,8 +10,8 @@
 struct app_task {
   char *name;
 
-  device_t *device;
-  device_tick_t *tick;
+  actor_t *actor;
+  actor_tick_t *tick;
   app_thread_t *thread;
 
   app_event_t inciting_event;
@@ -22,7 +22,7 @@ struct app_task {
   size_t phase_index;
   size_t step_index;
 
-  device_on_task_t handler;
+  actor_on_task_t handler;
 };
 
 enum app_task_signal {

@@ -32,16 +32,16 @@ static app_signal_t mcu_stop(system_mcu_t *mcu) {
 
 static app_signal_t mcu_link(system_mcu_t *mcu) {
     (void)mcu;
-    return device_link(mcu->device, (void **)&mcu->storage, mcu->properties->storage_index, NULL);
+    return actor_link(mcu->actor, (void **)&mcu->storage, mcu->properties->storage_index, NULL);
 }
 
-static app_signal_t mcu_phase(system_mcu_t *mcu, device_phase_t phase) {
+static app_signal_t mcu_phase(system_mcu_t *mcu, actor_phase_t phase) {
     (void)mcu;
     (void)phase;
     return 0;
 }
 
-device_class_t system_mcu_class = {
+actor_class_t system_mcu_class = {
     .type = SYSTEM_MCU,
     .size = sizeof(system_mcu_t),
     .phase_subindex = SYSTEM_MCU_PHASE,
@@ -50,6 +50,6 @@ device_class_t system_mcu_class = {
     .link = (app_method_t)mcu_link,
     .start = (app_method_t)mcu_start,
     .stop = (app_method_t)mcu_stop,
-    .on_phase = (device_on_phase_t)mcu_phase,
+    .on_phase = (actor_on_phase_t)mcu_phase,
     .property_write = mcu_property_write,
 };

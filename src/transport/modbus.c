@@ -27,25 +27,25 @@ static app_signal_t modbus_destruct(transport_modbus_t *modbus) {
 
 static app_signal_t modbus_start(transport_modbus_t *modbus) {
     (void)modbus;
-    device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
+    actor_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
 
 static app_signal_t modbus_stop(transport_modbus_t *modbus) {
     (void)modbus;
-    device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
+    actor_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
 
 static app_signal_t modbus_link(transport_modbus_t *modbus) {
-    return device_link(modbus->device, (void **)&modbus->usart, modbus->properties->usart_index, NULL);
+    return actor_link(modbus->actor, (void **)&modbus->usart, modbus->properties->usart_index, NULL);
 }
 
-static app_signal_t modbus_phase(transport_modbus_t *modbus, device_phase_t phase) {
+static app_signal_t modbus_phase(transport_modbus_t *modbus, actor_phase_t phase) {
     // if this callback is called, it means the request timed out
     switch (phase) {
-    case DEVICE_REQUESTING:
-    case DEVICE_RESPONDING:
+    case ACTOR_REQUESTING:
+    case ACTOR_RESPONDING:
         transport_modbus_cancel(modbus);
         break;
     default:
@@ -80,11 +80,11 @@ static void transport_modbus_ingest_buffer(transport_modbus_t *modbus) {
     }
 }
 
-static app_signal_t modbus_signal(transport_modbus_t *modbus, device_t *device, app_signal_t signal, char *source) {
+static app_signal_t modbus_signal(transport_modbus_t *modbus, actor_t *actor, app_signal_t signal, char *source) {
     switch (signal) {
         /* usart is idle, need to wait 3.5 characters to start reading */
         case APP_SIGNAL_RX_COMPLETE:
-            module_timer_set(modbus->timer, modbus->device, modbus->idle_timeout, APP_SIGNAL_RX_COMPLETE);
+            module_timer_set(modbus->timer, modbus->actor, modbus->idle_timeout, APP_SIGNAL_RX_COMPLETE);
             break;
         /* 3.5 characters delay time is over, ready to process messages in buffer */
         case APP_SIGNAL_TIMEOUT:
@@ -104,7 +104,7 @@ int transport_modbus_read(transport_modbus_t *modbus, uint8_t *data) {
     }
 
     // check if it's a response to current request
-    if (device_get_phase(modbus->device) == DEVICE_REQUESTING) {
+    if (actor_get_phase(modbus->actor) == ACTOR_REQUESTING) {
         request = &modbus->request;
         if (request->type == MODBUS_WRITE_SINGLE_COIL || request->type == MODBUS_WRITE_SINGLE_REGISTER) {
             return memcmp(request, data, 8);
@@ -135,24 +135,24 @@ int transport_modbus_read(transport_modbus_t *modbus, uint8_t *data) {
     }
 
     // respond to request
-    if (device_get_phase(modbus->device) != DEVICE_REQUESTING) {
+    if (actor_get_phase(modbus->actor) != ACTOR_REQUESTING) {
         return transport_modbus_respond(modbus, request);
     }
 
     // finish with request
-    device_set_phase(modbus->device, DEVICE_RUNNING);
+    actor_set_phase(modbus->actor, ACTOR_RUNNING);
     return 0;
 }
 int transport_modbus_respond(transport_modbus_t *modbus, transport_modbus_request_t *request) {
     (void)request;
-    //device_set_temporary_phase(modbus->device, DEVICE_RESPONDING, modbus->properties->timeout);
-    device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
+    //actor_set_temporary_phase(modbus->actor, ACTOR_RESPONDING, modbus->properties->timeout);
+    actor_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
 
 int transport_modbus_cancel(transport_modbus_t *modbus) {
-    device_set_phase(modbus->device, DEVICE_RUNNING);
-    device_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
+    actor_set_phase(modbus->actor, ACTOR_RUNNING);
+    actor_gpio_clear(modbus->properties->rts_port, modbus->properties->rts_pin);
     return 0;
 }
 
@@ -163,7 +163,7 @@ int transport_modbus_request(transport_modbus_t *modbus, uint8_t recipient, uint
                           uint8_t *response) {
     transport_modbus_request_t *request = transport_modbus_allocate_request(modbus);
 
-    if (device_get_phase(modbus->device) != DEVICE_RUNNING) {
+    if (actor_get_phase(modbus->actor) != ACTOR_RUNNING) {
         return 1;
     }
     request->recipient = recipient;
@@ -173,8 +173,8 @@ int transport_modbus_request(transport_modbus_t *modbus, uint8_t recipient, uint
     request->crc = transport_modbus_crc16((uint8_t *)&request, 6);
     request->response = response;
 
-    //device_set_temporary_phase(modbus->device, DEVICE_REQUESTING, modbus->properties->timeout);
-    device_gpio_set(modbus->properties->rts_port, modbus->properties->rts_pin);
+    //actor_set_temporary_phase(modbus->actor, ACTOR_REQUESTING, modbus->properties->timeout);
+    actor_gpio_set(modbus->properties->rts_port, modbus->properties->rts_pin);
     return transport_usart_send(modbus->usart, (char *)&request, 8);
 }
 
@@ -330,7 +330,7 @@ uint16_t transport_modbus_crc16(const uint8_t *nData, uint16_t wLength) {
     }
     return wCRCWord;
 }
-device_class_t transport_modbus_class = {
+actor_class_t transport_modbus_class = {
     .type = TRANSPORT_MODBUS,
     .size = sizeof(transport_modbus_t),
     .phase_subindex = TRANSPORT_MODBUS_PHASE,
@@ -340,6 +340,6 @@ device_class_t transport_modbus_class = {
     .destruct = (app_method_t) modbus_destruct,
     .start = (app_method_t) modbus_start,
     .stop = (app_method_t) modbus_stop,
-    .on_signal = (device_on_signal_t) modbus_signal,
-    .on_phase = (device_on_phase_t)modbus_phase,
+    .on_signal = (actor_on_signal_t) modbus_signal,
+    .on_phase = (actor_on_phase_t)modbus_phase,
     .property_write = modbus_property_write,};

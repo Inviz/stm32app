@@ -28,13 +28,13 @@ enum app_event_type {
 
 };
 
-/* Is event owned by some specific device */
+/* Is event owned by some specific actor */
 enum app_event_status {
     APP_EVENT_WAITING,   // Event is waiting to be routed
-    APP_EVENT_RECEIVED,  // Some devices receieved the event
-    APP_EVENT_ADDRESSED, // A device that could handle event was busy, others still can claim it
+    APP_EVENT_RECEIVED,  // Some actors receieved the event
+    APP_EVENT_ADDRESSED, // A actor that could handle event was busy, others still can claim it
     APP_EVENT_HANDLED,   // Device processed the event so no others will receive it
-    APP_EVENT_DEFERRED   // A busy device wants this event exclusively
+    APP_EVENT_DEFERRED   // A busy actor wants this event exclusively
 };
 
 struct app_event {
@@ -43,8 +43,8 @@ struct app_event {
     uint8_t *data;             /* Pointer to data package*/
     size_t size;               /* Size of data payload*/
     void *argument;            /* Optional argument */
-    device_t *producer;        /* Where event originated at */
-    device_t *consumer;        /* Device that handled the event*/
+    actor_t *producer;        /* Where event originated at */
+    actor_t *consumer;        /* Device that handled the event*/
 };
 
 app_event_t *app_event_from_vpool(app_event_t *event, struct vpool *vpool);

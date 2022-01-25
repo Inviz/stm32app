@@ -2,20 +2,20 @@
 #include "transport/spi.h"
 
 static app_task_signal_t step_write_spi(app_task_t *task, uint8_t *data, size_t size) {
-    app_publish(task->device->app, &((app_event_t){
+    app_publish(task->actor->app, &((app_event_t){
                                        .type = APP_EVENT_WRITE,
-                                       .consumer = ((storage_w25_t *)task->device->object)->spi->device,
-                                       .producer = task->device,
+                                       .consumer = ((storage_w25_t *)task->actor->object)->spi->actor,
+                                       .producer = task->actor,
                                        .data = data,
                                        .size = size,
                                    }));
     return APP_TASK_STEP_WAIT;
 }
 static app_task_signal_t step_read_spi(app_task_t *task, size_t size) {
-    app_publish(task->device->app, &((app_event_t){
+    app_publish(task->actor->app, &((app_event_t){
                                        .type = APP_EVENT_READ,
-                                       .consumer = ((storage_w25_t *)task->device->object)->spi->device,
-                                       .producer = task->device,
+                                       .consumer = ((storage_w25_t *)task->actor->object)->spi->actor,
+                                       .producer = task->actor,
                                        .size = size,
                                    }));
     return APP_TASK_STEP_WAIT;
@@ -37,7 +37,7 @@ static app_task_signal_t step_send(app_task_t *task, uint8_t *data, size_t size)
     }
 }
 
-// Query SR signal in a loop to check if device is ready to accept commands
+// Query SR signal in a loop to check if actor is ready to accept commands
 static app_task_signal_t step_wait_until_ready(app_task_t *task) {
     switch (task->step_index) {
     case 0: return step_write_spi(task, (uint8_t[]){W25_CMD_READ_SR1}, 1);
@@ -70,7 +70,7 @@ static app_task_signal_t step_write_in_pages(app_task_t *task, uint32_t address,
 static app_task_signal_t w25_task_introspection(app_task_t *task) {
     switch (task->phase_index) {
     case 0: return step_wait_until_ready(task);
-    case 1: return step_fetch(task, (uint8_t[]){W25_CMD_MANUF_DEVICE, 0xff, 0xff, 0x00}, 4, 2);
+    case 1: return step_fetch(task, (uint8_t[]){W25_CMD_MANUF_ACTOR, 0xff, 0xff, 0x00}, 4, 2);
     default: return APP_TASK_COMPLETE;
     }
 }
@@ -118,7 +118,7 @@ static app_task_signal_t w25_task_read(app_task_t *task) {
     }
 }
 
-static app_signal_t w25_tick_high_priority(storage_w25_t *w25, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t w25_tick_high_priority(storage_w25_t *w25, app_event_t *event, actor_tick_t *tick, app_thread_t *thread) {
     (void)tick;
     (void)thread;
     if (event->type == APP_EVENT_THREAD_ALARM) {
@@ -143,22 +143,22 @@ static app_signal_t w25_construct(storage_w25_t *w25) {
 }
 
 static app_signal_t w25_stop(storage_w25_t *w25) {
-    return device_event_handle_and_start_task(w25->device, &((app_event_t){.type = APP_EVENT_DISABLE}), &w25->task,
-                                              w25->device->app->threads->bg_priority, w25_task_disable);
+    return actor_event_handle_and_start_task(w25->actor, &((app_event_t){.type = APP_EVENT_DISABLE}), &w25->task,
+                                              w25->actor->app->threads->bg_priority, w25_task_disable);
 }
 
 static app_signal_t w25_start(storage_w25_t *w25) {
-    return device_event_handle_and_start_task(w25->device, &((app_event_t){.type = APP_EVENT_ENABLE}), &w25->task,
-                                              w25->device->app->threads->bg_priority, w25_task_enable);
+    return actor_event_handle_and_start_task(w25->actor, &((app_event_t){.type = APP_EVENT_ENABLE}), &w25->task,
+                                              w25->actor->app->threads->bg_priority, w25_task_enable);
 }
 
-/* Link w25 device with its spi module (i2c, spi, uart) */
+/* Link w25 actor with its spi module (i2c, spi, uart) */
 static app_signal_t w25_link(storage_w25_t *w25) {
-    device_link(w25->device, (void **)&w25->spi, w25->properties->spi_index, NULL);
+    actor_link(w25->actor, (void **)&w25->spi, w25->properties->spi_index, NULL);
     return 0;
 }
 
-static app_signal_t w25_on_phase(storage_w25_t *w25, device_phase_t phase) {
+static app_signal_t w25_on_phase(storage_w25_t *w25, actor_phase_t phase) {
     (void)w25;
     (void)phase;
     return 0;
@@ -168,31 +168,31 @@ static app_signal_t w25_on_phase(storage_w25_t *w25, device_phase_t phase) {
 static app_signal_t w25_on_event(storage_w25_t *w25, app_event_t *event) {
     switch (event->type) {
     case APP_EVENT_WRITE:
-        app_thread_device_schedule(w25->device->app->threads->high_priority, w25->device,
-                                   w25->device->app->threads->high_priority->current_time);
+        app_thread_actor_schedule(w25->actor->app->threads->high_priority, w25->actor,
+                                   w25->actor->app->threads->high_priority->current_time);
         break;
     default: break;
     }
     return 0;
 }
 
-static app_signal_t w25_tick_input(storage_w25_t *w25, app_event_t *event, device_tick_t *tick, app_thread_t *thread) {
+static app_signal_t w25_tick_input(storage_w25_t *w25, app_event_t *event, actor_tick_t *tick, app_thread_t *thread) {
     switch (event->type) {
     case APP_EVENT_INTROSPECTION:
-        return device_event_handle_and_start_task(w25->device, event, &w25->task, w25->device->app->threads->high_priority,
+        return actor_event_handle_and_start_task(w25->actor, event, &w25->task, w25->actor->app->threads->high_priority,
                                                   w25_task_introspection);
     case APP_EVENT_WRITE:
-        return device_event_handle_and_start_task(w25->device, event, &w25->task, w25->device->app->threads->high_priority, w25_task_write);
+        return actor_event_handle_and_start_task(w25->actor, event, &w25->task, w25->actor->app->threads->high_priority, w25_task_write);
     case APP_EVENT_READ:
-        return device_event_handle_and_start_task(w25->device, event, &w25->task, w25->device->app->threads->high_priority, w25_task_read);
+        return actor_event_handle_and_start_task(w25->actor, event, &w25->task, w25->actor->app->threads->high_priority, w25_task_read);
     case APP_EVENT_LOCK:
-        return device_event_handle_and_start_task(w25->device, event, &w25->task, w25->device->app->threads->high_priority, w25_task_lock);
+        return actor_event_handle_and_start_task(w25->actor, event, &w25->task, w25->actor->app->threads->high_priority, w25_task_lock);
     case APP_EVENT_UNLOCK:
-        return device_event_handle_and_start_task(w25->device, event, &w25->task, w25->device->app->threads->high_priority,
+        return actor_event_handle_and_start_task(w25->actor, event, &w25->task, w25->actor->app->threads->high_priority,
                                                   w25_task_unlock);
     case APP_EVENT_RESPONSE:
         if (event->producer == w25->spi && w25->task.handler != NULL) {
-            return device_event_handle_and_pass_to_task(w25->device, event, &w25->task, w25->device->app->threads->high_priority,
+            return actor_event_handle_and_pass_to_task(w25->actor, event, &w25->task, w25->actor->app->threads->high_priority,
                                                         w25->task.handler);
         }
         break;
@@ -200,7 +200,7 @@ static app_signal_t w25_tick_input(storage_w25_t *w25, app_event_t *event, devic
     }
 }
 
-device_class_t storage_w25_class = {
+actor_class_t storage_w25_class = {
     .type = STORAGE_W25,
     .size = sizeof(storage_w25_t),
     .phase_subindex = STORAGE_W25_PHASE,
@@ -209,9 +209,9 @@ device_class_t storage_w25_class = {
     .link = (app_method_t)w25_link,
     .start = (app_method_t)w25_start,
     .stop = (app_method_t)w25_stop,
-    .tick_input = (device_on_tick_t)w25_tick_input,
-    .tick_high_priority = (device_on_tick_t)w25_tick_high_priority,
-    .on_phase = (device_on_phase_t)w25_on_phase,
-    .on_event = (device_on_event_t)w25_on_event,
+    .tick_input = (actor_on_tick_t)w25_tick_input,
+    .tick_high_priority = (actor_on_tick_t)w25_tick_high_priority,
+    .on_phase = (actor_on_phase_t)w25_on_phase,
+    .on_event = (actor_on_event_t)w25_on_event,
     .property_write = w25_property_write,
 };

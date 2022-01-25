@@ -1,7 +1,7 @@
 /* Generalize dma api for STMF1 that dont support DMA streams with STMF2+ that do.
 The former need to configure stream to be the same as channel*/
 
-#include <core/device.h>
+#include <core/actor.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/dma.h>
 #include <libopencm3/stm32/rcc.h>
@@ -66,29 +66,29 @@ uint32_t dma_get_clock_address(uint8_t index);
 uint32_t nvic_dma_get_channel_base(uint8_t index);
 
 
-void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
-void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
+void actor_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
+void actor_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size);
 
-void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel);
-void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel);
+void actor_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel);
+void actor_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel);
 
 
-/* Make device be notified through interrupts */
-void device_register_dma(uint8_t unit, uint8_t index, device_t *device);
+/* Make actor be notified through interrupts */
+void actor_register_dma(uint8_t unit, uint8_t index, actor_t *actor);
 /* Remove interrupt notification assignment */
-void device_unregister_dma(uint8_t unit, uint8_t index);
-/* Notify registered device */
-void devices_dma_notify(uint8_t unit, uint8_t index);
+void actor_unregister_dma(uint8_t unit, uint8_t index);
+/* Notify registered actor */
+void actors_dma_notify(uint8_t unit, uint8_t index);
 
 
-uint16_t device_dma_get_buffer_position(uint8_t unit, uint8_t index, uint16_t buffer_size);
+uint16_t actor_dma_get_buffer_position(uint8_t unit, uint8_t index, uint16_t buffer_size);
 
 
 /* Read from circular buffer into memory pool from interrupt*/
-void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t buffer_size, uint16_t *cursor, struct vpool *pool);
+void actor_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t buffer_size, uint16_t *cursor, struct vpool *pool);
 
 /* Combine DMA unit and index into a pointer */
-void *device_dma_pack_source(uint8_t unit, uint8_t index);
+void *actor_dma_pack_source(uint8_t unit, uint8_t index);
 
 /* Check if pointer contains packed unit/index info */
-bool_t device_dma_match_source(void *source, uint8_t unit, uint8_t index);
+bool_t actor_dma_match_source(void *source, uint8_t unit, uint8_t index);

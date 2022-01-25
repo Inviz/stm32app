@@ -3,18 +3,18 @@
 An operating system based on CANopenNode, libopencm3 and FreeRTOS that enables writing modular networking applications for STM32 microcontrollers.. 
 
 ## Features
-  * **CAN bus-first** - bulletproof wired networking for devices that shouldnt break
-  * **Actor-oriented** -  
-  * **Observable** - fully configurable via CANopen via device profiles, via UI or programmatically over network
+  * **CAN bus-first** - bulletproof wired networking for actors that shouldnt break
+  * **Actor-oriented** - individual objects sending messages to each other
   * **Event-driven** - loosely coupling, highly composable
   * **Cooperative** - pre-emptive multi-tasking with no effort  
-  * **Hardware independent** - aimed to support all STM32 devices transparently
+  * **Observable** - fully configurable via CANopen via actor profiles, via UI or programmatically over network
+  * **Hardware independent** - aimed to support all STM32 actors transparently
   * **Low overhead** - get what you paid for
   * **Batteries included** - use anything STM32 offers out of the box
 
 ## Standing on shoulders of giants
 
-* **CANopenNode** - higher level protocol for managing, configuring and connecting CAN devices (Apache 2)
+* **CANopenNode** - higher level protocol for managing, configuring and connecting CAN actors (Apache 2)
 * **libopencm3** - stm32 hardware-independency with no overhead (MIT)
 * **FreeRTOS** - a realtime OS for cooperative multitasking (LGPL)
 
@@ -22,7 +22,7 @@ An operating system based on CANopenNode, libopencm3 and FreeRTOS that enables w
 
 **Devices** are individual actors within the STM32.app with different responsibilities. They include user applications, peripherials, drivers and MCU subsystems. Devices need to communicate and cooperate with each other to produce complex behavior. They resemble objects 
 
-CANopen splits objects into device-specific (general framework) and manufacturer-specific (user application). STM32.app constitutes a framework of device-specific objects that all work together in a cooperative, non-blocking way.
+CANopen splits objects into actor-specific (general framework) and manufacturer-specific (user application). STM32.app constitutes a framework of actor-specific objects that all work together in a cooperative, non-blocking way.
   * MCU features
     - Timers
     - ADC
@@ -42,9 +42,9 @@ CANopen splits objects into device-specific (general framework) and manufacturer
     - Screens
     - Indicators (led, beepers, etc) 
 
-Each object is configured via CANopen dictionary record, and all the meaningful state is observed on the network. Configuration and commands between different network nodes happens by writing observed values by one devices to another. 
+Each object is configured via CANopen dictionary record, and all the meaningful state is observed on the network. Configuration and commands between different network nodes happens by writing observed values by one actors to another. 
 
-CANopen dictionary itself is created with CANopenEditor that presents a device profile with a lot of features and support of different devices that work together out of the box. The development and system design happens mostly by subtraction instead of addition. Creating a new device involves taking a profile with all the features and turning some of them away. The scripts allow overlaying a generic profile with custom configuration customizations, so that the same device can have slightly different settings, or be powered by mcus with different pin configuration, even cpu families.
+CANopen dictionary itself is created with CANopenEditor that presents a actor profile with a lot of features and support of different actors that work together out of the box. The development and system design happens mostly by subtraction instead of addition. Creating a new actor involves taking a profile with all the features and turning some of them away. The scripts allow overlaying a generic profile with custom configuration customizations, so that the same actor can have slightly different settings, or be powered by mcus with different pin configuration, even cpu families.
 
 # Cooperation
 STM32.app implements cheap asynchrony, prioritization of work, event-driven communication with queues and cooperation through easy to use primitives.
@@ -104,4 +104,4 @@ STM32.app provides a primitive called thread - a combination of task, a queue an
   * **Prioritization**: threads have different priorities.  
 
 # Networking
-Internal changes of state can be broardcasted to network as individual values or packed into PDO objects (8 bytes). CANopen provides ability to snapshot and send data from multiple devices simultaneously by simulating synchronous messaging. Devices can acquire addresses automatically, then can be monitored via heartbeats and orchestrated to boot up at once. Master nodes can log errors on the network and report issues.
+Internal changes of state can be broardcasted to network as individual values or packed into PDO objects (8 bytes). CANopen provides ability to snapshot and send data from multiple actors simultaneously by simulating synchronous messaging. Devices can acquire addresses automatically, then can be monitored via heartbeats and orchestrated to boot up at once. Master nodes can log errors on the network and report issues.

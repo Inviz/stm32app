@@ -1,14 +1,14 @@
 #ifndef INC_ENUMS
 #define INC_ENUMS
 #include "core/types.h"
+// defined in ./src/core/actor.h
+char* get_actor_phase_name (uint32_t v);
+// defined in ./src/core/actor.h
+char* get_actor_type_name (uint32_t v);
 // defined in ./src/core/app.h
 char* get_app_signal_name (uint32_t v);
 // defined in ./src/core/app.h
 char* get_app_properties_properties_name (uint32_t v);
-// defined in ./src/core/device.h
-char* get_device_phase_name (uint32_t v);
-// defined in ./src/core/device.h
-char* get_device_type_name (uint32_t v);
 // defined in ./src/core/event.h
 char* get_app_event_type_name (uint32_t v);
 // defined in ./src/core/event.h

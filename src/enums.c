@@ -1,4 +1,52 @@
 #include "enums.h"
+char* get_actor_phase_name (uint32_t v) {
+switch (v) {
+case 0: return "ACTOR_ENABLED";
+case 1: return "ACTOR_CONSTRUCTING";
+case 2: return "ACTOR_LINKING";
+case 3: return "ACTOR_STARTING";
+case 4: return "ACTOR_CALIBRATING";
+case 5: return "ACTOR_PREPARING";
+case 6: return "ACTOR_RUNNING";
+case 7: return "ACTOR_REQUESTING";
+case 8: return "ACTOR_RESPONDING";
+case 9: return "ACTOR_WORKING";
+case 10: return "ACTOR_IDLE";
+case 11: return "ACTOR_BUSY";
+case 12: return "ACTOR_RESETTING";
+case 13: return "ACTOR_PAUSING";
+case 14: return "ACTOR_PAUSED";
+case 15: return "ACTOR_RESUMING";
+case 16: return "ACTOR_STOPPING";
+case 17: return "ACTOR_STOPPED";
+case 18: return "ACTOR_DISABLED";
+case 19: return "ACTOR_DESTRUCTING";
+default: return "Unknown";
+}
+};
+
+char* get_actor_type_name (uint32_t v) {
+switch (v) {
+case 12288: return "APP";
+case 16384: return "DEVICE_CIRCUIT";
+case 24576: return "SYSTEM_MCU";
+case 24608: return "SYSTEM_CANOPEN";
+case 24832: return "MODULE_TIMER";
+case 25088: return "TRANSPORT_CAN";
+case 25120: return "TRANSPORT_SPI";
+case 25152: return "TRANSPORT_USART";
+case 25184: return "TRANSPORT_I2C";
+case 25216: return "TRANSPORT_MODBUS";
+case 25344: return "MODULE_ADC";
+case 28928: return "STORAGE_W25";
+case 32768: return "INPUT_SENSOR";
+case 33024: return "CONTROL_TOUCHSCREEN";
+case 36864: return "SCREEN_EPAPER";
+case 38912: return "INDICATOR_LED";
+default: return "Unknown";
+}
+};
+
 char* get_app_signal_name (uint32_t v) {
 switch (v) {
 case 0: return "APP_SIGNAL_OK";
@@ -28,54 +76,6 @@ case 2: return "CORE_APP_STORAGE_INDEX";
 case 3: return "CORE_APP_MCU_INDEX";
 case 4: return "CORE_APP_CANOPEN_INDEX";
 case 5: return "CORE_APP_PHASE";
-default: return "Unknown";
-}
-};
-
-char* get_device_phase_name (uint32_t v) {
-switch (v) {
-case 0: return "DEVICE_ENABLED";
-case 1: return "DEVICE_CONSTRUCTING";
-case 2: return "DEVICE_LINKING";
-case 3: return "DEVICE_STARTING";
-case 4: return "DEVICE_CALIBRATING";
-case 5: return "DEVICE_PREPARING";
-case 6: return "DEVICE_RUNNING";
-case 7: return "DEVICE_REQUESTING";
-case 8: return "DEVICE_RESPONDING";
-case 9: return "DEVICE_WORKING";
-case 10: return "DEVICE_IDLE";
-case 11: return "DEVICE_BUSY";
-case 12: return "DEVICE_RESETTING";
-case 13: return "DEVICE_PAUSING";
-case 14: return "DEVICE_PAUSED";
-case 15: return "DEVICE_RESUMING";
-case 16: return "DEVICE_STOPPING";
-case 17: return "DEVICE_STOPPED";
-case 18: return "DEVICE_DISABLED";
-case 19: return "DEVICE_DESTRUCTING";
-default: return "Unknown";
-}
-};
-
-char* get_device_type_name (uint32_t v) {
-switch (v) {
-case 12288: return "APP";
-case 16384: return "DEVICE_CIRCUIT";
-case 24576: return "SYSTEM_MCU";
-case 24608: return "SYSTEM_CANOPEN";
-case 24832: return "MODULE_TIMER";
-case 25088: return "TRANSPORT_CAN";
-case 25120: return "TRANSPORT_SPI";
-case 25152: return "TRANSPORT_USART";
-case 25184: return "TRANSPORT_I2C";
-case 25216: return "TRANSPORT_MODBUS";
-case 25344: return "MODULE_ADC";
-case 28928: return "STORAGE_W25";
-case 32768: return "INPUT_SENSOR";
-case 33024: return "CONTROL_TOUCHSCREEN";
-case 36864: return "SCREEN_EPAPER";
-case 38912: return "INDICATOR_LED";
 default: return "Unknown";
 }
 };
@@ -124,7 +124,7 @@ default: return "Unknown";
 }
 };
 
-char* get_device_circuit_properties_properties_name (uint32_t v) {
+char* get_actor_circuit_properties_properties_name (uint32_t v) {
 switch (v) {
 case 1: return "DEVICE_CIRCUIT_PORT";
 case 2: return "DEVICE_CIRCUIT_PIN";
@@ -215,7 +215,7 @@ default: return "Unknown";
 
 char* get_w25_commands_name (uint32_t v) {
 switch (v) {
-case 144: return "W25_CMD_MANUF_DEVICE";
+case 144: return "W25_CMD_MANUF_ACTOR";
 case 159: return "W25_CMD_JEDEC_ID";
 case 6: return "W25_CMD_UNLOCK";
 case 4: return "W25_CMD_LOCK";
