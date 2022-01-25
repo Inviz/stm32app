@@ -2,7 +2,7 @@
 #include "core/device.h"
 
 #define MAX_THREAD_SLEEP_TIME_LONG (((uint32_t)-1) / 2)
-#define MAX_THREAD_SLEEP_TIME 60000
+#define MAX_THREAD_SLEEP_TIME 5000
 #define IS_IN_ISR (SCB_ICSR & SCB_ICSR_VECTACTIVE)
 
 static app_signal_t app_thread_event_dispatch(app_thread_t *thread, app_event_t *event, device_t *first_device, size_t tick_index);
@@ -130,8 +130,8 @@ static app_signal_t app_thread_event_device_dispatch(app_thread_t *thread, app_e
     app_signal_t signal;
 
     if (app_thread_should_notify_device(thread, event, device, tick)) {
-        log_printf("~ %s:  dispatching #%s from %s to %s\n", app_thread_get_name(thread), get_app_event_type_name(event->type), get_device_type_name(event->producer->class->type), get_device_type_name(device->class->type));
-
+        log_printf("~ %s:  dispatching #%s from %s to %s\n", app_thread_get_name(thread), get_app_event_type_name(event->type),
+                   get_device_type_name(event->producer->class->type), get_device_type_name(device->class->type));
 
         if (event->type == APP_EVENT_THREAD_ALARM) {
             tick->next_time = -1;
@@ -181,7 +181,10 @@ static size_t app_thread_event_requeue(app_thread_t *thread, app_event_t *event,
     QueueHandle_t queue;
 
     switch (event->status) {
-    case APP_EVENT_WAITING: log_printf("No devices are listening to event: #%s\n", get_app_event_type_name(event->type)); break;
+    case APP_EVENT_WAITING:
+        if (event->type != APP_EVENT_THREAD_ALARM)
+            log_printf("No devices are listening to event: #%s\n", get_app_event_type_name(event->type));
+        break;
 
     // Some busy device wants to handle event later, so the event has to be re-queued
     case APP_EVENT_DEFERRED:
@@ -246,9 +249,9 @@ static inline bool_t app_thread_event_queue_shift(app_thread_t *thread, app_even
     // Try getting an event out of the queue without blocking. Thread blocks on notification signal instead
     if (!xQueueReceive(thread->queue, event, 0)) {
         // clear out previous event
-        // *event = (app_event_t) {}; 
+        // *event = (app_event_t) {};
         return false;
-    }  
+    }
     return true;
 }
 
@@ -279,7 +282,7 @@ static inline void app_thread_event_await(app_thread_t *thread, app_event_t *eve
 
         uint32_t notification = ulTaskNotifyTake(true, pdMS_TO_TICKS((uint32_t)timeout));
 
-#ifdef DEBUG        
+#ifdef DEBUG
         if (thread->device->app->current_thread != thread) {
             if (thread->device->app->current_thread != NULL)
                 log_printf("~ %s <= %s\n", app_thread_get_name(thread), app_get_current_thread_name(thread->device->app));
@@ -292,7 +295,6 @@ static inline void app_thread_event_await(app_thread_t *thread, app_event_t *eve
             // if no notification was recieved (value of signal being zero) within scheduled time,
             // it means that thread is woken up by schedule so synthetic wake up event is broadcasted
             *event = (app_event_t){.producer = thread->device->app->device, .type = APP_EVENT_THREAD_ALARM};
-            thread->next_time = thread->current_time + MAX_THREAD_SLEEP_TIME;
             log_printf("~ %s:  woke up on alert after %lims\n", app_thread_get_name(thread),
                        ((xTaskGetTickCount() - thread->current_time) * portTICK_PERIOD_MS));
             stop = true;
@@ -329,10 +331,14 @@ static inline void app_thread_event_await(app_thread_t *thread, app_event_t *eve
     // current time will only update after waking up
     thread->last_time = thread->current_time;
     thread->current_time = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    // tell thread to sleep if no work co
+    if (thread->next_time <= thread->current_time)
+        thread->next_time = thread->current_time + MAX_THREAD_SLEEP_TIME;
 }
 
 bool_t app_thread_notify_generic(app_thread_t *thread, uint32_t value, bool_t overwrite) {
-    log_printf("~ %s:  notifying #%s with %s\n", app_get_current_thread_name(thread->device->app), value < 50 ? get_app_signal_name(value) : (char ) value, app_thread_get_name(thread));
+    log_printf("~ %s:  notifying #%s with %s\n", app_get_current_thread_name(thread->device->app),
+               value < 50 ? get_app_signal_name(value) : (char)value, app_thread_get_name(thread));
     if (IS_IN_ISR) {
         static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         bool_t result = xTaskNotifyFromISR(thread->task, value, overwrite ? eSetValueWithOverwrite : eSetValueWithoutOverwrite,
@@ -345,7 +351,8 @@ bool_t app_thread_notify_generic(app_thread_t *thread, uint32_t value, bool_t ov
 }
 
 bool_t app_thread_publish_generic(app_thread_t *thread, app_event_t *event, bool_t to_front) {
-    log_printf("~ %s: %s publishing #%s for %s\n", app_get_current_thread_name(thread->device->app), get_device_type_name(event->producer->class->type), get_app_event_type_name(event->type), app_thread_get_name(thread));
+    log_printf("~ %s: %s publishing #%s for %s\n", app_get_current_thread_name(thread->device->app),
+               get_device_type_name(event->producer->class->type), get_app_event_type_name(event->type), app_thread_get_name(thread));
     if (IS_IN_ISR) {
         static BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         bool_t result = false;
@@ -375,7 +382,7 @@ void app_thread_tick_schedule(app_thread_t *thread, device_tick_t *tick, uint32_
     app_thread_schedule(thread, time);
 }
 
-int device_tick_allocate(device_tick_t **destination, device_tick_callback_t callback) {
+int device_tick_allocate(device_tick_t **destination, device_on_tick_t callback) {
     if (callback != NULL) {
         *destination = malloc(sizeof(device_tick_t));
         if (*destination == NULL) {
@@ -513,8 +520,7 @@ int app_threads_allocate(app_t *app) {
     return app_thread_allocate(&app->threads->input, app, (void (*)(void *ptr))app_thread_execute, "Input", 200, 20, 5, NULL) ||
            app_thread_allocate(&app->threads->catchup, app, (void (*)(void *ptr))app_thread_execute, "Catchup", 200, 100, 5, NULL) ||
            app_thread_allocate(&app->threads->high_priority, app, (void (*)(void *ptr))app_thread_execute, "High P", 200, 1, 4, NULL) ||
-           app_thread_allocate(&app->threads->medium_priority, app, (void (*)(void *ptr))app_thread_execute, "Medium P", 200, 1, 3,
-                               NULL) ||
+           app_thread_allocate(&app->threads->medium_priority, app, (void (*)(void *ptr))app_thread_execute, "Medium P", 200, 1, 3, NULL) ||
            app_thread_allocate(&app->threads->low_priority, app, (void (*)(void *ptr))app_thread_execute, "Low P", 200, 1, 2, NULL) ||
            app_thread_allocate(&app->threads->bg_priority, app, (void (*)(void *ptr))app_thread_execute, "Bg P", 200, 0, 1, NULL);
 }

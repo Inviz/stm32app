@@ -35,7 +35,7 @@ static app_signal_t circuit_link(device_circuit_t *circuit) {
 }
 
 // receive value from current sensor
-static app_signal_t circuit_callback_value(device_circuit_t *circuit, device_t *device, void *value, void *argument) {
+static app_signal_t circuit_on_value(device_circuit_t *circuit, device_t *device, void *value, void *argument) {
     (void)argument;
     if (circuit->current_sensor->device == device) {
         device_circuit_set_current(circuit, (uint16_t)((uint32_t)value));
@@ -75,6 +75,6 @@ device_class_t device_circuit_class = {
     .start = (app_method_t)circuit_start,
     .stop = (app_method_t)circuit_stop,
     .link = (app_method_t)circuit_link,
-    .callback_value = (device_callback_value_t)circuit_callback_value,
+    .on_value = (device_on_value_t)circuit_on_value,
     .property_write = circuit_property_write,
 };

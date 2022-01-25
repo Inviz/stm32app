@@ -1,5 +1,5 @@
 #include "canopen.h"
-
+#include "indicator/led.h"
 
 static void app_thread_canopen_notify(app_thread_t *thread);
 static void system_canopen_initialize_class(system_canopen_t *canopen);
@@ -107,16 +107,16 @@ static app_signal_t canopen_start(system_canopen_t *canopen) {
     system_canopen_initialize_class(canopen);
 
     /* Initialize CANopen itself */
-    err = CO_CANopenInit(canopen->instance,                   /* CANopen object */
-                         NULL,                                /* alternate NMT */
-                         NULL,                                /* alternate em */
-                         OD,                                  /* Object dictionary */
-                         OD_STATUS_BITS,                      /* Optional OD_statusBit */
-                         NMT_CONTROL,                         /* CO_NMT_control_t */
+    err = CO_CANopenInit(canopen->instance,                       /* CANopen object */
+                         NULL,                                    /* alternate NMT */
+                         NULL,                                    /* alternate em */
+                         OD,                                      /* Object dictionary */
+                         OD_STATUS_BITS,                          /* Optional OD_statusBit */
+                         NMT_CONTROL,                             /* CO_NMT_control_t */
                          canopen->properties->first_hb_time,      /* firstHBTime_ms */
                          canopen->properties->sdo_client_timeout, /* SDOserverTimeoutTime_ms */
                          canopen->properties->sdo_client_timeout, /* SDOclientTimeoutTime_ms */
-                         SDO_CLI_BLOCK,                       /* SDOclientBlockTransfer */
+                         SDO_CLI_BLOCK,                           /* SDOclientBlockTransfer */
                          canopen->properties->node_id, &errInfo);
 
     if (err == CO_ERROR_OD_PARAMETERS) {
@@ -155,6 +155,8 @@ static app_signal_t canopen_stop(system_canopen_t *canopen) {
 
 static app_signal_t canopen_link(system_canopen_t *canopen) {
     device_link(canopen->device, (void **)&canopen->can, canopen->properties->can_index, NULL);
+    device_link(canopen->device, (void **)&canopen->red_led, canopen->properties->red_led_index, NULL);
+    device_link(canopen->device, (void **)&canopen->green_led, canopen->properties->green_led_index, NULL);
     return 0;
 }
 
@@ -170,6 +172,11 @@ static app_signal_t canopen_tick_high_priority(system_canopen_t *canopen, void *
     case CO_RESET_QUIT: device_set_phase(canopen->device, DEVICE_RESETTING); break;
     default: break;
     }
+
+    if (canopen->red_led != NULL)
+        indicator_led_set_duty_cycle(canopen->red_led, CO_LED_RED(canopen->instance->LEDs, CO_LED_CANopen) ? 255 : 0);
+    if (canopen->green_led != NULL)
+        indicator_led_set_duty_cycle(canopen->green_led, CO_LED_GREEN(canopen->instance->LEDs, CO_LED_CANopen) ? 255 : 0);
 
     if (us_until_next != (uint32_t)-1) {
         app_thread_tick_schedule(thread, tick, thread->current_time + us_until_next / US_PER_TICK);
@@ -205,18 +212,6 @@ static app_signal_t canopen_tick_input(system_canopen_t *canopen, void *argument
     return 0;
 }
 
-static app_signal_t canopen_tick_bg_priority(system_canopen_t *canopen, void *argument, device_tick_t *tick, app_thread_t *thread) {
-    (void)argument;
-    (void)tick;
-    (void)thread;
-    uint8_t LED_red = CO_LED_RED(canopen->instance->LEDs, CO_LED_CANopen);
-    uint8_t LED_green = CO_LED_GREEN(canopen->instance->LEDs, CO_LED_CANopen);
-
-    (void)LED_red;
-    (void)LED_green;
-    return 0;
-}
-
 static app_signal_t canopen_phase(system_canopen_t *canopen, device_phase_t phase) {
     (void)canopen;
     (void)phase;
@@ -237,18 +232,17 @@ device_class_t system_canopen_class = {
     .size = sizeof(system_canopen_t),
     .phase_subindex = SYSTEM_CANOPEN_PHASE,
 
-    .validate = (app_method_t) canopen_validate,
+    .validate = (app_method_t)canopen_validate,
     .construct = (app_method_t)canopen_construct,
     .destruct = (app_method_t)canopen_destruct,
     .link = (app_method_t)canopen_link,
     .start = (app_method_t)canopen_start,
     .stop = (app_method_t)canopen_stop,
 
-    .tick_input = (device_tick_callback_t)canopen_tick_input,
-    .tick_high_priority = (device_tick_callback_t)canopen_tick_high_priority,
-    .tick_bg_priority = (device_tick_callback_t)canopen_tick_bg_priority,
+    .tick_input = (device_on_tick_t)canopen_tick_input,
+    .tick_high_priority = (device_on_tick_t)canopen_tick_high_priority,
 
-    .callback_phase = (device_callback_phase_t)canopen_phase,
+    .on_phase = (device_on_phase_t)canopen_phase,
     .property_write = canopen_property_write,
 };
 

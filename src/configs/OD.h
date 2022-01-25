@@ -16,7 +16,7 @@
 
         Created:      9/25/2021 2:03:07 AM
         Created By:   
-        Modified:     1/24/2022 3:48:01 AM
+        Modified:     1/25/2022 2:17:40 AM
         Modified By:  
 
     Device Info:
@@ -61,6 +61,7 @@
 #define OD_CNT_INPUT_SENSOR 1
 #define OD_CNT_CONTROL_TOUCHSCREEN 1
 #define OD_CNT_SCREEN_EPAPER 1
+#define OD_CNT_INDICATOR_LED 3
 
 
 /*******************************************************************************
@@ -271,10 +272,8 @@ typedef struct {
         uint8_t highestSub_indexSupported;
         uint16_t CAN_Index;
         uint8_t CAN_FIFO_Index;
-        uint8_t greenLedPort;
-        uint8_t greenLedPin;
-        uint8_t redLedPort;
-        uint8_t redLedPin;
+        uint16_t greenLedIndex;
+        uint16_t redLedIndex;
         uint16_t firstHB_Time;
         uint16_t SDO_ServerTimeout;
         uint16_t SDO_ClientTimeout;
@@ -328,7 +327,7 @@ typedef struct {
         uint8_t DMA_RxUnit;
         uint8_t DMA_RxStream;
         uint8_t DMA_RxChannel;
-        int16_t DMA_RxIdleTimeout;
+        uint32_t DMA_RxIdleTimeout;
         uint16_t rxBufferSize;
         uint16_t rxPoolMaxSize;
         uint16_t rxPoolInitialSize;
@@ -485,6 +484,27 @@ typedef struct {
         uint32_t CANopenIndex;
         uint8_t phase;
     } x3000_coreApp;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint8_t port;
+        uint8_t pin;
+        uint8_t phase;
+        uint8_t dutyCycle;
+    } x9800_indicatorLED_1;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint8_t port;
+        uint8_t pin;
+        uint8_t phase;
+        uint8_t dutyCycle;
+    } x9801_indicatorLED_2;
+    struct {
+        uint8_t highestSub_indexSupported;
+        uint8_t port;
+        uint8_t pin;
+        uint8_t phase;
+        uint8_t dutyCycle;
+    } x9900_signalBeeper_1;
 } OD_RAM_t;
 
 #ifndef OD_ATTR_PERSIST_COMM
@@ -559,6 +579,9 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H8000 &OD->list[50]
 #define OD_ENTRY_H8100 &OD->list[51]
 #define OD_ENTRY_H9000 &OD->list[52]
+#define OD_ENTRY_H9800 &OD->list[53]
+#define OD_ENTRY_H9801 &OD->list[54]
+#define OD_ENTRY_H9900 &OD->list[55]
 
 
 /*******************************************************************************
@@ -617,6 +640,9 @@ extern OD_ATTR_OD OD_t *OD;
 #define OD_ENTRY_H8000_inputSensor_1 &OD->list[50]
 #define OD_ENTRY_H8100_controlTouchscreen_1 &OD->list[51]
 #define OD_ENTRY_H9000_screenEpaper_1 &OD->list[52]
+#define OD_ENTRY_H9800_indicatorLED_1 &OD->list[53]
+#define OD_ENTRY_H9801_indicatorLED_2 &OD->list[54]
+#define OD_ENTRY_H9900_signalBeeper_1 &OD->list[55]
 
 
 /*******************************************************************************

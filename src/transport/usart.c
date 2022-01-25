@@ -156,6 +156,6 @@ device_class_t transport_usart_class = {
     .destruct = (app_method_t)usart_destruct,
     .start = (app_method_t)usart_start,
     .stop = (app_method_t)usart_stop,
-    .callback_signal = (device_callback_signal_t)usart_signal,
-    .callback_link = (device_callback_argument_t)usart_accept,
+    .on_signal = (device_on_signal_t)usart_signal,
+    .on_link = (device_on_link_t)usart_accept,
 };

@@ -213,13 +213,11 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .startupTime = 0x00000000
     },
     .x6020_systemCANopen = {
-        .highestSub_indexSupported = 0x0C,
+        .highestSub_indexSupported = 0x0A,
         .CAN_Index = 0x6200,
         .CAN_FIFO_Index = 0x00,
-        .greenLedPort = 0x00,
-        .greenLedPin = 0x00,
-        .redLedPort = 0x00,
-        .redLedPin = 0x00,
+        .greenLedIndex = 0x9800,
+        .redLedIndex = 0x9801,
         .firstHB_Time = 0x0000,
         .SDO_ServerTimeout = 0x03E8,
         .SDO_ClientTimeout = 0x01F4,
@@ -270,17 +268,17 @@ OD_ATTR_PERSIST_COMM OD_PERSIST_COMM_t OD_PERSIST_COMM = {
         .isSlave = 0x00,
         .softwareSS_Control = 0x00,
         .mode = 0x00,
-        .DMA_RxUnit = 0x01,
-        .DMA_RxStream = 0x01,
-        .DMA_RxChannel = 0x01,
-        .DMA_RxIdleTimeout = 1,
+        .DMA_RxUnit = 0x02,
+        .DMA_RxStream = 0x00,
+        .DMA_RxChannel = 0x03,
+        .DMA_RxIdleTimeout = 0x00000004,
         .rxBufferSize = 0x0040,
         .rxPoolMaxSize = 0x1000,
         .rxPoolInitialSize = 0x0020,
         .rxPoolBlockSize = 0x0020,
-        .DMA_TxUnit = 0x01,
-        .DMA_TxStream = 0x01,
-        .DMA_TxChannel = 0x01,
+        .DMA_TxUnit = 0x02,
+        .DMA_TxStream = 0x03,
+        .DMA_TxChannel = 0x03,
         .AF_Index = 0x01,
         .SS_Port = 0x01,
         .SS_Pin = 0x04,
@@ -429,6 +427,27 @@ OD_ATTR_RAM OD_RAM_t OD_RAM = {
         .MCU_Index = 0x00006000,
         .CANopenIndex = 0x00006020,
         .phase = 0x00
+    },
+    .x9800_indicatorLED_1 = {
+        .highestSub_indexSupported = 0x04,
+        .port = 0x05,
+        .pin = 0x03,
+        .phase = 0x00,
+        .dutyCycle = 0x00
+    },
+    .x9801_indicatorLED_2 = {
+        .highestSub_indexSupported = 0x04,
+        .port = 0x07,
+        .pin = 0x09,
+        .phase = 0x00,
+        .dutyCycle = 0x00
+    },
+    .x9900_signalBeeper_1 = {
+        .highestSub_indexSupported = 0x04,
+        .port = 0x07,
+        .pin = 0x07,
+        .phase = 0x00,
+        .dutyCycle = 0x00
     }
 };
 
@@ -474,7 +493,7 @@ typedef struct {
     OD_obj_record_t o_3000_coreApp[6];
     OD_obj_record_t o_4000_deviceCircuit_1[12];
     OD_obj_record_t o_6000_systemMCU[7];
-    OD_obj_record_t o_6020_systemCANopen[13];
+    OD_obj_record_t o_6020_systemCANopen[11];
     OD_obj_record_t o_6100_moduleTimer_1[6];
     OD_obj_record_t o_6101_moduleTimer_2[6];
     OD_obj_record_t o_6102_moduleTimer_3[6];
@@ -491,6 +510,9 @@ typedef struct {
     OD_obj_record_t o_8000_inputSensor_1[7];
     OD_obj_record_t o_8100_controlTouchscreen_1[14];
     OD_obj_record_t o_9000_screenEpaper_1[14];
+    OD_obj_record_t o_9800_indicatorLED_1[5];
+    OD_obj_record_t o_9801_indicatorLED_2[5];
+    OD_obj_record_t o_9900_signalBeeper_1[5];
 } ODObjs_t;
 
 static CO_PROGMEM ODObjs_t ODObjs = {
@@ -1534,62 +1556,50 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataLength = 1
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.greenLedPort,
+            .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.greenLedIndex,
             .subIndex = 3,
-            .attribute = ODA_SDO_RW,
-            .dataLength = 1
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 2
         },
         {
-            .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.greenLedPin,
+            .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.redLedIndex,
             .subIndex = 4,
-            .attribute = ODA_SDO_RW,
-            .dataLength = 1
-        },
-        {
-            .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.redLedPort,
-            .subIndex = 5,
-            .attribute = ODA_SDO_RW,
-            .dataLength = 1
-        },
-        {
-            .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.redLedPin,
-            .subIndex = 6,
-            .attribute = ODA_SDO_RW,
-            .dataLength = 1
+            .attribute = ODA_SDO_RW | ODA_MB,
+            .dataLength = 2
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.firstHB_Time,
-            .subIndex = 7,
+            .subIndex = 5,
             .attribute = ODA_SDO_RW | ODA_MB,
             .dataLength = 2
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.SDO_ServerTimeout,
-            .subIndex = 8,
+            .subIndex = 6,
             .attribute = ODA_SDO_RW | ODA_MB,
             .dataLength = 2
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.SDO_ClientTimeout,
-            .subIndex = 9,
+            .subIndex = 7,
             .attribute = ODA_SDO_RW | ODA_MB,
             .dataLength = 2
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.phase,
-            .subIndex = 10,
+            .subIndex = 8,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.nodeID,
-            .subIndex = 11,
+            .subIndex = 9,
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6020_systemCANopen.bitrate,
-            .subIndex = 12,
+            .subIndex = 10,
             .attribute = ODA_SDO_RW | ODA_MB,
             .dataLength = 4
         }
@@ -1829,7 +1839,7 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.DMA_RxIdleTimeout,
             .subIndex = 7,
             .attribute = ODA_SDO_RW | ODA_MB,
-            .dataLength = 2
+            .dataLength = 4
         },
         {
             .dataOrig = &OD_PERSIST_COMM.x6220_transportSPI_1.rxBufferSize,
@@ -2525,6 +2535,102 @@ static CO_PROGMEM ODObjs_t ODObjs = {
             .attribute = ODA_SDO_RW,
             .dataLength = 1
         }
+    },
+    .o_9800_indicatorLED_1 = {
+        {
+            .dataOrig = &OD_RAM.x9800_indicatorLED_1.highestSub_indexSupported,
+            .subIndex = 0,
+            .attribute = ODA_SDO_R,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9800_indicatorLED_1.port,
+            .subIndex = 1,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9800_indicatorLED_1.pin,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9800_indicatorLED_1.phase,
+            .subIndex = 3,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9800_indicatorLED_1.dutyCycle,
+            .subIndex = 4,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        }
+    },
+    .o_9801_indicatorLED_2 = {
+        {
+            .dataOrig = &OD_RAM.x9801_indicatorLED_2.highestSub_indexSupported,
+            .subIndex = 0,
+            .attribute = ODA_SDO_R,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9801_indicatorLED_2.port,
+            .subIndex = 1,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9801_indicatorLED_2.pin,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9801_indicatorLED_2.phase,
+            .subIndex = 3,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9801_indicatorLED_2.dutyCycle,
+            .subIndex = 4,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        }
+    },
+    .o_9900_signalBeeper_1 = {
+        {
+            .dataOrig = &OD_RAM.x9900_signalBeeper_1.highestSub_indexSupported,
+            .subIndex = 0,
+            .attribute = ODA_SDO_R,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9900_signalBeeper_1.port,
+            .subIndex = 1,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9900_signalBeeper_1.pin,
+            .subIndex = 2,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9900_signalBeeper_1.phase,
+            .subIndex = 3,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        },
+        {
+            .dataOrig = &OD_RAM.x9900_signalBeeper_1.dutyCycle,
+            .subIndex = 4,
+            .attribute = ODA_SDO_RW,
+            .dataLength = 1
+        }
     }
 };
 
@@ -2569,7 +2675,7 @@ static OD_ATTR_OD OD_entry_t ODList[] = {
     {0x3000, 0x06, ODT_REC, &ODObjs.o_3000_coreApp, NULL},
     {0x4000, 0x0C, ODT_REC, &ODObjs.o_4000_deviceCircuit_1, NULL},
     {0x6000, 0x07, ODT_REC, &ODObjs.o_6000_systemMCU, NULL},
-    {0x6020, 0x0D, ODT_REC, &ODObjs.o_6020_systemCANopen, NULL},
+    {0x6020, 0x0B, ODT_REC, &ODObjs.o_6020_systemCANopen, NULL},
     {0x6100, 0x06, ODT_REC, &ODObjs.o_6100_moduleTimer_1, NULL},
     {0x6101, 0x06, ODT_REC, &ODObjs.o_6101_moduleTimer_2, NULL},
     {0x6102, 0x06, ODT_REC, &ODObjs.o_6102_moduleTimer_3, NULL},
@@ -2586,6 +2692,9 @@ static OD_ATTR_OD OD_entry_t ODList[] = {
     {0x8000, 0x07, ODT_REC, &ODObjs.o_8000_inputSensor_1, NULL},
     {0x8100, 0x0E, ODT_REC, &ODObjs.o_8100_controlTouchscreen_1, NULL},
     {0x9000, 0x0E, ODT_REC, &ODObjs.o_9000_screenEpaper_1, NULL},
+    {0x9800, 0x05, ODT_REC, &ODObjs.o_9800_indicatorLED_1, NULL},
+    {0x9801, 0x05, ODT_REC, &ODObjs.o_9801_indicatorLED_2, NULL},
+    {0x9900, 0x05, ODT_REC, &ODObjs.o_9900_signalBeeper_1, NULL},
     {0x0000, 0x00, 0, NULL, NULL}
 };
 

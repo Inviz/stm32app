@@ -32,13 +32,13 @@ size_t app_device_type_enumerate(app_t *app, OD_t *od, device_class_t *class,
 
         device_t *device = &destination[offset + count - 1];
         device->seq = seq;
-        device->properties = properties;
+        device->entry = properties;
         device->class = class;
 
-        device->properties_extension.write = class->property_write == NULL ? OD_writeOriginal : class->property_write;
-        device->properties_extension.read = class->property_read == NULL ? OD_readOriginal : class->property_read;
+        device->entry_extension.write = class->property_write == NULL ? OD_writeOriginal : class->property_write;
+        device->entry_extension.read = class->property_read == NULL ? OD_readOriginal : class->property_read;
 
-        OD_extension_init(properties, &device->properties_extension);
+        OD_extension_init(properties, &device->entry_extension);
     }
     return count;
 }

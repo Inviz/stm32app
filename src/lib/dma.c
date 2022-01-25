@@ -3,10 +3,6 @@
 
 uint32_t dma_get_address(uint8_t index) {
     switch (index) {
-#ifdef DMA3_BASE
-    case 3:
-        return DMA3;
-#endif
 #ifdef DMA2_BASE
     case 2:
         return DMA2;
@@ -18,16 +14,50 @@ uint32_t dma_get_address(uint8_t index) {
 
 uint32_t dma_get_clock_address(uint8_t index) {
     switch (index) {
-#ifdef DMA3_BASE
-    case 3:
-        return RCC_DMA3;
-#endif
 #ifdef DMA2_BASE
     case 2:
         return RCC_DMA2;
 #endif
     default:
         return RCC_DMA1;
+    }
+}
+
+static inline uint32_t dma_get_peripherial_clock(uint8_t index) {
+    switch (index) {
+#ifdef DMA2_BASE
+    case 2:
+#if defined(RCC_AHB1ENR_DMA2EN)
+    return RCC_AHB1ENR_DMA2EN;
+#elif defined(RCC_AHB2ENR_DMA2EN)
+    return RCC_AHB2ENR_DMA2EN;
+#endif
+#endif
+    default:
+#if defined(RCC_AHB1ENR_DMA1EN)
+    return RCC_AHB1ENR_DMA1EN;
+#elif defined(RCC_AHB2ENR_DMA1EN)
+    return RCC_AHB2ENR_DMA1EN;
+#endif
+    }
+}
+
+static inline volatile uint32_t *dma_get_ahb(uint8_t index) {
+    switch (index) {
+#ifdef DMA2_BASE
+    case 2:
+#if defined(RCC_AHB1ENR_DMA2EN)
+    return &RCC_AHB1ENR;
+#elif defined(RCC_AHB2ENR_DMA2EN)
+    return &RCC_AHB2ENR;
+#endif
+#endif
+    default:
+#if defined(RCC_AHB1ENR)
+    return &RCC_AHB1ENR;
+#elif defined(RCC_AHB2ENR_DMA1EN)
+    return &RCC_AHB2ENR;
+#endif
     }
 }
 
@@ -58,34 +88,7 @@ uint32_t nvic_dma_get_channel_base(uint8_t index) {
     }
 }
 
-void dma_enable_channel_or_stream(uint32_t dma, uint8_t index) {
-#ifdef DMA_CHANNEL1
-
-    dma_enable_channel(dma, index);
-#else
-    dma_enable_stream(dma, index);
-#endif
-}
-
-void dma_reset_channel_or_stream(uint32_t dma, uint8_t index) {
-#ifdef DMA_CHANNEL1
-
-    dma_channel_reset(dma, index);
-#else
-    dma_stream_reset(dma, index);
-#endif
-}
-
-void dma_disable_channel_or_stream(uint32_t dma, uint8_t index) {
-#ifdef DMA_CHANNEL1
-    dma_disable_channel(dma, index);
-#else
-    dma_disable_stream(dma, index);
-#endif
-}
-
-
-uint8_t dma_get_interrupt_for_channel_or_stream(uint32_t dma, uint8_t index) {
+uint8_t dma_get_interrupt_for_stream(uint32_t dma, uint8_t index) {
 #ifdef DMA_CHANNEL1
     switch (dma) {
         case 2:
@@ -116,11 +119,11 @@ void devices_dma_notify(uint8_t unit, uint8_t index) {
     volatile device_t *device = devices_dma[DMA_INDEX(unit, index)];
     if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF)) {
         error_printf("DMA Error in channel %i", index);
-        if (device->class->callback_signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
+        if (device->class->on_signal(device->object, NULL, APP_SIGNAL_DMA_ERROR, device_dma_pack_source(unit, index))) {
             dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_TEIF | DMA_DMEIF | DMA_FEIF);
         }
     } else if (dma_get_interrupt_flag(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF)) {
-        if (device->class->callback_signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
+        if (device->class->on_signal(device->object, NULL, APP_SIGNAL_DMA_TRANSFERRING, device_dma_pack_source(unit, index)) == 0) {
             dma_clear_interrupt_flags(dma_get_address(unit), index, DMA_HTIF | DMA_TCIF);
         }
     }
@@ -154,48 +157,63 @@ void device_dma_ingest(uint8_t unit, uint8_t index, uint8_t *buffer, uint16_t bu
     }
 }
 
-void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
-    uint32_t dma_address = dma_get_address(unit);
-    dma_disable_channel_or_stream(dma_address, stream);
-    dma_reset_channel_or_stream(dma_address, stream);
-    nvic_disable_irq(nvic_dma_get_channel_base(unit) + stream);
-}
-
 void device_dma_rx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+    log_printf("DMA%u(%u/%u)\tRX started\t(%u bytes)\n", unit + 1, stream, channel, size);
 	uint32_t dma_address = dma_get_address(unit);
 
-	dma_reset_channel_or_stream(dma_address, stream);
+    rcc_periph_clock_enable(dma_get_clock_address(unit));
+    rcc_peripheral_enable_clock(dma_get_ahb(unit), dma_get_peripherial_clock(unit));
+
+	dma_stream_reset(dma_address, stream);
+    dma_disable_stream(dma_address, stream);
+    dma_channel_select(dma_address, stream, channel << DMA_SxCR_CHSEL_SHIFT);
+
+    dma_disable_peripheral_increment_mode(dma_address, stream);
+    dma_enable_memory_increment_mode(dma_address, stream);
 
 	dma_set_peripheral_address(dma_address, stream, periphery_address);
 	dma_set_memory_address(dma_address, stream, (uint32_t)data);
 	dma_set_number_of_data(dma_address, stream, size);
+
 	dma_set_read_from_peripheral(dma_address, stream);
-	dma_enable_memory_increment_mode(dma_address, stream);
+    dma_enable_circular_mode(dma_address, stream);
+
 	dma_set_peripheral_size(dma_address, stream, DMA_PSIZE_8BIT);
 	dma_set_memory_size(dma_address, stream, DMA_MSIZE_8BIT);
 	dma_set_priority(dma_address, stream, DMA_PL_VERY_HIGH);
 
-    rcc_periph_clock_enable(dma_get_clock_address(unit));
+    dma_enable_direct_mode(dma_address, stream);
+    dma_disable_fifo_error_interrupt(dma_address, stream);
+    dma_enable_direct_mode_error_interrupt(dma_address, stream);
+
 	dma_enable_transfer_complete_interrupt(dma_address, stream);
+    dma_enable_half_transfer_interrupt(dma_address, stream);
 
-	dma_enable_channel_or_stream(DMA1, stream);
+	dma_enable_stream(DMA1, stream);
 }
 
-void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+void device_dma_rx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+    log_printf("DMA%u(%u/%u)\tTX stopped\n", unit + 1, stream, channel);
     uint32_t dma_address = dma_get_address(unit);
-    dma_disable_channel_or_stream(dma_address, stream);
-    dma_reset_channel_or_stream(dma_address, stream);
-    nvic_enable_irq(nvic_dma_get_channel_base(unit) + stream);
+    dma_disable_stream(dma_address, stream);
+    dma_stream_reset(dma_address, stream);
+    nvic_disable_irq(nvic_dma_get_channel_base(unit) + stream);
 }
-
 
 void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t stream, uint8_t channel, uint8_t *data, size_t size) {
+    log_printf("DMA%u(%u/%u)\tTX started\t(%u bytes)\n", unit + 1, stream, channel, size);
     uint32_t dma_address = dma_get_address(unit);
-
-    dma_channel_select(dma_address, stream, channel);
+    rcc_periph_clock_enable(dma_get_clock_address(unit));
+    rcc_peripheral_enable_clock(dma_get_ahb(unit), dma_get_peripherial_clock(unit));
+    
+	dma_stream_reset(dma_address, stream);
+    dma_disable_stream(dma_address, stream);
+    dma_channel_select(dma_address, stream, channel << DMA_SxCR_CHSEL_SHIFT);
+    
     dma_set_peripheral_address(dma_address, stream, periphery_address);
     dma_set_memory_address(dma_address, stream, (uint32_t)data);
     dma_set_number_of_data(dma_address, stream, size);
+    dma_disable_peripheral_increment_mode(dma_address, stream);
 
     dma_set_read_from_memory(dma_address, stream);
     dma_enable_memory_increment_mode(dma_address, stream);
@@ -204,13 +222,26 @@ void device_dma_tx_start(uint32_t periphery_address, uint8_t unit, uint8_t strea
     dma_set_memory_size(dma_address, stream, DMA_MSIZE_8BIT);
     dma_set_priority(dma_address, stream, DMA_PL_VERY_HIGH);
 
-    dma_enable_transfer_complete_interrupt(dma_address, stream);
+    dma_enable_direct_mode(dma_address, stream);
+    dma_disable_fifo_error_interrupt(dma_address, stream);
+    dma_enable_direct_mode_error_interrupt(dma_address, stream);
 
-    rcc_periph_clock_enable(dma_get_clock_address(unit));
+    dma_enable_transfer_complete_interrupt(dma_address, stream);
+    dma_enable_transfer_error_interrupt(dma_address, stream);
+    dma_disable_half_transfer_interrupt(dma_address, stream);
+
     nvic_set_priority(nvic_dma_get_channel_base(unit) + stream, 1);
     nvic_enable_irq(nvic_dma_get_channel_base(unit) + stream);
 
-    dma_enable_channel_or_stream(dma_address, stream);
+    dma_enable_stream(dma_address, stream);
+}
+
+void device_dma_tx_stop(uint8_t unit, uint8_t stream, uint8_t channel) {
+    log_printf("DMA%u(%u/%u)\tTX stopped\n", unit + 1, stream, channel);
+    uint32_t dma_address = dma_get_address(unit);
+    dma_disable_stream(dma_address, stream);
+    dma_stream_reset(dma_address, stream);
+    nvic_enable_irq(nvic_dma_get_channel_base(unit) + stream);
 }
 
 #ifdef DMA_CHANNEL1
@@ -264,3 +295,4 @@ void dma2_stream5_isr(void) { devices_dma_notify(2, 5); }
 void dma2_stream6_isr(void) { devices_dma_notify(2, 6); }
 void dma2_stream7_isr(void) { devices_dma_notify(2, 7); }
 #endif
+

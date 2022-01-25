@@ -46,6 +46,6 @@ device_class_t device_blank_class = {
     .link = (app_method_t)blank_link,
     .start = (app_method_t)blank_start,
     .stop = (app_method_t)blank_stop,
-    .callback_phase = (device_callback_phase_t)blank_phase,
+    .on_phase = (device_on_phase_t)blank_phase,
     .property_write = blank_property_write,
 };

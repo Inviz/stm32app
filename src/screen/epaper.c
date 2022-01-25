@@ -429,6 +429,6 @@ device_class_t screen_epaper_class = {
     .start = (app_method_t) epaper_start,
     .stop = (app_method_t) epaper_stop,
     .link = (app_method_t) epaper_link,
-    .callback_phase = (device_callback_phase_t)epaper_phase,
+    .on_phase = (device_on_phase_t)epaper_phase,
     .property_write = epaper_properties_property_write,
 };

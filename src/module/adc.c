@@ -164,10 +164,10 @@ device_class_t module_adc_class = {
     .validate = (app_method_t)adc_validate,
     .construct = (app_method_t)adc_construct,
     .destruct = (app_method_t)adc_destruct,
-    .callback_link = (device_callback_argument_t)adc_accept,
-    .callback_value = (device_callback_value_t)adc_receive,
+    .on_link = (device_on_link_t)adc_accept,
+    .on_value = (device_on_value_t)adc_receive,
     //.high_priority = (int (*)(void *, uint32_t time_passed, uint32_t *next_tick))module_adc_high_priority,
-    .callback_phase = (device_callback_phase_t)adc_phase,
+    .on_phase = (device_on_phase_t)adc_phase,
     .start = (app_method_t)adc_start,
     .stop = (app_method_t)adc_stop,
 };
@@ -175,10 +175,10 @@ device_class_t module_adc_class = {
 void adc_dma_setup(module_adc_t *adc) {
     if (adc->dma_address == DMA1) {
         rcc_periph_clock_enable(RCC_DMA1);
-        nvic_enable_irq(dma_get_interrupt_for_channel_or_stream(adc->properties->dma_unit, adc->properties->dma_stream));
+        nvic_enable_irq(dma_get_interrupt_for_stream(adc->properties->dma_unit, adc->properties->dma_stream));
     }
     dma_channel_select(adc->dma_address, adc->properties->dma_stream, adc->properties->dma_channel);
-    dma_disable_channel_or_stream(adc->dma_address, adc->properties->dma_stream);
+    dma_disable_stream(adc->dma_address, adc->properties->dma_stream);
 
     dma_enable_circular_mode(adc->dma_address, adc->properties->dma_stream);
     dma_enable_memory_increment_mode(adc->dma_address, adc->properties->dma_stream);
@@ -193,7 +193,7 @@ void adc_dma_setup(module_adc_t *adc) {
     dma_set_number_of_data(adc->dma_address, adc->properties->dma_stream, adc->sample_buffer_size);
 
     dma_enable_transfer_complete_interrupt(adc->dma_address, adc->properties->dma_stream);
-    dma_enable_channel_or_stream(adc->dma_address, adc->properties->dma_stream);
+    dma_enable_stream(adc->dma_address, adc->properties->dma_stream);
 }
 
 size_t adc_integrate_samples(module_adc_t *adc) {

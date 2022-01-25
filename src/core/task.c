@@ -53,8 +53,8 @@ app_task_signal_t app_task_advance(app_task_t *task) {
 }
 
 app_signal_t app_task_finalize(app_task_t *task) {
-  if (task->device->class->callback_task != NULL) {
-    task->device->class->callback_task(task->device->object, task);
+  if (task->device->class->on_task != NULL) {
+    task->device->class->on_task(task->device->object, task);
   }
   device_event_finalize(task->device, &task->inciting_event);
   device_event_finalize(task->device, &task->awaited_event);

@@ -1,18 +1,19 @@
 #include "device.h"
+#include "301/CO_ODinterface.h"
 #include "system/canopen.h"
 
 int device_send(device_t *device, device_t *origin, void *value, void *argument) {
-    if (device->class->callback_value == NULL) {
+    if (device->class->on_value == NULL) {
         return 1;
     }
-    return device->class->callback_value(device->object, origin, value, argument);
+    return device->class->on_value(device->object, origin, value, argument);
 }
 
 int device_signal(device_t *device, device_t *origin, app_signal_t signal, void *argument) {
-    if (device->class->callback_signal == NULL) {
+    if (device->class->on_signal == NULL) {
         return 1;
     }
-    return device->class->callback_signal(device->object, origin, signal, argument);
+    return device->class->on_signal(device->object, origin, signal, argument);
 }
 
 int device_link(device_t *device, void **destination, uint16_t index, void *argument) {
@@ -22,14 +23,15 @@ int device_link(device_t *device, void **destination, uint16_t index, void *argu
     device_t *target = app_device_find(device->app, index);
     if (target != NULL) {
         *destination = target->object;
-        if (target->class->callback_link != NULL) {
-            target->class->callback_link(target->object, device, argument);
+        if (target->class->on_link != NULL) {
+            target->class->on_link(target->object, device, argument);
         }
 
         return 0;
     } else {
         *destination = NULL;
-        log_printf("    ! Device 0x%x (%s) could not find device 0x%x\n", device_index(device), get_device_type_name(device->class->type), index);
+        log_printf("    ! Device 0x%x (%s) could not find device 0x%x\n", device_index(device), get_device_type_name(device->class->type),
+                   index);
         device_set_phase(device, DEVICE_DISABLED);
         device_error_report(device, CO_EM_INCONSISTENT_OBJECT_DICT, CO_EMC_ADDITIONAL_MODUL);
         return 1;
@@ -46,7 +48,9 @@ int device_allocate(device_t *device) {
     // by convention each object struct has pointer to device as its first member
     obj->device = device;
     // second member is `properties` poiting to memory struct in OD
-    obj->properties = OD_getPtr(device->properties, 0x00, 0, NULL);
+    obj->properties = OD_getPtr(device->entry, 0x00, 0, NULL);
+
+    device->entry_extension.object = device->object;
 
     return device_ticks_allocate(device);
 }
@@ -71,7 +75,7 @@ int device_timeout_check(uint32_t *clock, uint32_t time_since_last_tick, uint32_
 
 app_signal_t device_event_accept_and_process_generic(device_t *device, app_event_t *event, app_event_t *destination,
                                                      app_event_status_t ready_status, app_event_status_t busy_status,
-                                                     device_event_handler_t handler) {
+                                                     device_on_event_t handler) {
     // Check if destination can store the incoming event, otherwise device will be considered busy
     if (destination != NULL || destination->type != APP_EVENT_IDLE) {
         event->consumer = device;
@@ -88,7 +92,7 @@ app_signal_t device_event_accept_and_process_generic(device_t *device, app_event
 }
 
 app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
-                                                        device_task_t handler, app_event_status_t ready_status,
+                                                        device_on_task_t handler, app_event_status_t ready_status,
                                                         app_event_status_t busy_status) {
     app_signal_t signal = device_event_accept_and_process_generic(device, event, &task->inciting_event, ready_status, busy_status, NULL);
     if (signal == APP_SIGNAL_OK) {
@@ -100,14 +104,14 @@ app_signal_t device_event_accept_and_start_task_generic(device_t *device, app_ev
         task->thread = thread;
         task->tick = NULL;
         task->counter = 0;
-        log_printf("~ %s: New task via #%s\n", app_thread_get_name(thread), get_app_event_type_name(event->type));
+        log_printf("~ %s: New task for %s via #%s\n", get_device_type_name(device->class->type), app_thread_get_name(thread), get_app_event_type_name(event->type));
         app_thread_device_schedule(thread, device, thread->current_time);
     }
     return signal;
 }
 
 app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_event_t *event, app_task_t *task, app_thread_t *thread,
-                                                          device_task_t handler, app_event_status_t ready_status,
+                                                          device_on_task_t handler, app_event_status_t ready_status,
                                                           app_event_status_t busy_status) {
     if (task->handler != handler) {
         event->status = busy_status;
@@ -120,14 +124,12 @@ app_signal_t device_event_accept_and_pass_to_task_generic(device_t *device, app_
     return signal;
 }
 
-/* Attempt to store event in a memory destination if it's not occupied yet */
-void device_set_phase(device_t *device, device_phase_t phase) {
-    if (device_get_phase(device) != phase) {
-        log_printf("  - Device phase: 0x%x %s %s <= %s\n", device_index(device),
-                   get_device_type_name(device->class->type), get_device_phase_name(phase), get_device_phase_name(device_get_phase(device)));
-
-        device_set_phase_directly(device, phase);
-    }
+void device_on_phase_change(device_t *device, device_phase_t phase) {
+    #if DEBUG
+    log_printf("  - Device phase: 0x%x %s %s <= %s\n", device_index(device), get_device_type_name(device->class->type),
+               get_device_phase_name(phase), get_device_phase_name(device->previous_phase));
+        device->previous_phase = phase;
+    #endif
 
     switch (phase) {
     case DEVICE_CONSTRUCTING:
@@ -182,8 +184,8 @@ void device_set_phase(device_t *device, device_phase_t phase) {
     default: break;
     }
 
-    if (device->class->callback_phase != NULL) {
-        device->class->callback_phase(device->object, phase);
+    if (device->class->on_phase != NULL) {
+        device->class->on_phase(device->object, phase);
     }
 }
 
@@ -197,8 +199,8 @@ void device_event_subscribe(device_t *device, app_event_type_t type) {
 
 app_signal_t device_event_report(device_t *device, app_event_t *event) {
     (void)device;
-    if (event->producer && event->producer->class->callback_event) {
-        return event->producer->class->callback_event(event->producer->object, event);
+    if (event->producer && event->producer->class->on_event) {
+        return event->producer->class->on_event(event->producer->object, event);
     } else {
         return APP_SIGNAL_OK;
     }
@@ -206,6 +208,10 @@ app_signal_t device_event_report(device_t *device, app_event_t *event) {
 
 app_signal_t device_event_finalize(device_t *device, app_event_t *event) {
     if (event != NULL && event->type != APP_EVENT_IDLE) {
+
+        log_printf("~ %s: %s finalizing #%s of %s\n", app_get_current_thread_name(device->app),
+                get_device_type_name(device->class->type), get_app_event_type_name(event->type), get_device_type_name(event->producer->class->type));
+                
         device_event_report(device, event);
         memset(event, 0, sizeof(app_event_t));
     }
@@ -222,11 +228,74 @@ app_signal_t device_tick_catchup(device_t *device, device_tick_t *tick) {
     return APP_SIGNAL_OK;
 }
 inline void device_gpio_set(uint8_t port, uint8_t pin) {
-    return gpio_set(GPIOX(port), pin);
+    return gpio_set(GPIOX(port), 1 << pin);
 }
 inline void device_gpio_clear(uint8_t port, uint8_t pin) {
-    return gpio_clear(GPIOX(port), pin);
+    return gpio_clear(GPIOX(port), 1 << pin);
 }
 inline uint32_t device_gpio_get(uint8_t port, uint8_t pin) {
-    return gpio_get(GPIOX(port), pin);
+    return gpio_get(GPIOX(port), 1 << pin);
+}
+
+typedef struct {
+    void *dataOrig;       /**< Pointer to data */
+    uint8_t subIndex;     /**< Sub index of element. */
+    OD_attr_t attribute;  /**< Attribute bitfield, see @ref OD_attributes_t */
+    OD_size_t dataLength; /**< Data length in bytes */
+} OD_obj_record_t;
+
+ODR_t device_set_property(device_t *device, void *value, size_t size, uint8_t index) {
+    OD_obj_record_t *odo = &((OD_obj_record_t *)device->entry->odObject)[index];
+
+    // bail out quickly if value hasnt changed
+    if (memcmp(odo->dataOrig, value, size) == 0) {
+        return 0;
+    }
+
+    // special case of phase handler
+    if (index == device->class->phase_subindex) {
+        memcpy(odo->dataOrig, value, size);
+        device_on_phase_change(device, *((device_phase_t *) value));
+        return ODR_OK;
+    }
+
+    // quickly copy the value if there is no custom observer
+    if (device->class->property_write == NULL) {
+        memcpy(odo->dataOrig, value, size);
+        return ODR_OK;
+    }
+ 
+    OD_size_t count_written = 0;
+    OD_stream_t stream = {
+        .dataOrig = odo->dataOrig,
+        .dataLength = odo->dataLength,
+        .attribute = odo->attribute,
+        .object = device->object,
+        .subIndex = index,
+        .dataOffset = 0,
+    };
+
+    return device->class->property_write(&stream, value, size, &count_written);
+}
+
+ODR_t device_set_property_numeric(device_t *device, uint32_t value, size_t size, uint8_t index) {
+    return device_set_property(device, &value, size, index);
+}
+
+void *device_get_property_pointer(device_t *device, void *value, size_t size, uint8_t index) {
+    OD_obj_record_t *odo = &((OD_obj_record_t *)device->entry->odObject)[index];
+    if (device->class->property_read == NULL) {
+        return odo->dataOrig;
+    }
+    OD_size_t count_read = 0;
+    OD_stream_t stream = {
+        .dataOrig = odo->dataOrig,
+        .dataLength = odo->dataLength,
+        .attribute = odo->attribute,
+        .object = device->object,
+        .subIndex = index,
+        .dataOffset = 0,
+    };
+    device->class->property_read(&stream, value, size, &count_read);
+    return value;
 }

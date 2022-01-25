@@ -64,14 +64,17 @@ static app_signal_t spi_destruct(transport_spi_t *spi) {
 static app_signal_t spi_start(transport_spi_t *spi) {
     (void)spi;
     rcc_periph_clock_enable(spi->clock);
+    rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_SPI1EN);
+	SPI1_I2SCFGR = 0; //disable i2s??
 
-    // log_printf("    > SPI%i SS\n", spi->device->seq + 1);
-    // gpio_configure_output_af_pullup(spi->properties->ss_port, spi->properties->ss_pin, GPIO_SLOW, 5);
-    log_printf("    > SPI%i SCK\n", spi->device->seq + 1);
-    gpio_configure_output_af_pullup(spi->properties->sck_port, spi->properties->sck_pin, GPIO_SLOW, 5);
-    log_printf("    > SPI%i MOSI\n", spi->device->seq + 1);
-    gpio_configure_output_af_pullup(spi->properties->mosi_port, spi->properties->mosi_pin, GPIO_SLOW, 5);
-    log_printf("    > SPI%i MISO\n", spi->device->seq + 1);
+    log_printf("    > SPI%i SS\n", spi->device->seq + 1);
+    gpio_configure_output_af_pullup(spi->properties->ss_port, spi->properties->ss_pin, GPIO_FAST, 5);
+    device_gpio_set(spi->properties->ss_port, spi->properties->ss_pin);
+    log_printf("    > SPI%i SCK", spi->device->seq + 1);
+    gpio_configure_output_af_pullup(spi->properties->sck_port, spi->properties->sck_pin, GPIO_FAST, 5);
+    log_printf("    > SPI%i MOSI", spi->device->seq + 1);
+    gpio_configure_output_af_pullup(spi->properties->mosi_port, spi->properties->mosi_pin, GPIO_FAST, 5);
+    log_printf("    > SPI%i MISO", spi->device->seq + 1);
     gpio_configure_input(spi->properties->miso_port, spi->properties->miso_pin);
 
     /* Reset SPI, SPI_CR1 register cleared, SPI is disabled */
@@ -117,10 +120,10 @@ static app_signal_t spi_start(transport_spi_t *spi) {
      * ourselves this bit needs to be at least set to 1, otherwise the spi
      * peripheral will not send any data out.
      */
-    spi_enable_software_slave_management(spi->address);
-    spi_set_nss_high(spi->address);
-
-    /* Enable SPI1 periph. */
+    //spi_enable_software_slave_management(spi->address);
+    //spi_set_nss_high(spi->address);
+    spi_disable_software_slave_management(spi->address);
+    spi_enable_ss_output(spi->address);
     spi_enable(spi->address);
     return 0;
 }
@@ -139,8 +142,7 @@ static app_signal_t spi_allocate_rx_buffer(transport_spi_t *spi) {
 
 /* Set timer to signal device in specified amount of time */
 static app_signal_t spi_schedule_rx_timeout(transport_spi_t *spi) {
-    return 0;
-    return module_timer_timeout(spi->timer, spi->device, spi->properties->dma_rx_idle_timeout, DEVICE_REQUESTING);
+    return module_timer_timeout(spi->device->app->timer, spi->device, (void *) DEVICE_REQUESTING, spi->properties->dma_rx_idle_timeout);
 }
 
 /* Check if DMAs circular buffer position is still the same */
@@ -149,8 +151,11 @@ static app_signal_t spi_read_is_idle(transport_spi_t *spi) {
            spi->rx_buffer_cursor;
 }
 static app_signal_t spi_on_write(transport_spi_t *spi, app_event_t *event) {
+    device_register_dma(spi->properties->dma_tx_unit, spi->properties->dma_tx_stream, spi->device); 
+    log_printf("   > SPI%u\t", spi->device->seq + 1);
     device_dma_tx_start((uint32_t) & (SPI_DR(spi->address)), spi->properties->dma_tx_unit, spi->properties->dma_tx_stream,
                         spi->properties->dma_tx_channel, event->data, event->size);
+    spi_enable_tx_dma(spi->address);
     return APP_SIGNAL_OK;
 }
 
@@ -161,8 +166,11 @@ static app_signal_t spi_on_read(transport_spi_t *spi, app_event_t *event) {
             return error;
         }
     }
+    device_register_dma(spi->properties->dma_rx_unit, spi->properties->dma_rx_stream, spi->device); 
+    log_printf("   > SPI%u\t", spi->device->seq + 1);
     device_dma_rx_start((uint32_t) & (SPI_DR(spi->address)), spi->properties->dma_rx_unit, spi->properties->dma_rx_stream,
-                        spi->properties->dma_rx_channel, spi->rx_buffer, spi->properties->rx_buffer_size);
+                        spi->properties->dma_rx_channel, spi->rx_buffer, event->size == 0 ? spi->properties->rx_buffer_size : event->size);
+    spi_enable_rx_dma(spi->address);
     // schedule timeout to detect end of rx transmission
     spi_schedule_rx_timeout(spi);
     return APP_SIGNAL_OK;
@@ -170,12 +178,18 @@ static app_signal_t spi_on_read(transport_spi_t *spi, app_event_t *event) {
 
 // todo: Read DR register
 static app_signal_t spi_write_complete(transport_spi_t *spi) {
+    log_printf("   > SPI%u\t", spi->device->seq + 1);
+    device_dma_tx_stop(spi->properties->dma_tx_unit, spi->properties->dma_tx_stream,
+                        spi->properties->dma_tx_channel);
     device_event_finalize(spi->device, &spi->writing);
     device_tick_catchup(spi->device, spi->device->ticks->input);
 }
 
 /* Send the resulting read contents back via a queue */
 static app_signal_t spi_read_complete(transport_spi_t *spi) {
+    log_printf("   > SPI%u\t", spi->device->seq + 1);
+    device_dma_tx_stop(spi->properties->dma_rx_unit, spi->properties->dma_rx_stream,
+                        spi->properties->dma_rx_channel);
     app_event_t *response = app_event_from_vpool(
         &(app_event_t){.type = APP_EVENT_RESPONSE, .producer = spi->device, .consumer = spi->reading.producer}, &spi->rx_pool);
     device_event_finalize(spi->device, &spi->reading);
@@ -185,13 +199,15 @@ static app_signal_t spi_read_complete(transport_spi_t *spi) {
 
 static app_signal_t spi_signal(transport_spi_t *spi, device_t *device, app_signal_t signal, void *source) {
     switch (signal) {
-    case APP_SIGNAL_DMA_IDLE: spi_write_complete(spi); break;
+    case APP_SIGNAL_DMA_IDLE:
+        spi_schedule_rx_timeout(spi);
+        break;
+
     case APP_SIGNAL_TIMEOUT:
+        // if it's not idle still, then we expect for idle interrupt
         if ((uint32_t)source == DEVICE_REQUESTING) {
             if (spi_read_is_idle(spi)) {
                 spi_read_complete(spi);
-            } else {
-                spi_schedule_rx_timeout(spi);
             }
         }
         break;
@@ -227,7 +243,7 @@ device_class_t transport_spi_class = {
     .construct = (app_method_t)spi_construct,
     .destruct = (app_method_t)spi_destruct,
     .start = (app_method_t)spi_start,
-    .tick_input = (device_tick_callback_t)spi_tick_input,
-    .callback_signal = (device_callback_signal_t)spi_signal,
+    .tick_input = (device_on_tick_t)spi_tick_input,
+    .on_signal = (device_on_signal_t)spi_signal,
     .stop = (app_method_t)spi_stop,
 };

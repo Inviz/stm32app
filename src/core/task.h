@@ -22,7 +22,7 @@ struct app_task {
   size_t phase_index;
   size_t step_index;
 
-  device_task_t handler;
+  device_on_task_t handler;
 };
 
 enum app_task_signal {

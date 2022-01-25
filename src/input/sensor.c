@@ -61,8 +61,8 @@ device_class_t input_sensor_class = {
     .link = (app_method_t)sensor_link,
     .start = (app_method_t)sensor_start,
     .stop = (app_method_t)sensor_stop,
-    .callback_link = (device_callback_argument_t)sensor_accept,
-    .callback_value = (device_callback_value_t)sensor_receive,
-    .callback_phase = (device_callback_phase_t)sensor_phase,
+    .on_link = (device_on_link_t)sensor_accept,
+    .on_value = (device_on_value_t)sensor_receive,
+    .on_phase = (device_on_phase_t)sensor_phase,
     .property_write = sensor_property_write,
 };

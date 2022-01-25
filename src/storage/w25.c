@@ -1,9 +1,10 @@
 #include "w25.h"
+#include "transport/spi.h"
 
 static app_task_signal_t step_write_spi(app_task_t *task, uint8_t *data, size_t size) {
     app_publish(task->device->app, &((app_event_t){
                                        .type = APP_EVENT_WRITE,
-                                       .consumer = ((storage_w25_t *)task->device->object)->spi,
+                                       .consumer = ((storage_w25_t *)task->device->object)->spi->device,
                                        .producer = task->device,
                                        .data = data,
                                        .size = size,
@@ -13,7 +14,7 @@ static app_task_signal_t step_write_spi(app_task_t *task, uint8_t *data, size_t 
 static app_task_signal_t step_read_spi(app_task_t *task, size_t size) {
     app_publish(task->device->app, &((app_event_t){
                                        .type = APP_EVENT_READ,
-                                       .consumer = ((storage_w25_t *)task->device->object)->spi,
+                                       .consumer = ((storage_w25_t *)task->device->object)->spi->device,
                                        .producer = task->device,
                                        .size = size,
                                    }));
@@ -157,9 +158,21 @@ static app_signal_t w25_link(storage_w25_t *w25) {
     return 0;
 }
 
-static app_signal_t w25_phase(storage_w25_t *w25, device_phase_t phase) {
+static app_signal_t w25_on_phase(storage_w25_t *w25, device_phase_t phase) {
     (void)w25;
     (void)phase;
+    return 0;
+}
+
+// Acknowledge returned event
+static app_signal_t w25_on_event(storage_w25_t *w25, app_event_t *event) {
+    switch (event->type) {
+    case APP_EVENT_WRITE:
+        app_thread_device_schedule(w25->device->app->threads->high_priority, w25->device,
+                                   w25->device->app->threads->high_priority->current_time);
+        break;
+    default: break;
+    }
     return 0;
 }
 
@@ -196,8 +209,9 @@ device_class_t storage_w25_class = {
     .link = (app_method_t)w25_link,
     .start = (app_method_t)w25_start,
     .stop = (app_method_t)w25_stop,
-    .tick_input = (device_tick_callback_t)w25_tick_input,
-    .tick_high_priority = (device_tick_callback_t)w25_tick_high_priority,
-    .callback_phase = (device_callback_phase_t)w25_phase,
+    .tick_input = (device_on_tick_t)w25_tick_input,
+    .tick_high_priority = (device_on_tick_t)w25_tick_high_priority,
+    .on_phase = (device_on_phase_t)w25_on_phase,
+    .on_event = (device_on_event_t)w25_on_event,
     .property_write = w25_property_write,
 };

@@ -17,6 +17,8 @@ char* get_app_event_status_name (uint32_t v);
 char* get_app_task_signal_name (uint32_t v);
 // defined in ./src/device/circuit.h
 char* get_device_circuit_properties_properties_name (uint32_t v);
+// defined in ./src/indicator/led.h
+char* get_indicator_led_properties_properties_name (uint32_t v);
 // defined in ./src/input/sensor.h
 char* get_input_sensor_properties_properties_name (uint32_t v);
 // defined in ./src/lib/vpool.h

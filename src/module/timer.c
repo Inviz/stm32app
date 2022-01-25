@@ -448,7 +448,7 @@ static app_signal_t timer_link(module_timer_t *timer) {
     return 0;
 }
 
-static app_signal_t timer_callback_phase(module_timer_t *timer, device_phase_t phase) {
+static app_signal_t timer_on_phase(module_timer_t *timer, device_phase_t phase) {
     switch (phase) {
     case DEVICE_RUNNING: return timer_start_counting(timer); break;
 
@@ -475,7 +475,7 @@ device_class_t module_timer_class = {
     .link = (app_method_t)timer_link,
     .start = (app_method_t)timer_start,
     .stop = (app_method_t)timer_stop,
-    .callback_phase = (device_callback_phase_t)timer_callback_phase,
+    .on_phase = (device_on_phase_t)timer_on_phase,
     .property_write = timer_property_write,
 };
 

@@ -40,7 +40,7 @@ struct device_tick {
     device_t *next_device; /* Next device having the same tick */
     device_t *prev_device; /* Previous device handling the same tick*/
     app_thread_t *catchup; /* Did tick miss any messages? */
-    device_tick_callback_t callback;
+    device_on_tick_t callback;
 };
 
 struct device_ticks {
@@ -51,7 +51,7 @@ struct device_ticks {
     device_tick_t *bg_priority;     /* Lowest priority work that is done when there isn't anything more important */
 };
 
-int device_tick_allocate(device_tick_t **destination, device_tick_callback_t callback);
+int device_tick_allocate(device_tick_t **destination, device_on_tick_t callback);
 void device_tick_free(device_tick_t **tick);
 
 int device_ticks_allocate(device_t *device);

@@ -5,11 +5,13 @@
 #include "system/canopen.h"
 #include "input/sensor.h"
 #include "module/adc.h"
+#include "module/timer.h"
 #include "storage/w25.h"
 //#include "screen/epaper.h"
 //#include "transport/can.h"
 //#include "transport/i2c.h"
 #include "transport/spi.h"
+#include "indicator/led.h"
 //#include "transport/usart.h"
 
 static ODR_t mothership_property_write(OD_stream_t *stream, const void *buf, OD_size_t count, OD_size_t *countWritten) {
@@ -64,7 +66,7 @@ size_t app_mothership_enumerate_devices(app_t *app, OD_t *od, device_t *destinat
     count += app_device_type_enumerate(app, od, &transport_can_class, destination, count);
     count += app_device_type_enumerate(app, od, &transport_spi_class, destination, count);
     count += app_device_type_enumerate(app, od, &storage_w25_class, destination, count);
-    // count += app_device_type_enumerate(app, od, TRANSPORT_SPI, &transport_spi_class, sizeof(transport_spi_t), destination, count);
+    count += app_device_type_enumerate(app, od, &indicator_led_class, destination, count);
     // count += app_device_type_enumerate(MODULE_USART, &transport_usart_class, sizeof(transport_usart_t), destination, count);
     // count += app_device_type_enumerate(app, od, TRANSPORT_I2C, &transport_i2c_class, sizeof(transport_i2c_t), destination, count);
     // count += app_device_type_enumerate(app, od, DEVICE_CIRCUIT, &device_circuit_class, sizeof(device_circuit_t), destination, count);
@@ -77,18 +79,19 @@ static app_signal_t mothership_high_priority(app_mothership_t *mothership, app_e
     (void)tick;
     (void)thread;
     if (event->type == APP_EVENT_THREAD_START) {
+        // test simple timeout
         module_timer_timeout(mothership->timer, mothership->device, (void *)123, 1000000);
-        /*
+        // test w25 via spi
         return app_publish(mothership->device->app, &((app_event_t){
             .type = APP_EVENT_INTROSPECTION,
             .producer = mothership->device,
             .consumer = app_device_find_by_type((app_t *) mothership, STORAGE_W25)
-        }))*/
+        }));
     }
     return 0;
 }
 
-static app_signal_t mothership_callback_signal(app_mothership_t mothership, device_t *device, app_signal_t signal, void *argument) {
+static app_signal_t mothership_on_signal(app_mothership_t mothership, device_t *device, app_signal_t signal, void *argument) {
     (void) mothership;
     (void) device;
     (void) signal;
@@ -105,8 +108,8 @@ device_class_t app_mothership_class = {
     .link = (app_method_t)mothership_link,
     .start = (app_method_t)mothership_start,
     .stop = (app_method_t)mothership_stop,
-    .callback_phase = (device_callback_phase_t)mothership_phase,
-    .callback_signal = (device_callback_signal_t) mothership_callback_signal,
-    .tick_high_priority = (device_tick_callback_t)mothership_high_priority,
+    .on_phase = (device_on_phase_t)mothership_phase,
+    .on_signal = (device_on_signal_t) mothership_on_signal,
+    .tick_high_priority = (device_on_tick_t)mothership_high_priority,
     .property_write = mothership_property_write,
 };

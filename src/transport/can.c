@@ -69,7 +69,7 @@ device_class_t transport_can_class = {
     .link = (app_method_t)can_link,
     .start = (app_method_t)can_start,
     .stop = (app_method_t)can_stop,
-    .callback_link = (device_callback_argument_t)can_accept,
-    .callback_phase = (device_callback_phase_t)can_phase,
+    .on_link = (device_on_link_t)can_accept,
+    .on_phase = (device_on_phase_t)can_phase,
     .property_write = can_property_write,
 };

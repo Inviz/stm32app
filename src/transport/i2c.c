@@ -60,6 +60,6 @@ device_class_t transport_i2c_class = {
     .link = (app_method_t)i2c_link,
     .start = (app_method_t)i2c_start,
     .stop = (app_method_t)i2c_stop,
-    .callback_phase = (device_callback_phase_t)i2c_phase,
+    .on_phase = (device_on_phase_t)i2c_phase,
     .property_write = i2c_property_write,
 };

@@ -38,7 +38,7 @@ var toHex = function (rgb) {
   if (hex.length < 2) {
        hex = "0" + hex;
   }
-  return hex;
+  return hex.toUpperCase();
 };
 
 od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (match, struct, index, type, name) => {
@@ -73,9 +73,9 @@ od.replace(/\{\s*([^}]+?)\s*\}[^}]+?x([3-9].*?)_([a-z]+)([A-Z][^_\s,;]+)/g, (mat
 
 
     const constant = `${type.toUpperCase()}_${name.toUpperCase()}_${attribute.toUpperCase()}`
-    defs.push(`${constant} = 0x${(attributeIndex + 1)}`);
+    defs.push(`${constant} = 0x${(toHex(attributeIndex + 1))}`);
     const attributeOD = `${index.replace(/\d\d$/, 'XX')}${toHex(attributeIndex + 1)}`
-    const attributeDefinition = findDefinition(`UID_SUB_${index}${toHex(attributeIndex + 2)}`);
+    const attributeDefinition = findDefinition(`UID_SUB_${index}${toHex(attributeIndex + 1)}`);
     const shorttype = dataType.replace(/_t/, '').replace(/([a-z])[a-z]+/, '$1');
     if (attributeDefinition.description) {
       struct = struct.replace(' ' + attribute + ';', ' ' + attribute + '; // ' + attributeDefinition.description + ' ')
@@ -89,9 +89,16 @@ ODR_t ${type}_${name}_set_${attribute}(${type}_${name}_t *${name}, ${dataType} v
 ${dataType} ${type}_${name}_get_${attribute}(${type}_${name}_t *${name}); // 0x${attributeOD}: ${name} ${attribute}`)
 
 //accessors.push(`OD_ACCESSORS(${type}, ${name}, ${subtype}, ${attribute}, ${constant}, ${dataType}, ${shorttype}) /* 0x${attributeOD}: ${JSON.stringify(attributeDefinition)} */`);
+
+// slower version
+//accessors.push(`/* 0x${attributeOD}: ${attributeDefinition.description} */
+//#define ${type}_${name}_set_${attribute}(${name}, value) OD_set_${shorttype}(${name}->device->${subtype}, ${constant}, value, false)`);
 accessors.push(`/* 0x${attributeOD}: ${attributeDefinition.description} */
-#define ${type}_${name}_set_${attribute}(${name}, value) OD_set_${shorttype}(${name}->device->${subtype}, ${constant}, value, false)`);
-accessors.push(`#define ${type}_${name}_get_${attribute}(${name}) *((${dataType} *) OD_getPtr(${name}->device->${subtype}, ${constant}, 0, NULL))`);
+#define ${type}_${name}_set_${attribute}(${name}, value) device_set_property_numeric(${name}->device, (uint32_t) value, sizeof(${dataType}), ${constant})`);
+
+// slower version
+//accessors.push(`#define ${type}_${name}_get_${attribute}(${name}) *((${dataType} *) OD_getPtr(${name}->device->${subtype}, ${constant}, 0, NULL))`);
+accessors.push(`#define ${type}_${name}_get_${attribute}(${name}) *((${dataType} *) device_get_property_pointer(${name}->device, &(uint8_t[sizeof(${dataType})]{}), sizeof(${dataType}), ${constant})`);
 
 if (!'USE MACROS?')    accessors.push(
 `/* 0x${attributeOD}: ${name} ${attribute} */

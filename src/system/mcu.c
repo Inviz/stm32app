@@ -50,6 +50,6 @@ device_class_t system_mcu_class = {
     .link = (app_method_t)mcu_link,
     .start = (app_method_t)mcu_start,
     .stop = (app_method_t)mcu_stop,
-    .callback_phase = (device_callback_phase_t)mcu_phase,
+    .on_phase = (device_on_phase_t)mcu_phase,
     .property_write = mcu_property_write,
 };

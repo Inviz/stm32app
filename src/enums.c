@@ -75,6 +75,7 @@ case 28928: return "STORAGE_W25";
 case 32768: return "INPUT_SENSOR";
 case 33024: return "CONTROL_TOUCHSCREEN";
 case 36864: return "SCREEN_EPAPER";
+case 38912: return "INDICATOR_LED";
 default: return "Unknown";
 }
 };
@@ -134,8 +135,18 @@ case 6: return "DEVICE_CIRCUIT_SENSOR_INDEX";
 case 7: return "DEVICE_CIRCUIT_PHASE";
 case 8: return "DEVICE_CIRCUIT_DUTY_CYCLE";
 case 9: return "DEVICE_CIRCUIT_CURRENT";
-case 16: return "DEVICE_CIRCUIT_VOLTAGE";
-case 17: return "DEVICE_CIRCUIT_CONSUMERS";
+case 10: return "DEVICE_CIRCUIT_VOLTAGE";
+case 11: return "DEVICE_CIRCUIT_CONSUMERS";
+default: return "Unknown";
+}
+};
+
+char* get_indicator_led_properties_properties_name (uint32_t v) {
+switch (v) {
+case 1: return "INDICATOR_LED_PORT";
+case 2: return "INDICATOR_LED_PIN";
+case 3: return "INDICATOR_LED_PHASE";
+case 4: return "INDICATOR_LED_DUTY_CYCLE";
 default: return "Unknown";
 }
 };
@@ -194,10 +205,10 @@ case 6: return "SCREEN_EPAPER_BUSY_PORT";
 case 7: return "SCREEN_EPAPER_BUSY_PIN";
 case 8: return "SCREEN_EPAPER_RESET_PORT";
 case 9: return "SCREEN_EPAPER_RESET_PIN";
-case 16: return "SCREEN_EPAPER_WIDTH";
-case 17: return "SCREEN_EPAPER_HEIGHT";
-case 18: return "SCREEN_EPAPER_MODE";
-case 19: return "SCREEN_EPAPER_PHASE";
+case 10: return "SCREEN_EPAPER_WIDTH";
+case 11: return "SCREEN_EPAPER_HEIGHT";
+case 12: return "SCREEN_EPAPER_MODE";
+case 13: return "SCREEN_EPAPER_PHASE";
 default: return "Unknown";
 }
 };
@@ -238,16 +249,14 @@ char* get_system_canopen_properties_properties_name (uint32_t v) {
 switch (v) {
 case 1: return "SYSTEM_CANOPEN_CAN_INDEX";
 case 2: return "SYSTEM_CANOPEN_CAN_FIFO_INDEX";
-case 3: return "SYSTEM_CANOPEN_GREEN_LED_PORT";
-case 4: return "SYSTEM_CANOPEN_GREEN_LED_PIN";
-case 5: return "SYSTEM_CANOPEN_RED_LED_PORT";
-case 6: return "SYSTEM_CANOPEN_RED_LED_PIN";
-case 7: return "SYSTEM_CANOPEN_FIRST_HB_TIME";
-case 8: return "SYSTEM_CANOPEN_SDO_SERVER_TIMEOUT";
-case 9: return "SYSTEM_CANOPEN_SDO_CLIENT_TIMEOUT";
-case 16: return "SYSTEM_CANOPEN_PHASE";
-case 17: return "SYSTEM_CANOPEN_NODE_ID";
-case 18: return "SYSTEM_CANOPEN_BITRATE";
+case 3: return "SYSTEM_CANOPEN_GREEN_LED_INDEX";
+case 4: return "SYSTEM_CANOPEN_RED_LED_INDEX";
+case 5: return "SYSTEM_CANOPEN_FIRST_HB_TIME";
+case 6: return "SYSTEM_CANOPEN_SDO_SERVER_TIMEOUT";
+case 7: return "SYSTEM_CANOPEN_SDO_CLIENT_TIMEOUT";
+case 8: return "SYSTEM_CANOPEN_PHASE";
+case 9: return "SYSTEM_CANOPEN_NODE_ID";
+case 10: return "SYSTEM_CANOPEN_BITRATE";
 default: return "Unknown";
 }
 };
@@ -275,8 +284,8 @@ case 6: return "TRANSPORT_CAN_BRP";
 case 7: return "TRANSPORT_CAN_SJW";
 case 8: return "TRANSPORT_CAN_PROP";
 case 9: return "TRANSPORT_CAN_PH_SEG1";
-case 16: return "TRANSPORT_CAN_PH_SEG2";
-case 17: return "TRANSPORT_CAN_PHASE";
+case 10: return "TRANSPORT_CAN_PH_SEG2";
+case 11: return "TRANSPORT_CAN_PHASE";
 default: return "Unknown";
 }
 };
@@ -292,7 +301,7 @@ case 6: return "TRANSPORT_I2C_DMA_TX_STREAM";
 case 7: return "TRANSPORT_I2C_DMA_TX_CHANNEL";
 case 8: return "TRANSPORT_I2C_BAUDRATE";
 case 9: return "TRANSPORT_I2C_DATABITS";
-case 16: return "TRANSPORT_I2C_PHASE";
+case 10: return "TRANSPORT_I2C_PHASE";
 default: return "Unknown";
 }
 };
@@ -335,21 +344,21 @@ case 6: return "TRANSPORT_SPI_DMA_RX_CHANNEL";
 case 7: return "TRANSPORT_SPI_DMA_RX_IDLE_TIMEOUT";
 case 8: return "TRANSPORT_SPI_RX_BUFFER_SIZE";
 case 9: return "TRANSPORT_SPI_RX_POOL_MAX_SIZE";
-case 16: return "TRANSPORT_SPI_RX_POOL_INITIAL_SIZE";
-case 17: return "TRANSPORT_SPI_RX_POOL_BLOCK_SIZE";
-case 18: return "TRANSPORT_SPI_DMA_TX_UNIT";
-case 19: return "TRANSPORT_SPI_DMA_TX_STREAM";
-case 20: return "TRANSPORT_SPI_DMA_TX_CHANNEL";
-case 21: return "TRANSPORT_SPI_AF_INDEX";
-case 22: return "TRANSPORT_SPI_SS_PORT";
-case 23: return "TRANSPORT_SPI_SS_PIN";
-case 24: return "TRANSPORT_SPI_SCK_PORT";
-case 25: return "TRANSPORT_SPI_SCK_PIN";
-case 32: return "TRANSPORT_SPI_MISO_PORT";
-case 33: return "TRANSPORT_SPI_MISO_PIN";
-case 34: return "TRANSPORT_SPI_MOSI_PORT";
-case 35: return "TRANSPORT_SPI_MOSI_PIN";
-case 36: return "TRANSPORT_SPI_PHASE";
+case 10: return "TRANSPORT_SPI_RX_POOL_INITIAL_SIZE";
+case 11: return "TRANSPORT_SPI_RX_POOL_BLOCK_SIZE";
+case 12: return "TRANSPORT_SPI_DMA_TX_UNIT";
+case 13: return "TRANSPORT_SPI_DMA_TX_STREAM";
+case 14: return "TRANSPORT_SPI_DMA_TX_CHANNEL";
+case 15: return "TRANSPORT_SPI_AF_INDEX";
+case 16: return "TRANSPORT_SPI_SS_PORT";
+case 17: return "TRANSPORT_SPI_SS_PIN";
+case 18: return "TRANSPORT_SPI_SCK_PORT";
+case 19: return "TRANSPORT_SPI_SCK_PIN";
+case 20: return "TRANSPORT_SPI_MISO_PORT";
+case 21: return "TRANSPORT_SPI_MISO_PIN";
+case 22: return "TRANSPORT_SPI_MOSI_PORT";
+case 23: return "TRANSPORT_SPI_MOSI_PIN";
+case 24: return "TRANSPORT_SPI_PHASE";
 default: return "Unknown";
 }
 };
@@ -365,7 +374,7 @@ case 6: return "TRANSPORT_USART_DMA_TX_STREAM";
 case 7: return "TRANSPORT_USART_DMA_TX_CHANNEL";
 case 8: return "TRANSPORT_USART_BAUDRATE";
 case 9: return "TRANSPORT_USART_DATABITS";
-case 16: return "TRANSPORT_USART_PHASE";
+case 10: return "TRANSPORT_USART_PHASE";
 default: return "Unknown";
 }
 };

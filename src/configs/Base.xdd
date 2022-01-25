@@ -15,7 +15,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModifiedBy="" fileModificationDate="2022-01-24" fileModificationTime="03:48:01.4055475+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q1="http://www.canopen.org/xml/1.1" xsi:type="q1:ProfileBody_Device_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModifiedBy="" fileModificationDate="2022-01-25" fileModificationTime="02:17:40.4831049+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <q1:DeviceIdentity>
         <q1:vendorName>2</q1:vendorName>
         <q1:vendorID>3</q1:vendorID>
@@ -715,34 +715,28 @@
             <q1:varDeclaration name="CAN FIFO Index" uniqueID="UID_RECSUB_602002">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Green Led Port" uniqueID="UID_RECSUB_602003">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="Green Led Pin" uniqueID="UID_RECSUB_602004">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="Red Led Port" uniqueID="UID_RECSUB_602005">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="Red Led Pin" uniqueID="UID_RECSUB_602006">
-              <USINT />
-            </q1:varDeclaration>
-            <q1:varDeclaration name="First HB Time" uniqueID="UID_RECSUB_602007">
+            <q1:varDeclaration name="Green Led index" uniqueID="UID_RECSUB_602003">
               <UINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="SDO Server Timeout" uniqueID="UID_RECSUB_602008">
+            <q1:varDeclaration name="Red Led Index" uniqueID="UID_RECSUB_602004">
               <UINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="SDO ClientTimeout" uniqueID="UID_RECSUB_602009">
+            <q1:varDeclaration name="First HB Time" uniqueID="UID_RECSUB_602005">
               <UINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_60200A">
+            <q1:varDeclaration name="SDO Server Timeout" uniqueID="UID_RECSUB_602006">
+              <UINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="SDO ClientTimeout" uniqueID="UID_RECSUB_602007">
+              <UINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_602008">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Node ID" uniqueID="UID_RECSUB_60200B">
+            <q1:varDeclaration name="Node ID" uniqueID="UID_RECSUB_602009">
               <USINT />
             </q1:varDeclaration>
-            <q1:varDeclaration name="Bitrate" uniqueID="UID_RECSUB_60200C">
+            <q1:varDeclaration name="Bitrate" uniqueID="UID_RECSUB_60200A">
               <UDINT />
             </q1:varDeclaration>
           </q1:struct>
@@ -1271,6 +1265,57 @@
               <UINT />
             </q1:varDeclaration>
             <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_90000D">
+              <USINT />
+            </q1:varDeclaration>
+          </q1:struct>
+          <q1:struct name="Indicator LED 1" uniqueID="UID_REC_9800">
+            <q1:varDeclaration name="Highest sub-index supported" uniqueID="UID_RECSUB_980000">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Port" uniqueID="UID_RECSUB_980001">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Pin" uniqueID="UID_RECSUB_980002">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_980003">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Duty Cycle" uniqueID="UID_RECSUB_980004">
+              <USINT />
+            </q1:varDeclaration>
+          </q1:struct>
+          <q1:struct name="Indicator LED 2" uniqueID="UID_REC_9801">
+            <q1:varDeclaration name="Highest sub-index supported" uniqueID="UID_RECSUB_980100">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Port" uniqueID="UID_RECSUB_980101">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Pin" uniqueID="UID_RECSUB_980102">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_980103">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Duty Cycle" uniqueID="UID_RECSUB_980104">
+              <USINT />
+            </q1:varDeclaration>
+          </q1:struct>
+          <q1:struct name="Signal Beeper 1" uniqueID="UID_REC_9900">
+            <q1:varDeclaration name="Highest sub-index supported" uniqueID="UID_RECSUB_990000">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Port" uniqueID="UID_RECSUB_990001">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Pin" uniqueID="UID_RECSUB_990002">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Phase" uniqueID="UID_RECSUB_990003">
+              <USINT />
+            </q1:varDeclaration>
+            <q1:varDeclaration name="Duty Cycle" uniqueID="UID_RECSUB_990004">
               <USINT />
             </q1:varDeclaration>
           </q1:struct>
@@ -3064,7 +3109,7 @@
           <q1:parameter uniqueID="UID_SUB_602000">
             <label lang="en">Highest sub-index supported</label>
             <USINT />
-            <q1:defaultValue value="0x0C" />
+            <q1:defaultValue value="0x0A" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_602001" access="readWrite">
             <description lang="en">Values other than zero will prevent device from initializing</description>
@@ -3079,52 +3124,42 @@
             <q1:property name="CO_accessSRDO" value="trx" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_602003" access="readWrite">
-            <label lang="en">Green Led Port</label>
-            <USINT />
-            <q1:defaultValue value="0" />
+            <label lang="en">Green Led index</label>
+            <UINT />
+            <q1:defaultValue value="0x9800" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_602004" access="readWrite">
-            <label lang="en">Green Led Pin</label>
-            <USINT />
-            <q1:defaultValue value="0" />
+            <label lang="en">Red Led Index</label>
+            <UINT />
+            <q1:defaultValue value="0x9801" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_602005" access="readWrite">
-            <label lang="en">Red Led Port</label>
-            <USINT />
-            <q1:defaultValue value="0" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_602006" access="readWrite">
-            <label lang="en">Red Led Pin</label>
-            <USINT />
-            <q1:defaultValue value="0" />
-          </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_602007" access="readWrite">
             <label lang="en">First HB Time</label>
             <UINT />
             <q1:defaultValue value="0" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_602008" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_602006" access="readWrite">
             <description lang="en">in MS</description>
             <UINT />
             <q1:defaultValue value="1000" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_602009" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_602007" access="readWrite">
             <description lang="en">in MS</description>
             <UINT />
             <q1:defaultValue value="500" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_60200A" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_602008" access="readWrite">
             <label lang="en">Phase</label>
             <USINT />
             <q1:defaultValue value="0" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_60200B" access="readWrite">
+          <q1:parameter uniqueID="UID_SUB_602009" access="readWrite">
             <description lang="en">Node ID</description>
             <USINT />
             <q1:defaultValue value="0" />
           </q1:parameter>
-          <q1:parameter uniqueID="UID_SUB_60200C" access="readWrite">
-            <description lang="en">Node ID</description>
+          <q1:parameter uniqueID="UID_SUB_60200A" access="readWrite">
+            <description lang="en">Negotiated bitrate</description>
             <UDINT />
             <q1:defaultValue value="100000" />
           </q1:parameter>
@@ -3331,22 +3366,22 @@
           <q1:parameter uniqueID="UID_SUB_622004" access="readWrite">
             <label lang="en">DMA Rx Unit</label>
             <USINT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="2" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_622005" access="readWrite">
             <label lang="en">DMA Rx Stream</label>
             <USINT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="0" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_622006" access="readWrite">
             <label lang="en">DMA Rx Channel</label>
             <USINT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="3" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_622007" access="readWrite">
-            <label lang="en">DMA Rx Idle Timeout</label>
+            <description lang="en">In microseconds</description>
             <INT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="4" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_622008" access="readWrite">
             <label lang="en">Rx Buffer Size</label>
@@ -3371,17 +3406,17 @@
           <q1:parameter uniqueID="UID_SUB_62200C" access="readWrite">
             <label lang="en">DMA Tx Unit</label>
             <USINT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="2" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_62200D" access="readWrite">
             <label lang="en">DMA Tx Stream</label>
             <USINT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="3" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_62200E" access="readWrite">
             <label lang="en">DMA Tx Channel</label>
             <USINT />
-            <q1:defaultValue value="1" />
+            <q1:defaultValue value="3" />
           </q1:parameter>
           <q1:parameter uniqueID="UID_SUB_62200F" access="readWrite">
             <description lang="en">Index of the corresponding AF function for gpio pins</description>
@@ -4058,6 +4093,96 @@
             <USINT />
             <q1:defaultValue value="0" />
           </q1:parameter>
+          <q1:parameter uniqueID="UID_OBJ_9800">
+            <label lang="en">Indicator LED 1</label>
+            <q1:dataTypeIDRef uniqueIDRef="UID_REC_9800" />
+            <q1:property name="CO_countLabel" value="INDICATOR_LED" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980000">
+            <label lang="en">Highest sub-index supported</label>
+            <USINT />
+            <q1:defaultValue value="0x04" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980001" access="readWrite">
+            <label lang="en">Port</label>
+            <USINT />
+            <q1:defaultValue value="5" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980002" access="readWrite">
+            <label lang="en">Pin</label>
+            <USINT />
+            <q1:defaultValue value="3" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980003" access="readWrite">
+            <description lang="en">Current state of a device (DEVICE_PHASE)</description>
+            <USINT />
+            <q1:defaultValue value="0" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980004" access="readWrite">
+            <description lang="en">Brightness of LED between 0 and 255</description>
+            <USINT />
+            <q1:defaultValue value="0" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_OBJ_9801">
+            <label lang="en">Indicator LED 2</label>
+            <q1:dataTypeIDRef uniqueIDRef="UID_REC_9801" />
+            <q1:property name="CO_countLabel" value="INDICATOR_LED" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980100">
+            <label lang="en">Highest sub-index supported</label>
+            <USINT />
+            <q1:defaultValue value="0x04" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980101" access="readWrite">
+            <label lang="en">Port</label>
+            <USINT />
+            <q1:defaultValue value="7" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980102" access="readWrite">
+            <label lang="en">Pin</label>
+            <USINT />
+            <q1:defaultValue value="9" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980103" access="readWrite">
+            <description lang="en">Current state of a device (DEVICE_PHASE)</description>
+            <USINT />
+            <q1:defaultValue value="0" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_980104" access="readWrite">
+            <label lang="en">Duty Cycle</label>
+            <USINT />
+            <q1:defaultValue value="0" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_OBJ_9900">
+            <label lang="en">Signal Beeper 1</label>
+            <q1:dataTypeIDRef uniqueIDRef="UID_REC_9900" />
+            <q1:property name="CO_countLabel" value="INDICATOR_LED" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_990000">
+            <label lang="en">Highest sub-index supported</label>
+            <USINT />
+            <q1:defaultValue value="0x04" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_990001" access="readWrite">
+            <label lang="en">Port</label>
+            <USINT />
+            <q1:defaultValue value="7" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_990002" access="readWrite">
+            <label lang="en">Pin</label>
+            <USINT />
+            <q1:defaultValue value="7" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_990003" access="readWrite">
+            <description lang="en">Current state of a device (DEVICE_PHASE)</description>
+            <USINT />
+            <q1:defaultValue value="0" />
+          </q1:parameter>
+          <q1:parameter uniqueID="UID_SUB_990004" access="readWrite">
+            <label lang="en">Duty Cycle</label>
+            <USINT />
+            <q1:defaultValue value="0" />
+          </q1:parameter>
         </q1:parameterList>
       </q1:ApplicationProcess>
     </ProfileBody>
@@ -4075,7 +4200,7 @@
         <ProfileTechnology>CANopen</ProfileTechnology>
       </ISO15745Reference>
     </ProfileHeader>
-    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModificationDate="2022-01-24" fileModificationTime="03:48:01.4055475+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
+    <ProfileBody xmlns:q2="http://www.canopen.org/xml/1.1" xsi:type="q2:ProfileBody_CommunicationNetwork_CANopen" formatName="CANopen" formatVersion="1.0" fileName="Base.xdd" fileCreator="" fileCreationDate="2021-09-25" fileCreationTime="02:03:07.0000000+08:00" fileModificationDate="2022-01-25" fileModificationTime="02:17:40.4831049+08:00" fileVersion="1" supportedLanguages="en" xmlns="">
       <ApplicationLayers>
         <q2:CANopenObjectList>
           <CANopenObject index="1000" name="Device type" objectType="7" PDOmapping="no" uniqueIDRef="UID_OBJ_1000" />
@@ -4418,20 +4543,18 @@
             <CANopenSubObject subIndex="05" name="CPU Temperature" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_600005" />
             <CANopenSubObject subIndex="06" name="Startup time" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_600006" />
           </CANopenObject>
-          <CANopenObject index="6020" name="System CANopen" objectType="9" uniqueIDRef="UID_OBJ_6020" subNumber="13">
+          <CANopenObject index="6020" name="System CANopen" objectType="9" uniqueIDRef="UID_OBJ_6020" subNumber="11">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602000" />
             <CANopenSubObject subIndex="01" name="CAN Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602001" />
             <CANopenSubObject subIndex="02" name="CAN FIFO Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602002" />
-            <CANopenSubObject subIndex="03" name="Green Led Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602003" />
-            <CANopenSubObject subIndex="04" name="Green Led Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602004" />
-            <CANopenSubObject subIndex="05" name="Red Led Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602005" />
-            <CANopenSubObject subIndex="06" name="Red Led Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602006" />
-            <CANopenSubObject subIndex="07" name="First HB Time" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602007" />
-            <CANopenSubObject subIndex="08" name="SDO Server Timeout" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602008" />
-            <CANopenSubObject subIndex="09" name="SDO ClientTimeout" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602009" />
-            <CANopenSubObject subIndex="0A" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_60200A" />
-            <CANopenSubObject subIndex="0B" name="Node ID" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_60200B" />
-            <CANopenSubObject subIndex="0C" name="Bitrate" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_60200C" />
+            <CANopenSubObject subIndex="03" name="Green Led index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602003" />
+            <CANopenSubObject subIndex="04" name="Red Led Index" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602004" />
+            <CANopenSubObject subIndex="05" name="First HB Time" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602005" />
+            <CANopenSubObject subIndex="06" name="SDO Server Timeout" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602006" />
+            <CANopenSubObject subIndex="07" name="SDO ClientTimeout" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602007" />
+            <CANopenSubObject subIndex="08" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602008" />
+            <CANopenSubObject subIndex="09" name="Node ID" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_602009" />
+            <CANopenSubObject subIndex="0A" name="Bitrate" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_60200A" />
           </CANopenObject>
           <CANopenObject index="6100" name="Module Timer 1" objectType="9" uniqueIDRef="UID_OBJ_6100" subNumber="6">
             <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_610000" />
@@ -4632,6 +4755,27 @@
             <CANopenSubObject subIndex="0B" name="Height" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_90000B" />
             <CANopenSubObject subIndex="0C" name="Mode" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_90000C" />
             <CANopenSubObject subIndex="0D" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_90000D" />
+          </CANopenObject>
+          <CANopenObject index="9800" name="Indicator LED 1" objectType="9" uniqueIDRef="UID_OBJ_9800" subNumber="5">
+            <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980000" />
+            <CANopenSubObject subIndex="01" name="Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980001" />
+            <CANopenSubObject subIndex="02" name="Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980002" />
+            <CANopenSubObject subIndex="03" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980003" />
+            <CANopenSubObject subIndex="04" name="Duty Cycle" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980004" />
+          </CANopenObject>
+          <CANopenObject index="9801" name="Indicator LED 2" objectType="9" uniqueIDRef="UID_OBJ_9801" subNumber="5">
+            <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980100" />
+            <CANopenSubObject subIndex="01" name="Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980101" />
+            <CANopenSubObject subIndex="02" name="Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980102" />
+            <CANopenSubObject subIndex="03" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980103" />
+            <CANopenSubObject subIndex="04" name="Duty Cycle" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_980104" />
+          </CANopenObject>
+          <CANopenObject index="9900" name="Signal Beeper 1" objectType="9" uniqueIDRef="UID_OBJ_9900" subNumber="5">
+            <CANopenSubObject subIndex="00" name="Highest sub-index supported" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_990000" />
+            <CANopenSubObject subIndex="01" name="Port" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_990001" />
+            <CANopenSubObject subIndex="02" name="Pin" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_990002" />
+            <CANopenSubObject subIndex="03" name="Phase" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_990003" />
+            <CANopenSubObject subIndex="04" name="Duty Cycle" objectType="7" PDOmapping="no" uniqueIDRef="UID_SUB_990004" />
           </CANopenObject>
         </q2:CANopenObjectList>
         <dummyUsage>
